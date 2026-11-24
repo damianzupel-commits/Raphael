@@ -1,0 +1,5 @@
+# Una entrada por cliente. El token es el RAPHAEL_RELAY_TOKEN de su equipo (largo y único).
+- instalacion: "id-de-servidor.json-del-cliente"
+  token: "generar-con: python -c 'import secrets;print(secrets.token_urlsafe(32))'"
+  whatsapp_phone_ids: ["PHONE_NUMBER_ID"]
+  instagram_ids: ["ID_DE_LA_CUENTA_DE_INSTAGRAM"]

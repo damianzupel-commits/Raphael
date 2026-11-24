@@ -1,0 +1,580 @@
+<meta charset="utf-8">
+<title>Raphael — Centro de Mando</title>
+<style>
+  :root{
+    --bg:#05070d; --panel:rgba(18,24,38,.72); --edge:rgba(120,170,255,.18);
+    --ink:#e8f0ff; --muted:#7f8db0; --cyan:#35e0ff; --violet:#9b6bff;
+    --green:#36f0a0; --amber:#ffc24b; --red:#ff5c7a; --blue:#4d8cff;
+    --teal:#2ee6c8; --pink:#ff6bd6; --orange:#ff9f45;
+    --font:"Segoe UI",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:
+      radial-gradient(900px 900px at 38% 47%,rgba(89,224,255,.10),transparent 60%),
+      radial-gradient(1100px 700px at 12% 0%,rgba(60,110,220,.16),transparent 60%),
+      radial-gradient(1000px 700px at 96% 112%,rgba(155,107,255,.17),transparent 55%),
+      radial-gradient(700px 500px at 82% 18%,rgba(46,230,200,.08),transparent 60%),
+      var(--bg);
+    color:var(--ink);font-family:var(--font);overflow:hidden;height:100vh}
+  /* campo de estrellas */
+  @keyframes tw{0%,100%{opacity:.25}50%{opacity:.9}}
+  .star{position:fixed;width:2px;height:2px;border-radius:50%;background:#dff0ff;z-index:0;animation:tw 3s ease-in-out infinite}
+  body::before{content:"";position:fixed;inset:0;pointer-events:none;
+    background-image:linear-gradient(rgba(90,140,255,.04) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(90,140,255,.04) 1px,transparent 1px);
+    background-size:40px 40px;mask:radial-gradient(circle at 50% 40%,#000,transparent 85%)}
+  .wrap{display:flex;flex-direction:column;height:100vh;padding:14px 16px;gap:12px}
+  /* header */
+  .top{display:flex;align-items:center;gap:14px}
+  .brand{display:flex;align-items:center;gap:10px}
+  .orb{width:26px;height:26px;border-radius:50%;
+    background:radial-gradient(circle at 50% 40%,#fff,var(--cyan) 45%,#1b63ff 80%);
+    box-shadow:0 0 16px var(--cyan),0 0 36px rgba(53,224,255,.4);animation:breathe 3s ease-in-out infinite}
+  @keyframes breathe{0%,100%{transform:scale(.9);filter:brightness(.9)}50%{transform:scale(1.06);filter:brightness(1.2)}}
+  .brand b{font-size:17px;letter-spacing:3px}
+  .brand span{color:var(--muted);font-size:11px;letter-spacing:5px}
+  .top .sp{flex:1}
+  .pill{font-size:11px;letter-spacing:1px;padding:5px 12px;border:1px solid var(--edge);
+    border-radius:20px;color:var(--muted);background:rgba(255,255,255,.02)}
+  .pill b{color:var(--green)}
+  .clock{font-variant-numeric:tabular-nums;color:var(--cyan);letter-spacing:2px;font-size:13px}
+  /* body grid */
+  .main{flex:1;display:grid;grid-template-columns:1fr 280px;gap:12px;min-height:0}
+  .left{display:flex;flex-direction:column;gap:12px;min-height:0}
+  /* --- escenario radial: la Gran Sabia en el centro, brigadas en órbita --- */
+  .stage{position:relative;overflow:hidden;border:1px solid var(--edge);border-radius:16px;
+    background:radial-gradient(circle at 50% 50%,rgba(89,224,255,.07),transparent 62%)}
+  .beams{position:absolute;inset:0;width:100%;height:100%;z-index:1;pointer-events:none}
+  .beams line{stroke-dasharray:1.2 2.4;animation:flow 5s linear infinite}
+  @keyframes flow{to{stroke-dashoffset:-72}}
+  .ringg{animation:spin 70s linear infinite;transform-origin:50% 50%;transform-box:fill-box}
+  .ringg2{animation:spin 110s linear infinite reverse;transform-origin:50% 50%;transform-box:fill-box}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .sage{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:3;text-align:center;width:230px;pointer-events:none}
+  .orbwrap{position:relative;width:116px;height:116px;margin:0 auto 14px;perspective:560px;transform-style:preserve-3d}
+  .sagecore{position:absolute;inset:0;border-radius:50%;z-index:2;
+    background:radial-gradient(circle at 50% 42%,#fff 0%,#fff2c8 19%,#59e0ff 52%,#7a4fff 82%,transparent 100%);
+    box-shadow:0 0 26px #59e0ff,0 0 54px rgba(122,79,255,.4);
+    animation:breathe 3.2s ease-in-out infinite}
+  /* halo suave detrás del núcleo: un radial-gradient se compone mejor que un box-shadow
+     gigante (que en el navegador embebido de la tray salía con bandas/pixelado) */
+  .orbwrap::before{content:"";position:absolute;inset:-46px;border-radius:50%;z-index:0;pointer-events:none;
+    background:radial-gradient(circle,rgba(89,224,255,.22),rgba(122,79,255,.12) 42%,transparent 68%)}
+  /* anillos orbitando el orbe en 3D (giroscopio) */
+  .oring{position:absolute;border-radius:50%;border:2px solid;transform-style:preserve-3d}
+  /* sin box-shadow en los anillos: el glow sobre un borde que gira en 3D es lo que se
+     veía pixelado. El anillo nítido + el halo de .orbwrap::before dan el mismo efecto, limpio. */
+  .oring.r1{inset:-12px;border-color:rgba(89,224,255,.85);animation:ro1 7s linear infinite}
+  .oring.r2{inset:-27px;border-color:rgba(122,79,255,.7);animation:ro2 11s linear infinite}
+  .oring.r3{inset:-42px;border-color:rgba(255,233,176,.6);animation:ro3 16s linear infinite}
+  @keyframes ro1{to{transform:rotateX(360deg)}}
+  @keyframes ro2{to{transform:rotateY(360deg)}}
+  @keyframes ro3{to{transform:rotate3d(1,.6,.3,360deg)}}
+  .sage .k{font-size:10px;letter-spacing:4px;color:#ffe9b0}
+  .sage h2{margin:4px 0 2px;font-size:18px;letter-spacing:1px;color:#fff;text-shadow:0 0 12px rgba(89,224,255,.6)}
+  .sage .dir{margin:0;font-size:11px;color:#bcd0f5} .sage .dir b{color:var(--cyan)}
+  .sage .tk{margin-top:7px;font-size:11px;color:var(--muted)} .sage .tk b{font-size:20px;color:#fff;margin-right:4px}
+  /* maestro */
+  .maestro{border:1px solid var(--edge);border-radius:16px;background:
+      linear-gradient(120deg,rgba(155,107,255,.14),rgba(53,224,255,.08));
+    padding:14px 18px;display:flex;align-items:center;gap:18px;position:relative;overflow:hidden}
+  .maestro::after{content:"";position:absolute;inset:0;background:
+      radial-gradient(400px 120px at 10% 50%,rgba(155,107,255,.25),transparent 70%)}
+  .core{width:60px;height:60px;border-radius:50%;flex:none;position:relative;z-index:1;
+    background:radial-gradient(circle at 50% 40%,#fff,#c9a3ff 40%,#6a32ff 85%);
+    box-shadow:0 0 26px #9b6bff,0 0 60px rgba(155,107,255,.5);animation:breathe 2.4s ease-in-out infinite}
+  .maestro .txt{z-index:1}
+  .maestro .txt .k{font-size:11px;letter-spacing:3px;color:#c9b6ff}
+  .maestro .txt h2{margin:3px 0 4px;font-size:18px;letter-spacing:1px}
+  .maestro .txt p{margin:0;color:#cdd6f0;font-size:13px}
+  .maestro .txt p b{color:var(--cyan)}
+  .mstat{margin-left:auto;z-index:1;text-align:right}
+  .mstat .n{font-size:26px;font-weight:700;color:#fff}
+  .mstat .l{font-size:10px;letter-spacing:2px;color:var(--muted)}
+  /* brigades grid */
+  .grid{position:absolute;inset:0;z-index:4;pointer-events:none}
+  .node{position:absolute;transform:translate(-50%,-50%);z-index:4;width:132px;pointer-events:auto;cursor:pointer;
+    background:rgba(12,18,34,.62);border:1px solid color-mix(in srgb,var(--c) 38%,var(--edge));
+    border-radius:13px;padding:8px 10px;transition:.2s}
+  .node:hover{border-color:var(--c);box-shadow:0 0 18px color-mix(in srgb,var(--c) 45%,transparent)}
+  .node.run{border-color:var(--c);box-shadow:0 0 24px color-mix(in srgb,var(--c) 55%,transparent)}
+  .node .nh{display:flex;align-items:center;gap:7px}
+  .node .nic{width:25px;height:25px;border-radius:8px;display:grid;place-items:center;font-size:13px;flex:none;
+    background:color-mix(in srgb,var(--c) 14%,transparent);border:1px solid color-mix(in srgb,var(--c) 38%,transparent);color:var(--c)}
+  .node .nnm{font-size:11px;font-weight:600;line-height:1.12}
+  .node .nr{display:flex;align-items:baseline;gap:5px;margin-top:5px;flex-wrap:wrap}
+  .node .nr b{font-size:15px;color:#fff;font-variant-numeric:tabular-nums} .node .nr span{font-size:8.5px;color:var(--muted);letter-spacing:.5px}
+  .node .nl{display:none}
+  .node.future{opacity:.38;filter:saturate(.5);pointer-events:none}
+  .card{border:1px solid var(--edge);border-radius:14px;background:var(--panel);
+    padding:12px 14px;display:flex;flex-direction:column;gap:8px;position:relative;overflow:hidden}
+  .card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--c)}
+  .card.run::after{content:"";position:absolute;top:0;left:-40%;width:40%;height:2px;
+    background:linear-gradient(90deg,transparent,var(--c),transparent);animation:scan 2.2s linear infinite}
+  @keyframes scan{to{left:120%}}
+  .ch{display:flex;align-items:center;gap:9px}
+  .ic{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;font-size:15px;
+    background:rgba(255,255,255,.04);border:1px solid var(--edge);color:var(--c)}
+  .ch .nm{font-size:13px;font-weight:600;letter-spacing:.3px}
+  .ch .sub{font-size:10px;color:var(--muted);letter-spacing:1px}
+  .dot{margin-left:auto;width:9px;height:9px;border-radius:50%;background:var(--muted);box-shadow:0 0 0 0 var(--c)}
+  .dot.on{background:var(--c);animation:ping 1.6s ease-out infinite}
+  @keyframes ping{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--c) 60%,transparent)}100%{box-shadow:0 0 0 9px transparent}}
+  .viz{flex:1;min-height:34px;display:flex;align-items:flex-end;gap:3px}
+  .viz i{flex:1;background:linear-gradient(var(--c),transparent);border-radius:2px 2px 0 0;opacity:.85;
+    transition:height .4s ease}
+  .metric{display:flex;align-items:baseline;gap:6px}
+  .metric b{font-size:22px;color:#fff;font-variant-numeric:tabular-nums}
+  .metric span{font-size:10px;color:var(--muted);letter-spacing:1px}
+  .last{font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .mode{margin-left:auto;font-size:9px;letter-spacing:1px;padding:3px 8px;border-radius:10px;
+    border:1px solid var(--c);color:var(--c);background:color-mix(in srgb,var(--c) 15%,transparent);white-space:nowrap}
+  .card.future{opacity:.4;filter:saturate(.5)}
+  .card.future .dot{opacity:.3;animation:none}
+  .futtag{margin-left:auto;font-size:9px;letter-spacing:1px;color:var(--muted);border:1px solid var(--edge);padding:3px 8px;border-radius:10px}
+  .card:not(.future){cursor:pointer}
+  .card:not(.future):hover{border-color:var(--c)}
+  #detail{display:none;position:absolute;inset:0;z-index:6;background:rgba(5,8,15,.92);
+    border-radius:16px;padding:16px;min-height:0;flex-direction:column;gap:12px;overflow-y:auto}
+  #detail.show{display:flex}
+  .back{align-self:flex-start;background:rgba(255,255,255,.04);border:1px solid var(--edge);color:var(--ink);
+    padding:8px 14px;border-radius:10px;cursor:pointer;font-size:12px;letter-spacing:1px}
+  .back:hover{border-color:var(--cyan)}
+  .dhead{display:flex;align-items:center;gap:16px;border:1px solid var(--edge);border-left:4px solid var(--c);
+    border-radius:14px;background:var(--panel);padding:16px 20px}
+  .dic{width:54px;height:54px;border-radius:12px;display:grid;place-items:center;font-size:26px;
+    background:rgba(255,255,255,.04);border:1px solid var(--edge)}
+  .dhead h2{margin:0;font-size:22px;letter-spacing:.5px} .dhead .ds{color:var(--muted);font-size:11px;letter-spacing:2px}
+  .dstats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .dstat{border:1px solid var(--edge);border-radius:12px;background:var(--panel);padding:14px 16px}
+  .dstat .l{font-size:10px;letter-spacing:2px;color:var(--muted)} .dstat .v{font-size:20px;color:#fff;margin-top:6px}
+  .dviz{flex:1;min-height:70px;border:1px solid var(--edge);border-radius:12px;background:var(--panel);
+    padding:16px;display:flex;align-items:flex-end;gap:5px}
+  .dviz i{flex:1;background:linear-gradient(var(--c),transparent);border-radius:3px 3px 0 0;transition:height .4s ease}
+  .soldier{display:flex;align-items:center;gap:10px;padding:9px 13px;border:1px solid var(--edge);
+    border-radius:10px;margin-bottom:7px;background:var(--panel)}
+  .soldier .rk{font-size:13px;color:var(--ink)} .soldier .sp{flex:1}
+  .soldier .md{font-size:11px;color:var(--muted)}
+  .soldier .tr{font-size:9px;letter-spacing:1px;padding:3px 9px;border-radius:8px;border:1px solid var(--c);color:var(--c)}
+  #detail{overflow-y:auto;padding-right:4px}
+  #detail .dviz{flex:none;height:72px}
+  .mcbar{display:flex;gap:8px;padding:10px 12px;border-top:1px solid var(--edge)}
+  .mcbar input{flex:1;background:rgba(255,255,255,.04);border:1px solid var(--edge);border-radius:10px;
+    color:var(--ink);padding:9px 12px;font-size:13px;outline:none;font-family:var(--font)}
+  .mcbar input:focus{border-color:var(--cyan)}
+  .mcbar button{background:var(--cyan);color:#04121a;border:none;border-radius:10px;padding:0 14px;cursor:pointer;font-size:14px}
+  .mcbar button:disabled{opacity:.4;cursor:default}
+  .log .me{color:var(--ink)} .log .rx{color:var(--cyan)}
+  /* right: log */
+  .side{border:1px solid var(--edge);border-radius:14px;background:rgba(10,14,24,.75);
+    display:flex;flex-direction:column;overflow:hidden}
+  .side h3{margin:0;padding:11px 14px;font-size:11px;letter-spacing:3px;color:var(--muted);
+    border-bottom:1px solid var(--edge)}
+  .log{flex:1;overflow-y:auto;padding:8px 12px;font:12px/1.5 "Consolas",monospace;word-break:break-word}
+  /* salida inline de las acciones (análisis/ataque/escaneo): texto completo + scroll propio */
+  .runbox{margin-top:10px;padding:10px 12px;border:1px solid var(--edge);border-radius:10px;
+    background:rgba(255,255,255,.03);font-size:12.5px;line-height:1.5;white-space:pre-wrap;
+    word-break:break-word;max-height:300px;overflow-y:auto}
+  .runbox.running{color:var(--amber);border-color:var(--amber)}
+  .runbox.err{color:var(--red);border-color:var(--red)}
+  .log div{opacity:0;animation:in .3s forwards}
+  @keyframes in{to{opacity:1}}
+  .log .t{color:var(--muted)}
+  .log .c{color:var(--cyan)}.log .v{color:var(--violet)}.log .g{color:var(--green)}
+  .log .a{color:var(--amber)}.log .r{color:var(--red)}
+</style>
+
+<div class="wrap">
+  <div class="top">
+    <div class="brand"><div class="orb"></div><div><b>RAPHAEL</b><br><span>CENTRO DE MANDO</span></div></div>
+    <div class="sp"></div>
+    <div class="pill">MODELO · <b id="mmodel">…</b></div>
+    <div class="pill">BRIGADAS · <b id="bact">—</b></div>
+    <div class="clock" id="clock">--:--:--</div>
+  </div>
+
+  <div class="main">
+    <div class="stage">
+      <svg class="beams" id="beams" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <g class="ringg"><polygon id="ring1" fill="none" stroke="rgba(120,170,255,.22)" stroke-width="0.25"></polygon></g>
+        <g class="ringg2"><polygon id="ring2" fill="none" stroke="rgba(155,107,255,.18)" stroke-width="0.25"></polygon></g>
+      </svg>
+      <div class="sage">
+        <div class="orbwrap">
+          <div class="oring r1"></div><div class="oring r2"></div><div class="oring r3"></div>
+          <div class="sagecore"></div>
+        </div>
+        <div class="k">GRAN SABIA · ORQUESTADOR</div>
+        <h2 id="sage-model">…</h2>
+        <p class="dir" id="directive">Coordinando <b>en espera</b></p>
+        <div class="tk"><b id="tasks">0</b>tareas en curso</div>
+      </div>
+      <div class="grid" id="grid"></div>
+
+      <div id="detail" style="--c:var(--cyan)">
+        <div class="back" onclick="hideDetail()">← VOLVER AL PANEL</div>
+        <div class="dhead">
+          <div class="dic" id="d-ic"></div>
+          <div><h2 id="d-nm"></h2><div class="ds" id="d-sub"></div></div>
+          <div class="mode" id="d-mode" style="display:none"></div>
+        </div>
+        <div class="dstats" style="grid-template-columns:repeat(2,1fr)">
+          <div class="dstat"><div class="l" id="d-unitl">MÉTRICA</div><div class="v" id="d-metric">0</div></div>
+          <div class="dstat"><div class="l">ÚLTIMA ACCIÓN</div><div class="v" id="d-last" style="font-size:14px">en espera…</div></div>
+        </div>
+        <div>
+          <div class="l" style="font-size:10px;letter-spacing:2px;color:var(--muted);margin:2px 0 8px">ESCUADRÓN · SOLDADOS <span style="opacity:.6">(una estación = un soldado)</span></div>
+          <div id="d-squad"></div>
+        </div>
+        <div class="dviz" id="d-viz" style="min-height:56px"></div>
+        <div id="d-extra"></div>
+      </div>
+    </div>
+
+    <div class="side">
+      <h3>FEED EN VIVO · CHAT</h3>
+      <div class="log" id="log"></div>
+      <div class="mcbar"><input id="mc-input" placeholder="Escribile a la brigada…" autocomplete="off"><button id="mc-send">➤</button></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const brigades=[
+  {id:"seg", nm:"Seguridad", sub:"AUDITORÍA · PENTEST", ic:"🛡", c:"var(--cyan)", unit:"hallazgos",
+    modes:["⚔️ ATAQUE","🛡️ DEFENSA"],
+    lasts:["Semgrep + Bandit OK","3 hallazgos (1 crítico)","nmap: puertos mapeados","sqlmap: inyección detectada","Triage de findings","ZAP: spider corriendo"]},
+  {id:"mal", nm:"Antimalware", sub:"PROTECCIÓN ACTIVA", ic:"🦠", c:"var(--red)", unit:"amenazas",
+    lasts:["YARA: scan limpio","FIM: integridad OK","ClamAV actualizado","On-access: Descargas","Sin amenazas"]},
+  {id:"inv", nm:"Investigación", sub:"FORENSE", ic:"🔎", c:"var(--amber)", unit:"evidencias",
+    lasts:["Analizando enlace","Hash sha256 guardado","Log firmado (Ed25519)","Caso abierto","Artifact archivado"]},
+  {id:"geo", nm:"Geolocalización pública", sub:"MAPA · OSINT", ic:"🌐", c:"#4fd6c9", unit:"pines",
+    lasts:["Geolocalizando IP","Pin en el mapa","Rastreo cripto","ASN resuelto","Infraestructura ubicada"]},
+  {id:"mem", nm:"Memoria · Cerebro", sub:"CONSOLIDACIÓN", ic:"🧠", c:"var(--violet)", unit:"notas",
+    lasts:["Propagando activación","Hebbian +0.3","Consolidando clusters","Recuerdo recuperado","Curiosidad: hueco detectado"]},
+  {id:"ing", nm:"Ingesta", sub:"CONOCIMIENTO", ic:"📥", c:"var(--blue)", unit:"docs",
+    lasts:["Playlist: 3 nuevos","Embebiendo transcript","Nota creada","Web ingerida","Relevancia: útil"]},
+  {id:"trd", nm:"Trading", sub:"MERCADOS", ic:"📈", c:"var(--green)", unit:"señales",
+    lasts:["Analizando BTC/USDT","Señal: hold","Backtest corriendo","Riesgo evaluado","Condición de etapa OK"]},
+  {id:"ops", nm:"Operaciones", sub:"PC · CELULAR", ic:"🖥", c:"var(--teal)", unit:"acciones",
+    lasts:["Leyendo pantalla","Shell ejecutado","Captura tomada","Celular conectado","Ventana enfocada"]},
+  {id:"rep", nm:"Autorreparación", sub:"AUTO-MEJORA", ic:"🔧", c:"var(--orange)", unit:"propuestas",
+    lasts:["Analizando propio código","Propuesta generada","Esperando tu OK","Línea roja respetada","Dry-run listo"]},
+  {id:"con", nm:"Contenido", sub:"IMAGEN · VIDEO", ic:"🎬", c:"var(--pink)", unit:"piezas", future:true,
+    lasts:["—"]},
+];
+function resolveColor(c){ c=(c||"").trim(); if(c.startsWith("var(")){ const n=c.slice(4,-1).trim();
+  return getComputedStyle(document.documentElement).getPropertyValue(n).trim()||"#78aaff"; } return c; }
+const g=document.getElementById("grid");
+const N=brigades.length, RX=37, RY=44;
+function nodePos(i){ const a=(i/N)*Math.PI*2 - Math.PI/2; return {x:50+RX*Math.cos(a), y:50+RY*Math.sin(a)}; }
+brigades.forEach((b,i)=>{
+  const p=nodePos(i);
+  g.insertAdjacentHTML("beforeend",`<div class="node${b.future?' future':''}" id="c-${b.id}" style="--c:${b.c};left:${p.x.toFixed(1)}%;top:${p.y.toFixed(1)}%" ${b.future?'':`onclick="showDetail('${b.id}')"`}>
+    <div class="nh"><div class="nic">${b.ic}</div><div class="nnm">${b.nm}</div><span class="dot" id="d-${b.id}"></span></div>
+    <div class="nr"><b id="m-${b.id}">0</b><span>${b.unit}</span>${b.modes?`<span class="mode" id="mode-${b.id}">${b.modes[1]}</span>`:''}</div>
+    <div class="nl" id="l-${b.id}">${b.future?'en desarrollo…':'en espera…'}</div></div>`);
+});
+// haces del núcleo a cada brigada + anillos heptagonales
+const svg=document.getElementById("beams");
+brigades.forEach((b,i)=>{ if(b.future) return; const p=nodePos(i);
+  const ln=document.createElementNS("http://www.w3.org/2000/svg","line");
+  ln.setAttribute("x1","50");ln.setAttribute("y1","50");ln.setAttribute("x2",p.x.toFixed(1));ln.setAttribute("y2",p.y.toFixed(1));
+  ln.setAttribute("stroke",resolveColor(b.c));ln.setAttribute("stroke-width","0.22");ln.setAttribute("opacity","0.4");ln.setAttribute("id","beam-"+b.id);
+  svg.insertBefore(ln, svg.firstChild);
+});
+function hepta(cx,cy,r){ let p=[]; for(let k=0;k<7;k++){const a=(k/7)*Math.PI*2-Math.PI/2; p.push((cx+r*Math.cos(a)).toFixed(2)+","+(cy+r*Math.sin(a)).toFixed(2));} return p.join(" "); }
+document.getElementById("ring1").setAttribute("points",hepta(50,50,18));
+document.getElementById("ring2").setAttribute("points",hepta(50,50,26));
+// estrellas de fondo
+(function(){ const f=document.createDocumentFragment(); for(let k=0;k<40;k++){ const s=document.createElement("div"); s.className="star";
+  s.style.left=(Math.random()*100)+"vw"; s.style.top=(Math.random()*100)+"vh"; s.style.animationDelay=(Math.random()*3)+"s";
+  s.style.opacity=(0.2+Math.random()*0.6); f.appendChild(s);} document.body.appendChild(f); })();
+
+// clock
+setInterval(()=>{document.getElementById("clock").textContent=new Date().toLocaleTimeString("es-AR")},1000);
+
+const logEl=document.getElementById("log");
+const cls={seg:"c",mal:"r",inv:"a",mem:"v",ing:"c",trd:"g",ops:"c",rep:"a",con:"v"};
+function logLine(b,msg){
+  const t=new Date().toLocaleTimeString("es-AR");
+  const d=document.createElement("div");
+  d.innerHTML=`<span class="t">${t}</span> <span class="${cls[b.id]}">[${b.sub}]</span> ${msg}`;
+  logEl.prepend(d);
+  while(logEl.children.length>60) logEl.lastChild.remove();
+}
+
+// --- detalle de una brigada (click en su tarjeta) ---
+// Soldado propuesto por brigada (modelo/tier que la comanda). A confirmar con Damian.
+const TIER_MODEL={0:"determinista · sin modelo",1:"jarvis-text-v2 local",2:"free rotativo",3:"Sonnet 5.5",4:"Opus 5.5"};
+// Escuadrón por brigada = sus estaciones (cada una un "soldado" con su tier). Seguridad y
+// Trading son las REALES del código; el resto son propuestas (brigadas aún no orquestadas).
+const SQUADS={
+  seg:[["Reconocimiento",0],["Contexto",0],["Triage",3],["Config",0],["Redacción",3],["Catador",3],["Ensamble",0]],
+  trd:[["Datos",0],["Estructura",0],["Liquidez",0],["Zonas",0],["POI",0],["Riesgo",0],["Señal",0],["Lectura",3]],
+  mal:[["Vigilancia (YARA/FIM)",0],["Heurística conductual",0],["Cuarentena",0]],
+  inv:[["Captura de evidencia",0],["Análisis",3],["Firma Ed25519",0]],
+  mem:[["Activación/difusión",0],["Consolidación (sueño)",1],["Curiosidad",1]],
+  ing:[["Fetch/transcript",0],["Embeddings (nomic)",0],["Relevancia",2]],
+  ops:[["Monitor de tools (en vivo)",0],["Supervisor · valida y destraba",3]],
+  rep:[["Propuesta de fix",4],["Guardrail líneas rojas",0]],
+  geo:[["Geolocalización IP",0],["Rastreo cripto",0],["Mapa en vivo",0]],
+  con:[["Generación (ComfyUI)",0]],
+};
+function renderSquad(id){
+  const sq=SQUADS[id]||[];
+  let html = sq.length
+    ? sq.map(([role,tier])=>`<div class="soldier"><span class="rk">${role}</span><span class="sp"></span><span class="md">${TIER_MODEL[tier]}</span><span class="tr">TIER ${tier}</span></div>`).join("")
+    : '<div class="md" style="color:var(--muted)">sin soldados definidos aún</div>';
+  document.getElementById("d-squad").innerHTML = html;
+}
+// Paridad con la app (2026-10-13): secciones interactivas en el detalle del panel de la PC.
+function _hdr(){ const k=new URLSearchParams(location.search).get("key")||""; return k?{Authorization:"Bearer "+k}:{}; }
+function esc2(s){ return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+const _XH='font-size:10px;letter-spacing:2px;color:var(--muted);margin:16px 0 8px';
+const _XR='padding:6px 0;border-top:1px solid #152338;font-size:13px';
+const _BTN='display:inline-block;margin:4px 8px 4px 0;padding:9px 14px;border-radius:10px;cursor:pointer;'
+  +'font-size:13px;font-family:var(--font);border:1px solid var(--c);color:var(--c);'
+  +'background:color-mix(in srgb,var(--c) 14%,transparent)';
+// Manda una orden al agente por el chat del panel y la muestra en el feed (ítems 1 y 3).
+// Reusa /api/chat (conversación "mando"), así pasa por el agente y TODOS sus gates.
+// Corre una acción: muestra "⏳ Corriendo…" INLINE (donde está el botón) y en el feed,
+// espera la respuesta COMPLETA del agente (sin recortar) y la muestra en ambos lados.
+// Reusa /api/chat (conversación "mando"), así pasa por el agente y TODOS sus gates.
+async function runAction(text, outId){
+  const k=new URLSearchParams(location.search).get("key")||""; if(!k) return;
+  const le=document.getElementById("log");
+  function feed(cls,txt){ const t=new Date().toLocaleTimeString("es-AR"); const d=document.createElement("div");
+    d.innerHTML='<span class="t">'+t+'</span> <span class="'+cls+'">'+String(txt).replace(/</g,"&lt;")+'</span>';
+    le.prepend(d); while(le.children.length>60) le.lastChild.remove(); return d; }
+  const out = outId ? document.getElementById(outId) : null;
+  if(out) out.innerHTML='<div class="runbox running">⏳ Corriendo… (puede tardar unos segundos)</div>';
+  feed("me","vos: "+text); const waiting=feed("rx","Raphael: ⏳ corriendo…");
+  try{
+    const r=await fetch("/api/chat",{method:"POST",
+      headers:{"Content-Type":"application/json","Authorization":"Bearer "+k},
+      body:JSON.stringify({message:text, conversation_id:"mando", client_id:"centro-de-mando"})});
+    const j=await r.json();
+    const reply=String(j.reply||"(sin respuesta)").replace(/</g,"&lt;");
+    waiting.innerHTML='<span class="t">'+new Date().toLocaleTimeString("es-AR")+'</span> <span class="rx">Raphael: '+reply+'</span>';
+    if(out) out.innerHTML='<div class="runbox">'+reply+'</div>';
+  }catch(e){ if(out) out.innerHTML='<div class="runbox err">error al enviar</div>'; waiting.innerHTML='<span class="r">error al enviar</span>'; }
+}
+function mcCommand(text){ return runAction(text, null); }
+// Análisis de seguridad: pide la carpeta del proyecto (con un default) para que el escaneo
+// corra de verdad sobre algo concreto (si no, el agente no sabe qué auditar).
+function segAnalyze(){
+  const p=prompt("Carpeta del proyecto a auditar:", "C:\\Users\\dam\\Documents\\JarvisRemote");
+  if(p && p.trim()) runAction("Auditá la seguridad del proyecto en la carpeta "+p.trim()
+    +" (usá security_scan) y resumime los hallazgos más importantes.", "seg-out");
+}
+// Ataque/pentest: pide el objetivo (el gate authorized_targets.yaml igual lo valida en el backend).
+function segAttack(){
+  const t=prompt("Objetivo del pentest (IP/host de TU lab, autorizado en authorized_targets.yaml):");
+  if(t && t.trim()) runAction("Corré un pentest/ataque contra "+t.trim()
+    +". Validá que esté autorizado en authorized_targets.yaml antes de tocar nada; si no lo está, avisame.", "seg-out");
+}
+async function renderExtra(id){
+  const el=document.getElementById("d-extra"); el.innerHTML="";
+  const k=new URLSearchParams(location.search).get("key")||""; if(!k) return;
+  try{
+    if(id==="geo"){
+      // Mapa de inteligencia ya abierto, embebido (con sus capas abajo).
+      el.innerHTML='<div style="'+_XH+'">MAPA DE INTELIGENCIA</div>'+
+        '<iframe src="/globo?key='+encodeURIComponent(k)+'" style="width:100%;height:440px;border:1px solid var(--edge);border-radius:12px;background:#04060c" title="Mapa"></iframe>';
+      return;
+    }
+    if(id==="seg"){
+      el.innerHTML='<div style="'+_XH+'">ACCIONES</div>'+
+        '<button style="'+_BTN+'" onclick="segAnalyze()">▶ Correr análisis de seguridad</button>'+
+        '<button style="'+_BTN+'" onclick="segAttack()">⚔ Correr ataque (pentest)</button>'+
+        '<div style="padding:8px 0 0;color:var(--muted);font-size:11px">El análisis pide la carpeta del proyecto; el ataque pide un objetivo (respeta authorized_targets.yaml).</div>'+
+        '<div id="seg-out"></div>';
+      return;
+    }
+    if(id==="mal"){
+      el.innerHTML='<div style="'+_XH+'">ACCIONES</div>'+
+        '<button style="'+_BTN+'" onclick="runAction(\'Corré un escaneo antimalware completo ahora (usá malware_full_scan_run) y decime si encontraste amenazas.\',\'mal-out\')">▶ Escanear ahora</button>'+
+        '<div style="padding:8px 0 0;color:var(--muted);font-size:11px">Corre un full scan sobre FS_ALLOWED_ROOT. El progreso y el resultado aparecen abajo.</div>'+
+        '<div id="mal-out"></div>';
+      return;
+    }
+    if(id==="mem"){
+      el.innerHTML='<div style="'+_XH+'">GRAFO DE MEMORIA · OBSIDIAN</div>'+
+        '<iframe src="/grafo-memoria?key='+encodeURIComponent(k)+'" style="width:100%;height:460px;border:1px solid var(--edge);border-radius:12px;background:#070a12" title="Grafo de memoria"></iframe>';
+      return;
+    }
+    if(id==="ing"){
+      const d=await (await fetch("/api/ingest",{headers:_hdr()})).json();
+      let h='<div style="'+_XH+'">INGERIDO RECIENTEMENTE</div>';
+      (d.recent||[]).slice(0,8).forEach(i=>h+='<div style="'+_XR+'"><a href="'+encodeURI(i.url)+'" target="_blank" style="color:var(--cyan);text-decoration:none">'+esc2(i.title)+'</a></div>');
+      if(!(d.recent||[]).length) h+='<div style="'+_XR+';color:var(--muted)">todavía nada</div>';
+      if((d.sources||[]).length){ h+='<div style="'+_XH+'">FUENTES</div>'; d.sources.forEach(s=>h+='<div style="'+_XR+';font-family:monospace;font-size:11px">'+esc2(s)+'</div>'); }
+      el.innerHTML=h;
+    } else if(id==="inv"){
+      const d=await (await fetch("/api/investigation",{headers:_hdr()})).json();
+      let h='<div style="'+_XH+'">INVESTIGACIONES</div>';
+      (d.cases||[]).forEach(c=>h+='<div style="'+_XR+'">'+(c.status==="abierta"?"● ":"○ ")+esc2(c.title)+' <span style="color:var(--muted)">· '+c.findings+' hallazgos</span></div>');
+      if(!(d.cases||[]).length) h+='<div style="'+_XR+';color:var(--muted)">sin investigaciones</div>';
+      el.innerHTML=h;
+    } else if(id==="trd"){
+      const d=await (await fetch("/api/trading/watch",{headers:_hdr()})).json();
+      let h='<div style="'+_XH+'">WATCHLIST <a href="#" id="trd-refresh" style="float:right;color:var(--cyan);text-decoration:none">actualizar</a></div>';
+      (d.symbols||[]).forEach(s=>h+='<div style="'+_XR+'">'+esc2(s.instrument)+' <span style="color:var(--muted)">· '+esc2(s.estado||"sin evaluar")+(s.direction?(" "+esc2(s.direction)):"")+(s.rr?(" · R:R "+s.rr):"")+'</span></div>');
+      if(!(d.symbols||[]).length) h+='<div style="'+_XR+';color:var(--muted)">sin símbolos</div>';
+      el.innerHTML=h;
+      const rb=document.getElementById("trd-refresh");
+      if(rb) rb.addEventListener("click",async e=>{ e.preventDefault(); rb.textContent="actualizando…";
+        try{ await fetch("/api/trading/watch/refresh",{method:"POST",headers:Object.assign({"Content-Type":"application/json"},_hdr()),body:"{}"}); }catch(x){}
+        renderExtra("trd"); });
+    }
+  }catch(e){}
+}
+let _detailId=null;
+function showDetail(id){
+  const b=brigades.find(x=>x.id===id); if(!b||b.future) return;
+  _detailId=id;
+  const det=document.getElementById("detail");
+  det.style.setProperty("--c", b.c);
+  document.getElementById("d-ic").textContent=b.ic;
+  document.getElementById("d-nm").textContent=b.nm;
+  document.getElementById("d-sub").textContent=b.sub;
+  renderSquad(id);
+  renderExtra(id);
+  document.getElementById("d-unitl").textContent=(b.unit||"métrica").toUpperCase();
+  document.getElementById("d-metric").textContent=document.getElementById("m-"+id).textContent;
+  document.getElementById("d-last").textContent=document.getElementById("l-"+id).textContent;
+  const dm=document.getElementById("d-mode");
+  if(b.modes){const mo=document.getElementById("mode-"+id); dm.style.display=""; dm.textContent=mo?mo.textContent:b.modes[1];}
+  else dm.style.display="none";
+  document.getElementById("d-viz").innerHTML=Array.from({length:30},()=>'<i style="height:'+(20+Math.random()*70)+'%"></i>').join("");
+  document.getElementById("grid").style.display="none";
+  det.classList.add("show");
+}
+function hideDetail(){
+  _detailId=null;
+  document.getElementById("detail").classList.remove("show");
+  document.getElementById("grid").style.display="";
+}
+function updateDetailIfOpen(id){
+  if(_detailId!==id) return;
+  document.getElementById("d-metric").textContent=document.getElementById("m-"+id).textContent;
+  document.getElementById("d-last").textContent=document.getElementById("l-"+id).textContent;
+  const mo=document.getElementById("mode-"+id), dm=document.getElementById("d-mode");
+  if(mo&&dm&&dm.style.display!=="none") dm.textContent=mo.textContent;
+  document.querySelectorAll("#d-viz i").forEach(i=>i.style.height=(15+Math.random()*80)+"%");
+}
+
+// live simulation
+const counts={}; brigades.forEach(b=>counts[b.id]=Math.floor(Math.random()*5));
+function tick(){
+  let active=0;
+  brigades.forEach(b=>{
+    if(b.future) return;
+    const on=Math.random()<.45;
+    const card=document.getElementById("c-"+b.id), dot=document.getElementById("d-"+b.id);
+    dot.classList.toggle("on",on); card.classList.toggle("run",on);
+    if(on){active++;
+      document.querySelectorAll("#v-"+b.id+" i").forEach(i=>i.style.height=(15+Math.random()*80)+"%");
+      if(Math.random()<.6){counts[b.id]++;document.getElementById("m-"+b.id).textContent=counts[b.id];}
+      const msg=b.lasts[Math.floor(Math.random()*b.lasts.length)];
+      document.getElementById("l-"+b.id).textContent=msg;
+      if(b.modes) document.getElementById("mode-"+b.id).textContent=b.modes[Math.random()<.5?0:1];
+      updateDetailIfOpen(b.id);
+      if(Math.random()<.5) logLine(b,msg);
+    }
+  });
+  const total=brigades.filter(b=>!b.future).length;
+  document.getElementById("bact").textContent=active+" / "+total;
+  document.getElementById("tasks").textContent=active;
+  const deployed=brigades.filter(b=>{const d=document.getElementById("d-"+b.id);return d&&d.classList.contains("on");});
+  const names=deployed.map(b=>b.nm).slice(0,3);
+  document.getElementById("directive").innerHTML="Coordinando <b>"+(names.join(" · ")||"en espera")+"</b>";
+}
+// --- aplicar un evento de brigada que llega del backend (modo en vivo) ---
+function refreshHeaderLive(){
+  const active=brigades.filter(b=>{const d=document.getElementById("d-"+b.id);return d&&d.classList.contains("on");});
+  const total=brigades.filter(b=>!b.future).length;
+  document.getElementById("bact").textContent=active.length+" / "+total;
+  document.getElementById("tasks").textContent=active.length;
+  const names=active.map(b=>b.nm).slice(0,3);
+  document.getElementById("directive").innerHTML="Coordinando <b>"+(names.join(" · ")||"en espera")+"</b>";
+}
+function applyBrigade(d){
+  const b=brigades.find(x=>x.id===d.id); if(!b||b.future) return;
+  const dot=document.getElementById("d-"+d.id), card=document.getElementById("c-"+d.id);
+  if(dot) dot.classList.add("on"); if(card) card.classList.add("run");
+  document.querySelectorAll("#v-"+d.id+" i").forEach(i=>i.style.height=(15+Math.random()*80)+"%");
+  if(typeof d.count==="number") document.getElementById("m-"+d.id).textContent=d.count;
+  if(d.msg){document.getElementById("l-"+d.id).textContent=d.msg; logLine(b,d.msg);}
+  if(d.mode&&b.modes){const me=document.getElementById("mode-"+d.id); if(me) me.textContent=d.mode;}
+  updateDetailIfOpen(d.id);
+  refreshHeaderLive();
+  clearTimeout(b._t); b._t=setTimeout(()=>{if(dot)dot.classList.remove("on");if(card)card.classList.remove("run");refreshHeaderLive();},2800);
+}
+function initFromSnapshot(state){
+  Object.entries(state||{}).forEach(([id,s])=>{
+    const m=document.getElementById("m-"+id); if(m&&typeof s.count==="number") m.textContent=s.count;
+    const l=document.getElementById("l-"+id); if(l&&s.last) l.textContent=s.last;
+    if(s&&s.mode){const me=document.getElementById("mode-"+id); if(me) me.textContent=s.mode;}
+    // volcar la actividad reciente al feed, para que no arranque vacío
+    (s&&s.recent||[]).slice(0,3).forEach(rec=>{ const b=brigades.find(x=>x.id===id); if(b&&rec&&rec.m) logLine(b,rec.m); });
+  });
+  // inicializa el header (BRIGADAS 0/N, tareas 0) en vez de dejar "—" fijo
+  refreshHeaderLive();
+}
+const MC_KEY=new URLSearchParams(location.search).get("key")||"";
+// Modelo REAL en uso (ítem 6): reemplaza el "OPUS 5.5" fijo por el que de verdad
+// resuelve el backend (testmode/routing). Se refresca al abrir y cada 30s.
+function refreshModel(){
+  if(!location.protocol.startsWith("http")) return;
+  fetch("/api/model", MC_KEY?{headers:{Authorization:"Bearer "+MC_KEY}}:{})
+    .then(r=>r.json()).then(d=>{
+      const name=d.model||d.configured||"local";
+      const mm=document.getElementById("mmodel"); if(mm) mm.textContent=name+(d.test_mode?" · prueba":"");
+      const sm=document.getElementById("sage-model"); if(sm) sm.textContent=name;
+    }).catch(()=>{});
+}
+refreshModel(); setInterval(refreshModel, 30000);
+if(location.protocol.startsWith("http")){
+  fetch("/api/mission-control/state", MC_KEY?{headers:{Authorization:"Bearer "+MC_KEY}}:{}).then(r=>r.json()).then(d=>initFromSnapshot(d.state)).catch(()=>{});
+  (function connect(){
+    const ws=new WebSocket((location.protocol==="https:"?"wss://":"ws://")+location.host+"/ws/mission-control"+(MC_KEY?("?key="+encodeURIComponent(MC_KEY)):""));
+    ws.onmessage=ev=>{try{const d=JSON.parse(ev.data); if(d.type==="brigade") applyBrigade(d); else if(d.type==="snapshot") initFromSnapshot(d.state);}catch(e){}};
+    ws.onclose=()=>setTimeout(connect,3000); ws.onerror=()=>{try{ws.close();}catch(e){}};
+  })();
+}else{
+  tick(); setInterval(tick,2200);
+}
+
+// --- chat con la brigada desde el feed ---
+(function(){
+  const inp=document.getElementById("mc-input"), btn=document.getElementById("mc-send");
+  const key=new URLSearchParams(location.search).get("key");
+  if(!location.protocol.startsWith("http") || !key){
+    inp.disabled=true; btn.disabled=true; inp.placeholder="Abrí desde la app para chatear"; return;
+  }
+  function feed(cls,txt){
+    const t=new Date().toLocaleTimeString("es-AR"); const d=document.createElement("div");
+    d.innerHTML=`<span class="t">${t}</span> <span class="${cls}">${txt.replace(/</g,"&lt;")}</span>`;
+    const le=document.getElementById("log"); le.prepend(d);
+    while(le.children.length>60) le.lastChild.remove();
+    return d;
+  }
+  async function send(){
+    const text=inp.value.trim(); if(!text) return;
+    const b=_detailId?brigades.find(x=>x.id===_detailId):null;
+    const ctx=b?("["+b.nm+"] "):"";
+    inp.value=""; feed("me","vos: "+text); const waiting=feed("rx","Raphael: ⏳ corriendo…"); btn.disabled=true;
+    try{
+      const r=await fetch("/api/chat",{method:"POST",
+        headers:{"Content-Type":"application/json","Authorization":"Bearer "+key},
+        body:JSON.stringify({message:ctx+text, conversation_id:"mando", client_id:"centro-de-mando"})});
+      const j=await r.json();
+      waiting.innerHTML='<span class="t">'+new Date().toLocaleTimeString("es-AR")+'</span> <span class="rx">Raphael: '+String(j.reply||"(sin respuesta)").replace(/</g,"&lt;")+'</span>';
+    }catch(e){ waiting.innerHTML='<span class="r">error al enviar</span>'; }
+    btn.disabled=false; inp.focus();
+  }
+  btn.onclick=send; inp.addEventListener("keydown",e=>{ if(e.key==="Enter") send(); });
+})();
+</script>

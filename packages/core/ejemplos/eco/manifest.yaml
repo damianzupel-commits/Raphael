@@ -1,0 +1,13 @@
+# Segunda brigada de ejemplo: la mínima posible (un cocinero, sin jefe ni tools). Sirve para que la matriz de
+# montaje tenga combinaciones reales y para probar que dos brigadas no se pisan.
+id: eco
+name: Brigada eco
+version: 1.0.0
+contract: ">=2.0,<3"
+description: Repite lo que le dicen cuando empieza con "eco".
+cooks:
+  - {id: repetidor, entry: "ejemplo_eco:Echo"}
+actions:
+  repetir: {level: automatico}
+events:
+  consumes: [saludo.hecho]

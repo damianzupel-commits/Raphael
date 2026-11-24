@@ -1,0 +1,14 @@
+name: tests
+on: [push, pull_request]
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: raphael-relay
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pyyaml httpx fastapi uvicorn pytest
+      - run: cd raphael-relay && python -m pytest -q

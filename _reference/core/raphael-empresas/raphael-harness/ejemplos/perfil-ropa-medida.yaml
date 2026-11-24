@@ -1,0 +1,49 @@
+# Perfil de ejemplo: taller de ropa a medida (el caso piloto).
+# Validar:  python -m raphael_harness validar ejemplos/perfil-ropa-medida.yaml
+empresa:
+  nombre: "Taller Ejemplo"
+  rubro: encargos_ropa_medida
+  duena: "Ana"
+  tono: voseo_emojis
+  zona_horaria: America/Argentina/Buenos_Aires
+
+plan: basico          # basico | pro | privado | premium
+
+brigadas: [atencion, encargos, cobros, agenda, avisos]
+
+informacion:          # lo único que el bot puede afirmar
+  horarios: "Atendemos de lunes a sábado de 10 a 19"
+  envios: "Enviamos a todo el país por correo"
+  medios_pago: ["transferencia", "efectivo"]
+  ubicacion: "Estamos en Rosario, zona centro (la dirección exacta se pasa al confirmar un turno)"
+  faq:
+    - pregunta: "¿Trabajan con telas que lleva la clienta?"
+      respuesta: "Sí, podés traer tu tela; te decimos si sirve para el modelo que querés."
+      palabras: ["mi tela", "traer tela", "llevo la tela"]
+
+cobros:
+  sena_pct: 50
+  alias: "taller.ejemplo"
+  titular: "Ana Pérez"
+
+encargos:
+  datos_obligatorios: [prenda, ocasion, fecha, detalles, referencias, medidas, nombre]
+  urgente_si_dias_menor_a: 15
+  precios:
+    - {prenda: vestido, base: 150000, dias: 30}
+    - {prenda: vestido de novia, base: 450000, dias: 60}
+    - {prenda: traje, base: 220000, dias: 35}
+  recargos:
+    - {palabra: largo, tipo: pct, valor: 20}
+    - {palabra: bordado, tipo: monto, valor: 40000}
+
+agenda:
+  recordatorio_dias_antes: 3
+  franjas: ["jueves de 16 a 19", "sábados de 10 a 13"]
+
+politicas:            # solo puede endurecer: lo que es "aprobacion" o "humano" no se puede bajar
+  enviar_presupuesto: aprobacion
+  confirmar_pago: aprobacion
+
+limites:
+  mensajes_mes: 3000

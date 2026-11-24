@@ -1,0 +1,474 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#070b14">
+<link rel="manifest" href="manifest.webmanifest">
+<title>Raphael — Empresas</title>
+<style>
+:root{
+  --fondo:#070b14;--fondo2:#0b1220;--panel:rgba(15,23,42,.72);--panel2:rgba(17,26,46,.9);
+  --linea:rgba(148,163,184,.16);--linea2:rgba(56,189,248,.35);--tinta:#e6edf7;--suave:#8b97ab;--tenue:#56627a;
+  --cian:#22d3ee;--cian2:#38bdf8;--naranja:#f59e0b;--ok:#34d399;--mal:#f87171;--violeta:#a78bfa;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;color:var(--tinta);font:15px/1.5 "Segoe UI",system-ui,-apple-system,Roboto,sans-serif;
+  background:radial-gradient(1200px 600px at 0% 0%,rgba(34,211,238,.07),transparent 60%),radial-gradient(900px 600px at 100% 100%,rgba(167,139,250,.07),transparent 60%),linear-gradient(180deg,var(--fondo),var(--fondo2));background-attachment:fixed}
+::selection{background:rgba(34,211,238,.3)}
+::-webkit-scrollbar{height:8px;width:10px}::-webkit-scrollbar-thumb{background:rgba(148,163,184,.25);border-radius:8px}::-webkit-scrollbar-track{background:transparent}
+button{font:inherit;color:inherit;cursor:pointer}
+.wrap{max-width:1320px;margin:0 auto;padding:16px 18px 30px;display:flex;flex-direction:column;gap:14px;min-height:100vh}
+
+/* cabecera */
+.top{display:flex;align-items:center;gap:12px}
+.marca{min-width:0}.marca small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.orbe{width:30px;height:30px;border-radius:50%;flex:none;background:radial-gradient(circle at 35% 30%,#e0fbff 0,#67e8f9 25%,#0891b2 60%,#0e3a52 100%);
+  box-shadow:0 0 18px rgba(34,211,238,.75),0 0 40px rgba(34,211,238,.35);animation:latido 3.2s ease-in-out infinite}
+@keyframes latido{50%{box-shadow:0 0 26px rgba(34,211,238,.95),0 0 60px rgba(34,211,238,.45);transform:scale(1.04)}}
+.marca h1{margin:0;font-size:19px;letter-spacing:.14em;font-weight:700}
+.marca small{display:block;font-size:10.5px;letter-spacing:.16em;color:var(--suave);text-transform:uppercase}
+.esp{flex:1}
+.modelo{white-space:nowrap;text-align:right;font-size:10.5px;letter-spacing:.12em;color:var(--suave);text-transform:uppercase}
+.modelo b{display:block;color:var(--cian);letter-spacing:0;text-transform:none;font-size:12px;font-weight:600}
+.pill{border:1px solid var(--linea);background:var(--panel);border-radius:14px;padding:7px 14px;text-align:center;font-size:12.5px;color:var(--suave);white-space:nowrap;flex:none}
+.pill b{display:block;color:var(--tinta);font-size:13px}
+.pill.alerta{border-color:rgba(245,158,11,.75);color:var(--naranja)}.pill.alerta b{color:var(--naranja)}
+
+/* pestañas-tarjeta */
+.tabs{display:flex;gap:8px;overflow-x:auto;padding:8px 8px 8px 0}
+.tab{flex:none;display:flex;align-items:center;gap:9px;border:1px solid var(--linea);background:var(--panel);border-radius:12px;padding:8px 14px 8px 11px;text-align:left;position:relative;transition:.15s}
+.tab:hover{border-color:var(--linea2)}
+.tab .ic{font-size:17px;width:22px;text-align:center}
+.tab b{display:block;font-size:13.5px;font-weight:600;line-height:1.15}
+.tab small{display:block;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--suave)}
+.tab.on{border-color:var(--cian);background:linear-gradient(180deg,rgba(34,211,238,.16),rgba(34,211,238,.05));box-shadow:0 0 0 1px rgba(34,211,238,.25) inset,0 0 18px rgba(34,211,238,.12)}
+.tab.on small{color:var(--cian)}
+.tab.off{opacity:.45}.tab.off .ic{filter:grayscale(1)}
+.tab .badge{position:absolute;top:-6px;right:-6px;background:var(--naranja);color:#111;font-size:11px;font-weight:700;border-radius:999px;padding:0 6px;min-width:18px;text-align:center}
+.sep{flex:none;width:1px;background:var(--linea);margin:4px 2px}
+
+/* cabecera de sección */
+.sec{display:flex;align-items:center;gap:12px}
+.sec .tile{width:40px;height:40px;border-radius:10px;border:1px solid var(--linea2);background:rgba(34,211,238,.08);display:grid;place-items:center;font-size:19px}
+.sec h2{margin:0;font-size:17px}.sec small{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--suave)}
+.sec .der{margin-left:auto;text-align:right;font-size:11px;color:var(--suave)}.sec .der b{display:block;color:var(--cian);font-weight:600}
+
+/* entrada y feed */
+.entrada{display:flex;gap:10px}
+.entrada input{flex:1}
+input,textarea,select{font:inherit;color:var(--tinta);background:rgba(2,6,23,.55);border:1px solid var(--linea);border-radius:12px;padding:11px 14px;min-width:0;outline:none}
+input:focus,textarea:focus,select:focus{border-color:var(--cian);box-shadow:0 0 0 3px rgba(34,211,238,.12)}
+.entrada input{border-color:var(--linea2);padding:13px 16px}
+textarea{width:100%;min-height:72px;resize:vertical}select option{background:#0b1220}
+input[type=date],input[type=time]{color-scheme:dark}
+.b{border:1px solid var(--linea);background:var(--panel2);border-radius:12px;padding:10px 18px;font-weight:600}
+.b:hover{border-color:var(--linea2)}
+.b.p{background:var(--cian);border-color:var(--cian);color:#04212b}.b.p:hover{background:#67e8f9}
+.b.si{background:rgba(52,211,153,.15);border-color:rgba(52,211,153,.6);color:var(--ok)}
+.b.no{color:var(--suave)}.b.peligro{color:var(--mal);border-color:rgba(248,113,113,.4)}
+.b:disabled{opacity:.5;cursor:wait}
+.feed{flex:1;min-height:340px;max-height:calc(100vh - 300px);overflow-y:auto;border:1px solid var(--linea);background:var(--panel);border-radius:16px;padding:14px 16px;display:flex;flex-direction:column}
+.feed>header{position:sticky;top:-14px;background:#0e1626;padding:4px 0;z-index:1;display:flex;justify-content:space-between;align-items:center;font-size:10.5px;letter-spacing:.14em;color:var(--suave);margin-bottom:10px}
+.feed>header button{border:0;background:none;color:var(--tinta);font-weight:600;font-size:11px;letter-spacing:0}
+.ayuda{color:var(--suave);font-size:13.5px}.ayuda b{color:var(--tinta)}
+code{font-family:Consolas,ui-monospace,monospace;background:rgba(148,163,184,.12);padding:1px 6px;border-radius:6px;font-size:12.5px;color:var(--tinta)}
+.chat{display:flex;flex-direction:column;gap:8px}
+.m{max-width:80%;padding:9px 13px;border-radius:14px;white-space:pre-wrap;font-size:14px}
+.m.cliente{align-self:flex-end;background:rgba(56,189,248,.14);border:1px solid rgba(56,189,248,.3)}
+.m.raphael{align-self:flex-start;background:rgba(148,163,184,.08);border:1px solid var(--linea)}
+.m small{display:block;font-size:11px;color:var(--suave);margin-top:2px}
+.ruta{align-self:flex-start;font-size:11px;letter-spacing:.06em;color:var(--suave);margin:4px 0 -4px}
+.ruta b{color:var(--cian)}.ruta i{font-style:normal;color:var(--naranja)}
+
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin:2px 0 4px}
+.chipb{border:1px solid var(--linea2);background:rgba(34,211,238,.07);color:var(--cian);border-radius:999px;padding:6px 14px;font-size:13px}
+.chipb:hover{background:rgba(34,211,238,.18)}
+.ficha{max-width:640px}.ficha .t{margin:0}
+/* tarjetas */
+.lista{display:grid;gap:10px}
+.t{border:1px solid var(--linea);background:var(--panel);border-radius:14px;padding:14px 16px}
+.t h3{margin:0 0 4px;font-size:15px}.t small{color:var(--suave)}
+.click{cursor:pointer}.click:hover{border-color:var(--linea2)}
+.chip{display:inline-block;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;padding:2px 9px;border-radius:999px;border:1px solid var(--linea);color:var(--suave);margin:0 6px 6px 0}
+.chip.aprobacion{border-color:rgba(245,158,11,.6);color:var(--naranja)}.chip.humano{border-color:rgba(248,113,113,.6);color:var(--mal)}
+.chip.activa{border-color:rgba(52,211,153,.6);color:var(--ok)}.chip.cian{border-color:var(--linea2);color:var(--cian)}
+.fila{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:flex-end}
+label{font-size:12px;color:var(--suave);display:flex;flex-direction:column;gap:4px}
+.vacio{color:var(--suave);text-align:center;padding:40px 10px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 18px;font-size:14px}.kv b{color:var(--suave);font-weight:500}
+.banner{border:1px solid rgba(245,158,11,.5);background:rgba(245,158,11,.08);color:#fcd34d;padding:10px 14px;border-radius:12px;font-size:13.5px}
+.bloqueo{text-align:center;padding:46px 20px}.bloqueo .grande{font-size:42px;filter:grayscale(.4)}.bloqueo h3{margin:8px 0 4px;font-size:18px}
+.bloqueo p{color:var(--suave);max-width:520px;margin:0 auto 16px}
+.grilla{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px}
+#aviso{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--panel2);border:1px solid var(--linea2);color:var(--tinta);padding:10px 18px;border-radius:12px;display:none;z-index:9;max-width:90%;box-shadow:0 10px 30px rgba(0,0,0,.4)}
+.login{max-width:400px;margin:14vh auto 0;text-align:center}
+.login .orbe{width:54px;height:54px;margin:0 auto 18px}
+.login h1{letter-spacing:.14em;font-size:20px;margin:0}.login p{color:var(--suave)}
+.login form{display:flex;flex-direction:column;gap:10px;margin-top:18px}
+@media(max-width:820px){
+  .top{flex-wrap:wrap;gap:10px}.modelo{display:none}
+  .marca{flex:1 1 calc(100% - 50px)}.marca h1{font-size:16px}.marca small{font-size:9.5px}
+  .esp{display:none}
+  .pill{flex:1 1 0;padding:5px 8px;font-size:11px;border-radius:12px}.pill b{font-size:12.5px}
+  .wrap{padding:10px 12px 24px}
+  .feed{max-height:calc(100vh - 330px);min-height:280px}
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="aviso"></div>
+<script>
+const $ = (s, el = document) => el.querySelector(s);
+const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const hora = s => { if (!s) return ""; const d = new Date(s); return isNaN(d) ? s : d.toLocaleString("es-AR", {day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit"}); };
+const plata = v => v == null ? "" : "$ " + Number(v).toLocaleString("es-AR", {maximumFractionDigits: 0});
+let token = ""; try { token = localStorage.getItem("raphael") || ""; } catch (e) {}
+let vista = "orquestador", negocio = "", brigadas = [], estado = {};
+let feed = [];   // historial del probador en esta sesión
+let charla = []; // historial de la charla con el secretario
+
+function aviso(t) { const a = $("#aviso"); a.textContent = t; a.style.display = "block"; clearTimeout(a._t); a._t = setTimeout(() => a.style.display = "none", 3800); }
+async function api(ruta, cuerpo) {
+  const r = await fetch(ruta, {method: cuerpo ? "POST" : "GET", headers: {"Content-Type": "application/json", Authorization: "Bearer " + token}, body: cuerpo ? JSON.stringify(cuerpo) : undefined});
+  if (r.status === 401) { token = ""; login(); throw new Error("Iniciá sesión"); }
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) { const m = typeof d.detail === "string" ? d.detail : "No se pudo hacer"; aviso(m); throw new Error(m); }
+  return d;
+}
+
+// ------------------------------------------------------------------ acceso
+async function login() {
+  const ini = await (await fetch("/api/inicio")).json();
+  negocio = ini.negocio;
+  const primera = !ini.tiene_clave;
+  $("#app").innerHTML = `<div class="login"><div class="orbe"></div><h1>RAPHAEL · EMPRESAS</h1><p>${esc(negocio)}<br>${primera ? "Elegí una clave para tu panel (mínimo 8 caracteres)." : "Ingresá tu clave."}</p>
+    <form id="f"><input id="c" type="password" autocomplete="current-password" placeholder="Clave" autofocus><button class="b p">Entrar</button></form></div>`;
+  $("#f").onsubmit = async e => {
+    e.preventDefault();
+    const r = await fetch(primera ? "/api/primera-clave" : "/api/login", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({clave: $("#c").value})});
+    const d = await r.json();
+    if (!r.ok) return aviso(typeof d.detail === "string" ? d.detail : "No se pudo entrar");
+    token = d.token; try { localStorage.setItem("raphael", token); } catch (e) {}
+    armar();
+  };
+}
+
+// ------------------------------------------------------------------ estructura
+const NUCLEO = [
+  {id: "orquestador", ic: "🧭", t: "Orquestador", s: "tu secretario"},
+  {id: "pendientes", ic: "🛎️", t: "Pendientes", s: "aprobar · decidir"},
+  {id: "conversaciones", ic: "💬", t: "Conversaciones", s: "whatsapp · instagram"},
+];
+const BRIGADAS = [
+  {id: "atencion", ic: "🙋", t: "Atención", s: "dudas · faq"},
+  {id: "encargos", ic: "🧵", t: "Encargos", s: "pedidos · estados"},
+  {id: "cobros", ic: "💸", t: "Cobros", s: "señas · pagos"},
+  {id: "agenda", ic: "📅", t: "Agenda", s: "turnos · calendario"},
+  {id: "avisos", ic: "📣", t: "Avisos", s: "estados · recordatorios"},
+];
+const SISTEMA = [
+  {id: "probador", ic: "🧪", t: "Probador", s: "simular un cliente"},
+  {id: "brigadas", ic: "🧩", t: "Brigadas", s: "descargar · activar"},
+  {id: "estado", ic: "📊", t: "Estado", s: "plan · copias"},
+];
+const TODAS = [...NUCLEO, ...BRIGADAS, ...SISTEMA];
+const info = id => TODAS.find(x => x.id === id);
+const brigada = id => brigadas.find(b => b.nombre === id) || {estado: "bloqueada"};
+const activa = id => brigada(id).estado === "activa";
+const ESTADO_TXT = {bloqueada: "bloqueada", descargada: "descargada · inactiva"};
+
+function avisarALaApp() { try { if (window.RaphaelApp && token) RaphaelApp.guardarToken(token); } catch (e) {} }
+async function armar() {
+  avisarALaApp();
+  try { [brigadas, estado] = await Promise.all([api("/api/brigadas").then(d => d.brigadas), api("/api/resumen")]); } catch (e) { return; }
+  const nActivas = brigadas.filter(b => b.estado === "activa").length;
+  const tab = x => {
+    const esBrig = BRIGADAS.includes(x), off = esBrig && !activa(x.id);
+    return `<button class="tab${off ? " off" : ""}" data-v="${x.id}"><span class="ic">${x.ic}</span><span><b>${x.t}</b><small>${off ? ESTADO_TXT[brigada(x.id).estado] : x.s}</small></span>${x.id === "pendientes" ? `<span class="badge" id="badge" style="display:none"></span>` : ""}</button>`;
+  };
+  const pend = estado.pendientes || 0;
+  $("#app").innerHTML = `<div class="wrap">
+    <div class="top">
+      <div class="orbe"></div>
+      <div class="marca"><h1>RAPHAEL · EMPRESAS</h1><small>${esc(negocio)} · un pedido → la brigada que corresponde</small></div>
+      <div class="esp"></div>
+      <div class="modelo" data-ir="estado" style="cursor:pointer" title="Configurar la IA">Modelo del orquestador<b>${esc(estado.ia || "solo reglas")}</b><span>plan ${esc(estado.plan || "")}</span></div>
+      <div class="pill ${pend ? "alerta" : ""}" data-ir="pendientes" style="cursor:pointer">🛎️ Pendientes<b id="pillPend">${pend}</b></div>
+      <div class="pill" data-ir="brigadas" style="cursor:pointer">🧩 Brigadas activas<b>${nActivas} de ${brigadas.length}</b></div>
+      <div class="pill ${estado.modo === "mock" ? "alerta" : ""}">⚡ Modo<b>${estado.modo === "mock" ? "prueba" : "real"}</b></div>
+    </div>
+    <nav class="tabs">${NUCLEO.map(tab).join("")}<span class="sep"></span>${BRIGADAS.map(tab).join("")}<span class="sep"></span>${SISTEMA.map(tab).join("")}</nav>
+    <div class="sec" id="sec"></div>
+    <div id="m" style="display:flex;flex-direction:column;gap:12px;flex:1"></div></div>`;
+  $$("[data-v]").forEach(b => b.onclick = () => ir(b.dataset.v));
+  $$("[data-ir]").forEach(b => b.onclick = () => ir(b.dataset.ir));
+  contarPendientes(pend);
+  ir(vista);
+}
+function contarPendientes(n) {
+  const b = $("#badge"); if (b) { b.textContent = n; b.style.display = n ? "" : "none"; }
+  const p = $("#pillPend"); if (p) { p.textContent = n; p.parentElement.classList.toggle("alerta", !!n); }
+}
+function seccion(id, der = "") {
+  const x = info(id);
+  $("#sec").innerHTML = `<div class="tile">${x.ic}</div><div><h2>${x.t}</h2><small>${x.s}</small></div>${der ? `<div class="der">${der}</div>` : ""}`;
+}
+function ir(v) {
+  vista = v; $("#m").onclick = null;
+  $$(".tab").forEach(b => b.classList.toggle("on", b.dataset.v === v));
+  const esBrig = BRIGADAS.some(x => x.id === v);
+  if (esBrig && !activa(v)) return bloqueada(v);
+  seccion(v, v === "orquestador" ? `modelo del orquestador<b>${esc(estado.ia || "solo reglas")}</b>` : esBrig ? `brigada <b>${esc(v)} v${esc(brigada(v).version || "")}</b>` : "");
+  VER[v]().catch(e => console.warn(e));
+}
+
+// pantalla de una brigada que todavía no está acoplada
+function bloqueada(id) {
+  const b = brigada(id), x = info(id);
+  seccion(id, `brigada <b>${b.estado === "bloqueada" ? "🔒 bloqueada" : "descargada · inactiva"}</b>`);
+  const faltan = (b.necesita || []).filter(n => !activa(n));
+  $("#m").innerHTML = `<div class="t bloqueo"><div class="grande">${x.ic}</div><h3>${esc(b.titulo || x.t)}</h3><p>${esc(b.descripcion || "")}</p>
+    ${faltan.length ? `<p>Necesita tener activa: <b>${faltan.map(n => esc(info(n)?.t || n)).join(", ")}</b></p>` : ""}
+    ${b.estado === "bloqueada" ? `<button class="b p" data-acc="descargar" data-n="${id}">Descargar brigada</button>` : `<button class="b p" data-acc="activar" data-n="${id}">Acoplar al orquestador</button>`}</div>`;
+  botonesTienda();
+}
+function botonesTienda() {
+  $$("[data-acc]").forEach(btn => btn.onclick = async () => {
+    const txt = btn.textContent; btn.disabled = true; btn.textContent = btn.dataset.acc === "descargar" ? "Descargando…" : "Un momento…";
+    try {
+      await api(`/api/brigadas/${btn.dataset.n}/${btn.dataset.acc}`, {});
+      aviso({descargar: "Descargada. Ahora acoplala al orquestador.", activar: "Acoplada: el orquestador ya la usa ✓", desactivar: "Desactivada"}[btn.dataset.acc]);
+      armar();
+    } catch (e) { btn.disabled = false; btn.textContent = txt; }
+  });
+}
+
+// ------------------------------------------------------------------ vistas
+const VER = {
+  async orquestador() {
+    $("#m").innerHTML = `<form class="entrada" id="sf"><input id="st" placeholder="Hablale al orquestador: «buen día, ¿qué tareas tenemos hoy?»" autocomplete="off"><button class="b p">Enviar</button></form>
+      <div class="feed" id="sfeed"><header><span>TU SECRETARIO</span><button id="limpiar" type="button">limpiar</button></header><div class="chat" id="sch"></div></div>`;
+    const ch = $("#sch"), caja = $("#sfeed");
+    const pintar = () => { ch.innerHTML = charla.join(""); caja.scrollTop = caja.scrollHeight; };
+    const decir = async (t, visible = true) => {
+      if (visible) { charla.push(`<div class="m cliente">${esc(t)}</div>`); pintar(); }
+      const r = await api("/api/secretaria", {texto: t});
+      let h = `<div class="ruta">ORQUESTADOR</div><div class="m raphael">${esc(r.texto)}</div>`;
+      if (r.ficha && r.ficha.pendiente) h += `<div class="ficha">${tarjetaPendiente(r.ficha.pendiente)}</div>`;
+      if (r.sugerencias && r.sugerencias.length) h += `<div class="chips">${r.sugerencias.map(q => `<button class="chipb" data-q="${esc(q)}">${esc(q)}</button>`).join("")}</div>`;
+      charla.push(h); pintar();
+      api("/api/pendientes").then(ps => contarPendientes(ps.length)).catch(() => {});
+    };
+    $("#limpiar").onclick = () => { charla = []; decir("hola", false); };
+    $("#sf").onsubmit = e => { e.preventDefault(); const t = $("#st").value.trim(); if (!t) return; $("#st").value = ""; decir(t); };
+    ch.onclick = async e => {
+      const q = e.target.closest("[data-q]");
+      if (q) { quitarChips(); return decir(q.dataset.q); }
+      if (await accionPendiente(e.target, () => { charla.push(`<div class="ruta">✓ hecho</div>`); pintar(); })) return;
+      const c = e.target.closest("[data-conv]"); if (c) conversacion(c.dataset.conv);
+    };
+    if (charla.length) pintar(); else decir("hola", false);
+    $("#st").focus();
+  },
+  async probador() {
+    $("#m").innerHTML = `<div class="banner">Escribí como si fueras un cliente del negocio: es lo que pasaría por WhatsApp. Arriba de cada respuesta ves qué brigada la atendió.</div>
+      <form class="entrada" id="pf"><input id="pt" placeholder="Hola, quiero un vestido a medida…" autocomplete="off"><button class="b p">Enviar</button></form>
+      <div class="feed"><header><span>CLIENTE DE PRUEBA</span><button id="limpiar" type="button">limpiar</button></header><div class="chat" id="ch"></div></div>`;
+    const ch = $("#ch");
+    const pintar = () => { ch.innerHTML = feed.join(""); ch.parentElement.scrollTop = ch.parentElement.scrollHeight; };
+    pintar();
+    $("#limpiar").onclick = () => { feed = []; pintar(); };
+    $("#pt").focus();
+    $("#pf").onsubmit = async e => {
+      e.preventDefault(); const t = $("#pt").value.trim(); if (!t) return; $("#pt").value = "";
+      feed.push(`<div class="m cliente">${esc(t)}</div>`); pintar();
+      const r = await api("/api/probar", {texto: t, quien: "probador", nombre: "Prueba"});
+      const quien = r.brigada ? `→ <b>${esc(info(r.brigada)?.t || r.brigada)}</b>` : `→ <i>ninguna brigada: queda pendiente para la dueña</i>`;
+      const extra = (r.consultas || []).length ? ` · consultó a ${r.consultas.map(c => `<b>${esc(info(c)?.t || c)}</b>`).join(", ")}` : "";
+      const pend = r.pendientes_nuevos ? ` · <i>${r.pendientes_nuevos} pendiente${r.pendientes_nuevos > 1 ? "s" : ""} nuevo${r.pendientes_nuevos > 1 ? "s" : ""}</i>` : "";
+      feed.push(`<div class="ruta">ORQUESTADOR ${quien}${extra}${pend}</div>`);
+      r.respuestas.forEach(x => feed.push(`<div class="m raphael">${esc(x)}</div>`));
+      pintar();
+      api("/api/pendientes").then(ps => contarPendientes(ps.length)).catch(() => {});
+    };
+  },
+  async pendientes() {
+    const ps = await api("/api/pendientes");
+    contarPendientes(ps.length);
+    $("#m").innerHTML = ps.length ? `<div class="lista">${ps.map(tarjetaPendiente).join("")}</div>` : `<div class="t vacio">No hay nada esperando tu decisión 🙌</div>`;
+    $("#m").onclick = async e => { if (await accionPendiente(e.target, () => ir("pendientes"))) return; };
+    $$("[data-conv]").forEach(b => b.onclick = () => conversacion(b.dataset.conv));
+  },
+  async conversaciones() {
+    const cs = await api("/api/contactos");
+    $("#m").innerHTML = cs.length ? `<div class="grilla">${cs.map(c => `<div class="t click" data-c="${esc(c.contacto)}"><span class="chip cian">${esc(c.contacto.split(":")[0])}</span><h3>${esc(c.nombre || c.contacto)}</h3><small>${esc(hora(c.ultimo))} · ${c.mensajes} mensajes</small></div>`).join("")}</div>` : `<div class="t vacio">Todavía no escribió nadie.</div>`;
+    $$("[data-c]").forEach(el => el.onclick = () => conversacion(el.dataset.c));
+  },
+  async atencion() {
+    const ds = await api("/api/comando", {brigada: "atencion", nombre: "dudas", datos: {}});
+    $("#m").innerHTML = `<div class="t ayuda">Atención responde con lo que cargaste en el perfil (horarios, envíos, preguntas frecuentes). Acá quedan las preguntas que <b>no supo responder</b>.</div>` +
+      (ds.length ? `<div class="lista">${ds.slice().reverse().map(d => `<div class="t"><span class="chip ${d.estado === "abierta" ? "humano" : "activa"}">${esc(d.estado)}</span><div>${esc(d.pregunta)}</div>${d.respuesta ? `<small>Respondiste: ${esc(d.respuesta)}</small>` : ""}</div>`).join("")}</div>` : `<div class="t vacio">El bot supo responder todo hasta ahora.</div>`);
+  },
+  async encargos() {
+    const es = await api("/api/comando", {brigada: "encargos", nombre: "listar", datos: {}});
+    const estados = ["presupuesto", "confirmado", "en_confeccion", "prueba", "listo", "entregado", "cancelado"];
+    $("#m").innerHTML = es.length ? `<div class="grilla">${es.map(e => `<div class="t"><span class="chip cian">#${e.num}</span>${e.urgente ? `<span class="chip humano">urgente</span>` : ""}<h3>${esc(e.cliente)}</h3><div>${esc(e.descripcion)}</div>
+      <small>Entrega: ${esc(e.entrega || "sin fecha")} · ${e.precio ? plata(e.precio) : "sin precio"} ${e.sena ? "· seña " + plata(e.sena) : ""}</small>
+      <div class="fila"><select data-num="${e.num}">${estados.map(s => `<option ${s === e.estado ? "selected" : ""}>${s}</option>`).join("")}</select></div></div>`).join("")}</div>` : `<div class="t vacio">No hay encargos activos. Probá pedir algo desde el Orquestador.</div>`;
+    $$("select[data-num]").forEach(s => s.onchange = async () => { await api("/api/comando", {brigada: "encargos", nombre: "estado", datos: {num: Number(s.dataset.num), estado: s.value}}); aviso("Estado actualizado (si corresponde, el cliente recibe el aviso)"); });
+  },
+  async cobros() {
+    const [esp, av] = await Promise.all([api("/api/comando", {brigada: "cobros", nombre: "esperando", datos: {}}), api("/api/comando", {brigada: "cobros", nombre: "avisados", datos: {}})]);
+    const t = (x, chip, cls) => `<div class="t"><span class="chip ${cls}">${chip}</span><span class="chip cian">encargo #${esc(x.num)}</span><h3>${esc(x.cliente || "Cliente")}</h3><small>Seña ${plata(x.sena)} · desde ${esc(hora(x.desde))}</small></div>`;
+    $("#m").innerHTML = `<div class="t ayuda">Cuando un cliente avisa que transfirió, te queda en <b>Pendientes</b> para que confirmes si llegó. Raphael nunca da un pago por hecho.</div>` +
+      ((esp.length || av.length) ? `<div class="grilla">${av.map(x => t(x, "avisó que pagó", "aprobacion")).join("")}${esp.map(x => t(x, "esperando seña", "")).join("")}</div>` : `<div class="t vacio">No hay señas pendientes.</div>`);
+  },
+  async agenda() {
+    const cal = await api("/api/comando", {brigada: "agenda", nombre: "calendario", datos: {}});
+    const dias = Object.keys(cal);
+    $("#m").innerHTML = dias.length ? `<div class="grilla">${dias.map(d => `<div class="t"><h3>📅 ${esc(d)}</h3>${cal[d].map(t => `<div><b style="color:var(--cian)">${esc(t.hora)}</b> · ${esc(t.motivo)} · ${esc(t.nombre || t.contacto)}</div>`).join("")}</div>`).join("")}</div>` : `<div class="t vacio">No hay turnos confirmados.</div>`;
+  },
+  async avisos() {
+    const av = await api("/api/comando", {brigada: "avisos", nombre: "enviados", datos: {}});
+    $("#m").innerHTML = `<div class="t ayuda">Cada vez que cambiás el estado de un encargo, Avisos le escribe al cliente (pasa por tu aprobación si así lo configuraste).</div>` +
+      (av.length ? `<div class="lista">${av.slice().reverse().map(a => `<div class="t"><span class="chip cian">encargo #${esc(a.num)}</span><span class="chip">${esc(a.estado)}</span><small>${esc(a.contacto)} · ${esc(hora(a.cuando))}</small></div>`).join("")}</div>` : `<div class="t vacio">Todavía no se mandó ningún aviso.</div>`);
+  },
+  async brigadas() {
+    const d = await api("/api/brigadas");
+    const chip = {bloqueada: `<span class="chip">🔒 bloqueada</span>`, descargada: `<span class="chip aprobacion">descargada · inactiva</span>`, activa: `<span class="chip activa">● acoplada</span>`};
+    $("#m").innerHTML = `<div class="t"><span class="chip activa">● siempre activo</span><h3>🧭 Orquestador</h3><small>${esc(d.orquestador)} · lee cada mensaje y se lo pasa a la brigada que corresponde.</small></div>
+      <div class="grilla">${d.brigadas.map(b => `<div class="t">${chip[b.estado]}${b.version ? `<span class="chip">v${esc(b.version)}</span>` : ""}
+        <h3>${info(b.nombre)?.ic || "🧩"} ${esc(b.titulo)}</h3><div class="ayuda">${esc(b.descripcion)}</div>${b.necesita.length ? `<small>Necesita: ${b.necesita.map(n => esc(info(n)?.t || n)).join(", ")}</small>` : ""}
+        <div class="fila">${b.estado === "bloqueada" ? `<button class="b p" data-acc="descargar" data-n="${b.nombre}">Descargar</button>` : ""}
+        ${b.estado === "descargada" ? `<button class="b si" data-acc="activar" data-n="${b.nombre}">Acoplar</button>` : ""}
+        ${b.estado === "activa" ? `<button class="b no" data-acc="desactivar" data-n="${b.nombre}">Desacoplar</button>` : ""}</div></div>`).join("")}</div>`;
+    botonesTienda();
+  },
+  async estado() {
+    const e = await api("/api/resumen");
+    const lic = e.licencia || {};
+    $("#m").innerHTML = `${lic.activa ? "" : `<div class="banner">La licencia no está activa: Raphael guarda los mensajes pero no responde. Contactá a soporte.</div>`}
+      <div class="t"><div class="kv"><b>Plan</b><span>${esc(e.plan)}</span><b>IA del orquestador</b><span>${esc(e.ia)}</span><b>Mensajes del mes</b><span>${e.uso.mensajes} de ${e.uso.limite_mensajes}</span>
+      <b>Modo</b><span>${e.modo === "mock" ? "prueba (no manda nada a WhatsApp ni Instagram)" : esc(e.modo)}</span><b>Versiones</b><span>servidor ${esc(e.servidor)} · harness ${esc(e.harness)} · ${esc(e.orquestador)}</span>
+      <b>Brigadas</b><span>${Object.entries(e.brigadas).map(([k, v]) => `${esc(k)} ${esc(v)}`).join(", ") || "ninguna acoplada"}</span>
+      <b>Envíos fallidos</b><span>${e.envios_fallidos}</span></div>
+      ${(e.avisos || []).map(a => `<div class="banner" style="margin-top:10px">${esc(a)}</div>`).join("")}
+      <div class="fila"><button class="b" id="bk">Hacer copia de seguridad ahora</button><button class="b no" id="salir">Cerrar sesión</button>
+      ${window.RaphaelApp && !(RaphaelApp.fijo && RaphaelApp.fijo()) ? `<button class="b no" id="srv">Cambiar servidor</button>` : ""}</div></div>
+      <div class="t" id="iaCaja"><h3>🧠 Inteligencia artificial</h3><div class="ayuda">Cargando…</div></div>
+      <div class="t" id="cel"><h3>📱 Conectar el celular</h3><div class="ayuda">Cargando…</div></div>`;
+    tarjetaIA();
+    if ($("#srv")) $("#srv").onclick = () => RaphaelApp.cambiarServidor();
+    api("/api/conexion").then(c => {
+      const caja = $("#cel"); if (!caja) return;
+      if (c.nube) { caja.remove(); return; }                      // en la nube no hay que conectar nada: la app ya viene con el servidor
+      const dirs = c.direcciones.map(d => `<code>${esc(d)}</code>`).join(" · ");
+      caja.innerHTML = `<h3>📱 Conectar el celular</h3>` + (c.escuchando
+        ? `<div class="ayuda">Instalá la app <b>Raphael Empresas</b> en el celular y escribí esta dirección (el celular tiene que estar en el mismo wifi):<br><br>${dirs || "(no encontré la dirección de esta PC)"}</div>
+           <div class="fila"><button class="b no" id="celOff">Desactivar acceso desde el celular</button></div>`
+        : c.activado
+          ? `<div class="ayuda">Quedó activado: <b>cerrá y volvé a abrir Raphael</b> para que se pueda entrar desde el celular.</div>`
+          : `<div class="ayuda">Por seguridad, Raphael solo se puede abrir desde esta PC. Si querés usar la app del celular, activá el acceso desde tu red de wifi. Siempre pide tu clave.</div>
+             <div class="fila"><button class="b p" id="celOn">Activar acceso desde el celular</button></div>`);
+      const cambiar = async v => { await api("/api/conexion", {celular: v}); aviso("Listo: cerrá y volvé a abrir Raphael para aplicarlo."); ir("estado"); };
+      if ($("#celOn")) $("#celOn").onclick = () => cambiar(true);
+      if ($("#celOff")) $("#celOff").onclick = () => cambiar(false);
+    }).catch(() => {});
+    $("#bk").onclick = async () => { const r = await api("/api/backup", {}); aviso("Copia guardada: " + r.archivo); };
+    $("#salir").onclick = () => { token = ""; try { localStorage.removeItem("raphael"); } catch (e) {} login(); };
+  },
+};
+
+// IA del orquestador: proveedor, modelo y clave. Se guarda en esta PC y se aplica sin reiniciar.
+async function tarjetaIA() {
+  const caja = $("#iaCaja"); if (!caja) return;
+  let d; try { d = await api("/api/ia"); } catch (e) { return; }
+  const pre = Object.fromEntries(d.presets.map(p => [p.id, p]));
+  const sel = pre[d.proveedor] ? d.proveedor : (d.configurada ? "otro" : "nvidia");
+  caja.innerHTML = `<h3>🧠 Inteligencia artificial</h3>
+    <div class="ayuda">${d.configurada ? `Activa: <b>${esc(d.activa)}</b>. Con la IA, el secretario te entiende hablando normal y puede hacer lo que le pidas (siempre te pide confirmación).`
+      : `Ahora el secretario trabaja <b>solo con reglas</b>: entiende frases fijas y no puede hacer pedidos libres. Conectale una IA para que te entienda hablando normal y organice todo.`}</div>
+    <div class="fila"><label style="flex:1 1 200px"><small>Proveedor</small><select id="iaProv" style="width:100%">${d.presets.map(p => `<option value="${p.id}" ${p.id === sel ? "selected" : ""}>${esc(p.titulo)}</option>`).join("")}</select></label></div>
+    <div class="ayuda" id="iaAyuda" style="margin-top:8px"></div>
+    <div class="fila"><label style="flex:2 1 240px"><small>Dirección del servicio</small><input id="iaUrl" style="width:100%" autocomplete="off"></label>
+      <label style="flex:1 1 160px"><small>Modelo</small><input id="iaModelo" style="width:100%" autocomplete="off"></label></div>
+    <div class="fila" id="iaFilaClave"><label style="flex:1 1 100%"><small>Clave ${d.tiene_clave ? "(ya hay una guardada: dejala vacía para conservarla)" : ""}</small><input id="iaClave" type="password" style="width:100%" autocomplete="off" placeholder="${d.tiene_clave ? "••••••••" : "pegá tu clave acá"}"></label></div>
+    <div class="fila"><button class="b" id="iaProbar">Probar</button><button class="b p" id="iaGuardar">Guardar y usar</button>${d.configurada ? `<button class="b no" id="iaQuitar">Quitar IA</button>` : ""}</div>
+    <div class="ayuda" id="iaRes" style="margin-top:8px"></div>`;
+  const campos = () => ({proveedor: $("#iaProv").value, base_url: $("#iaUrl").value.trim(), model: $("#iaModelo").value.trim(), api_key: $("#iaClave").value.trim()});
+  const poner = (id, inicial) => {
+    const p = pre[id];
+    $("#iaAyuda").textContent = p.ayuda;
+    $("#iaFilaClave").style.display = p.clave ? "" : "none";
+    if (inicial && d.configurada && d.proveedor === id) { $("#iaUrl").value = d.base_url; $("#iaModelo").value = d.model; }
+    else { $("#iaUrl").value = p.base_url; $("#iaModelo").value = p.model; }
+    $("#iaUrl").readOnly = id === "nvidia";
+  };
+  $("#iaProv").onchange = () => { poner($("#iaProv").value, false); $("#iaRes").textContent = ""; };
+  poner(sel, true);
+  $("#iaProbar").onclick = async () => {
+    const r = $("#iaRes"); r.textContent = "Probando…";
+    try { const x = await api("/api/ia/probar", campos()); r.innerHTML = x.ok ? `✅ Funciona. El modelo contestó: <i>${esc(x.respuesta)}</i>` : `❌ ${esc(x.error)}`; }
+    catch (e) { r.textContent = "❌ " + e.message; }
+  };
+  $("#iaGuardar").onclick = async () => {
+    try { const x = await api("/api/ia", campos()); aviso("IA activa: " + x.activa); vista = "estado"; armar(); }
+    catch (e) { $("#iaRes").textContent = "❌ " + e.message; }
+  };
+  if ($("#iaQuitar")) $("#iaQuitar").onclick = async () => { await api("/api/ia/quitar", {}); aviso("IA desactivada: el secretario vuelve a las reglas."); vista = "estado"; armar(); };
+}
+
+// aprobar / rechazar / responder una tarjeta de pendiente, desde Pendientes o desde el chat del secretario
+async function accionPendiente(el, despues) {
+  const ap = el.closest("[data-ap]"), re = el.closest("[data-re]"), res = el.closest("[data-res]");
+  if (!ap && !re && !res) return false;
+  const t = (ap || re || res).closest(".t");
+  if (ap) {
+    const cambios = {};
+    $$("[data-campo]", t).forEach(i => { if (i.value !== "") cambios[i.dataset.campo] = i.type === "number" ? Number(i.value) : i.value; });
+    await api(`/api/pendientes/${ap.dataset.ap}/aprobar`, {cambios}); aviso("Aprobado y enviado ✓");
+  } else if (re) {
+    await api(`/api/pendientes/${re.dataset.re}/rechazar`, {motivo: ""}); aviso("Rechazado");
+  } else {
+    const resp = $("textarea", t).value.trim();
+    await api(`/api/pendientes/${res.dataset.res}/resolver`, {respuesta: resp || null}); aviso(resp ? "Respuesta enviada ✓" : "Marcado como resuelto");
+  }
+  t.style.opacity = ".45"; $$("button,input,textarea", t).forEach(x => x.disabled = true);
+  despues();
+  return true;
+}
+function quitarChips() { $$(".chips").forEach(c => c.remove()); charla = charla.map(h => h.replace(/<div class="chips">.*?<\/div>/s, "")); }
+
+function tarjetaPendiente(p) {
+  const a = p.accion, d = a.datos || {};
+  let campos = "";
+  if (a.tipo === "enviar_presupuesto") campos = `<label>Precio final<input type="number" data-campo="precio" value="${d.precio ?? ""}"></label>`;
+  if (a.tipo === "confirmar_turno") campos = `<label>Fecha<input type="date" data-campo="fecha" value="${d.fecha ?? ""}"></label><label>Hora<input type="time" data-campo="hora" value="${d.hora ?? ""}"></label>`;
+  if (a.tipo === "confirmar_pago") campos = `<label>Monto recibido<input type="number" data-campo="monto" value="${d.monto ?? ""}"></label>`;
+  const humano = p.nivel === "humano";
+  const botones = humano
+    ? `<textarea placeholder="Tu respuesta para el cliente (opcional)"></textarea><div class="fila"><button class="b si" data-res="${p.id}">Responder / resolver</button>${a.destino ? `<button class="b no" data-conv="${esc(a.destino)}">Ver conversación</button>` : ""}</div>`
+    : `${campos ? `<div class="fila">${campos}</div>` : ""}<div class="fila"><button class="b si" data-ap="${p.id}">${a.tipo === "confirmar_pago" ? "Me llegó" : "Aprobar"}</button><button class="b no" data-re="${p.id}">Rechazar</button></div>`;
+  return `<div class="t"><span class="chip ${p.nivel}">${humano ? "te necesita" : "para aprobar"}</span><span class="chip cian">${esc(info(p.pieza)?.t || p.pieza)}</span>
+    <h3>${esc(a.resumen || a.tipo)}</h3><small>${esc(hora(p.creado))}</small>${botones}</div>`;
+}
+
+async function conversacion(c) {
+  const ms = await api("/api/conversacion?contacto=" + encodeURIComponent(c));
+  $$(".tab").forEach(b => b.classList.toggle("on", b.dataset.v === "conversaciones")); vista = "conversaciones";
+  seccion("conversaciones", `contacto<b>${esc(c)}</b>`);
+  $("#m").innerHTML = `<div class="feed"><header><span>CONVERSACIÓN</span><button type="button" id="volver">← volver</button></header><div class="chat">${ms.map(m => `<div class="m ${m.de}">${esc(m.texto)}<small>${esc(hora(m.cuando))}</small></div>`).join("")}</div></div>
+    <form id="rf" class="entrada"><input id="rt" placeholder="Escribirle vos…"><button class="b p">Enviar</button></form>`;
+  $("#volver").onclick = () => ir("conversaciones");
+  $("#rf").onsubmit = async e => { e.preventDefault(); const t = $("#rt").value.trim(); if (!t) return; await api("/api/enviar", {contacto: c, texto: t}); conversacion(c); };
+}
+
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+(async () => { const ini = await (await fetch("/api/inicio")).json(); negocio = ini.negocio; token ? armar() : login(); })();
+setInterval(() => { if (!token || !$("#badge")) return; if (vista === "pendientes") ir("pendientes"); else api("/api/pendientes").then(ps => contarPendientes(ps.length)).catch(() => {}); }, 20000);
+</script>
+</body>
+</html>

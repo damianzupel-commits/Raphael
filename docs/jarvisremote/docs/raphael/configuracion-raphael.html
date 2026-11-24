@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Configuración · Raphael</title>
+<style>
+  :root{
+    --accent:#35e6ff; --accent-dim:#1aa7bb;
+    --bg:#05070d; --panel:#0b111c; --panel2:#0e1726;
+    --line:#1b2a3f; --txt:#dfe9f5; --mut:#7d93ac; --ok:#39d98a; --warn:#ffcf5c;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    background:radial-gradient(1200px 700px at 70% -10%, #0c1a2e 0%, var(--bg) 60%);
+    color:var(--txt); font-family:"Segoe UI",system-ui,-apple-system,sans-serif;
+    display:flex; flex-direction:column; height:100vh; overflow:hidden;
+  }
+  header{
+    display:flex; align-items:center; gap:14px; padding:16px 26px;
+    border-bottom:1px solid var(--line); background:linear-gradient(180deg,#070c15,#05070d);
+  }
+  .dot{width:11px;height:11px;border-radius:50%;background:var(--accent);
+    box-shadow:0 0 12px var(--accent); animation:pulse 2.4s infinite}
+  @keyframes pulse{0%,100%{opacity:.5}50%{opacity:1}}
+  header h1{font-size:15px;letter-spacing:.32em;margin:0;font-weight:600;text-transform:uppercase}
+  header .sub{color:var(--mut);font-size:12px;letter-spacing:.12em;margin-left:auto}
+  #banner{display:none;padding:9px 26px;font-size:12.5px;background:#2a1d08;
+    color:var(--warn);border-bottom:1px solid #4a3410}
+  main{flex:1;overflow-y:auto;padding:22px 26px 120px}
+  .sec{margin:0 auto 26px;max-width:760px}
+  .sec > h2{font-size:12.5px;letter-spacing:.18em;color:var(--accent);
+    text-transform:uppercase;margin:0 0 12px;font-weight:600;opacity:.92}
+  .card{background:linear-gradient(180deg,var(--panel),var(--panel2));
+    border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  .row{display:flex;align-items:center;gap:16px;padding:14px 18px;border-top:1px solid #121e2e}
+  .row:first-child{border-top:none}
+  .row .meta{flex:1;min-width:0}
+  .row .lab{font-size:14px;font-weight:500}
+  .row .dsc{font-size:12px;color:var(--mut);margin-top:2px;line-height:1.35}
+  .row .ctl{flex:none}
+  input[type=text],input[type=number],input[type=password],select{
+    background:#060b14;border:1px solid var(--line);color:var(--txt);
+    border-radius:8px;padding:8px 11px;font-size:13.5px;min-width:230px;font-family:inherit}
+  input[type=number]{min-width:96px;width:96px;text-align:right}
+  select{min-width:170px;cursor:pointer}
+  input:focus,select:focus{outline:none;border-color:var(--accent-dim);box-shadow:0 0 0 2px rgba(53,230,255,.15)}
+  /* switch */
+  .sw{position:relative;width:48px;height:27px;flex:none;cursor:pointer}
+  .sw input{opacity:0;width:0;height:0}
+  .sw .tr{position:absolute;inset:0;background:#1a2638;border:1px solid var(--line);
+    border-radius:20px;transition:.18s}
+  .sw .kn{position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;
+    background:#56708c;transition:.18s}
+  .sw input:checked + .tr{background:rgba(53,230,255,.22);border-color:var(--accent-dim)}
+  .sw input:checked + .tr .kn{left:24px;background:var(--accent);box-shadow:0 0 10px var(--accent)}
+  footer{position:fixed;bottom:0;left:0;right:0;display:flex;align-items:center;gap:14px;
+    padding:14px 26px;background:linear-gradient(0deg,#05070d 70%,transparent);
+    border-top:1px solid var(--line)}
+  #status{font-size:12.5px;color:var(--mut);flex:1}
+  button{background:var(--accent);color:#04121a;border:none;border-radius:9px;
+    padding:11px 22px;font-size:13.5px;font-weight:700;cursor:pointer;letter-spacing:.04em;
+    transition:.15s;font-family:inherit}
+  button:hover{filter:brightness(1.12)}
+  button:disabled{background:#223247;color:#5a6e85;cursor:not-allowed}
+  button.ghost{background:transparent;border:1px solid var(--line);color:var(--mut)}
+  .chg{color:var(--warn)!important}
+</style>
+</head>
+<body>
+  <header>
+    <span class="dot"></span>
+    <h1 id="title">Configuración</h1>
+    <span class="sub" id="whoami">RAPHAEL</span>
+  </header>
+  <div id="banner"></div>
+  <main id="main"><div class="sec"><div class="card"><div class="row"><div class="meta"><div class="lab">Cargando…</div></div></div></div></div></main>
+  <footer>
+    <span id="status">Cargando configuración…</span>
+    <button class="ghost" id="reset" disabled>Descartar</button>
+    <button id="save" disabled>Guardar y reiniciar</button>
+  </footer>
+
+<script>
+(function(){
+  const KEY = new URLSearchParams(location.search).get("key") || "";
+  const THEMES = {"cian":["#35e6ff","#1aa7bb"],"violeta":["#b78cff","#7a4fd0"],
+                  "verde":["#49f0a6","#1f9e69"],"ámbar":["#ffc24d","#c8871a"]};
+  const $ = s => document.querySelector(s);
+  const main = $("#main"), statusEl = $("#status"), saveBtn = $("#save"), resetBtn = $("#reset");
+  let SCHEMA = [], values = {}, orig = {}, dirty = {}, SECRETS = {};
+
+  function hdrs(){ return KEY ? {"Authorization":"Bearer "+KEY,"Content-Type":"application/json"} : {"Content-Type":"application/json"}; }
+  function applyTheme(name){
+    const t = THEMES[name] || THEMES.cian;
+    document.documentElement.style.setProperty("--accent", t[0]);
+    document.documentElement.style.setProperty("--accent-dim", t[1]);
+  }
+  function esc(s){ return String(s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+
+  function markDirty(k, v){
+    if (String(v) === String(orig[k])) delete dirty[k]; else dirty[k] = v;
+    values[k] = v;
+    const n = Object.keys(dirty).length;
+    saveBtn.disabled = n === 0 || !KEY;
+    resetBtn.disabled = n === 0;
+    statusEl.textContent = n === 0 ? "Sin cambios." : (n + " cambio" + (n>1?"s":"") + " sin guardar · toma efecto al reiniciar.");
+    const row = document.querySelector('[data-row="'+k+'"] .lab');
+    if (row) row.classList.toggle("chg", k in dirty);
+  }
+
+  function control(f){
+    const k = f.key, v = values[k];
+    if (f.type === "toggle"){
+      const on = v === true || v === "true";
+      const el = document.createElement("label"); el.className = "sw";
+      el.innerHTML = '<input type="checkbox" '+(on?"checked":"")+'><span class="tr"><span class="kn"></span></span>';
+      el.querySelector("input").addEventListener("change", e => markDirty(k, e.target.checked));
+      return el;
+    }
+    if (f.type === "secret"){
+      const el = document.createElement("input");
+      el.type = "password"; el.value = ""; el.autocomplete = "off";
+      el.placeholder = SECRETS[k] ? "•••• configurada (escribí para cambiar)" : "sin configurar";
+      el.addEventListener("input", e => markDirty(k, e.target.value));
+      return el;
+    }
+    if (f.type === "select"){
+      const el = document.createElement("select");
+      (f.options||[]).forEach(o => { const op=document.createElement("option"); op.value=o; op.textContent=o; if(String(o)===String(v)) op.selected=true; el.appendChild(op); });
+      el.addEventListener("change", e => { markDirty(k, e.target.value); if (k==="UI_THEME") applyTheme(e.target.value); });
+      return el;
+    }
+    const el = document.createElement("input");
+    el.type = f.type === "number" ? "number" : "text";
+    el.value = (v == null ? "" : v);
+    if (f.type === "number"){ el.min = 0; el.addEventListener("input", e => markDirty(k, e.target.value===""?"":Number(e.target.value))); }
+    else el.addEventListener("input", e => markDirty(k, e.target.value));
+    return el;
+  }
+
+  function render(){
+    main.innerHTML = "";
+    SCHEMA.forEach(sec => {
+      const s = document.createElement("div"); s.className = "sec";
+      s.innerHTML = "<h2>"+esc(sec.section)+"</h2>";
+      const card = document.createElement("div"); card.className = "card";
+      sec.fields.forEach(f => {
+        const row = document.createElement("div"); row.className = "row"; row.dataset.row = f.key;
+        const meta = document.createElement("div"); meta.className = "meta";
+        meta.innerHTML = '<div class="lab">'+esc(f.label)+'</div>'+(f.desc?'<div class="dsc">'+esc(f.desc)+'</div>':"");
+        const ctl = document.createElement("div"); ctl.className = "ctl"; ctl.appendChild(control(f));
+        row.appendChild(meta); row.appendChild(ctl); card.appendChild(row);
+      });
+      s.appendChild(card); main.appendChild(s);
+    });
+    applyTheme(values.UI_THEME);
+    $("#whoami").textContent = (values.ASSISTANT_NAME || "RAPHAEL").toUpperCase();
+  }
+
+  async function load(){
+    try{
+      const r = await fetch("/api/config", {headers: hdrs()});
+      if (r.status === 401){ banner("Abrí este panel desde la app de Raphael para poder guardar (falta la credencial)."); }
+      if (!r.ok) throw new Error("HTTP "+r.status);
+      const data = await r.json();
+      SCHEMA = data.schema || []; values = data.values || {}; SECRETS = data.secrets || {};
+      orig = JSON.parse(JSON.stringify(values));
+      render();
+      loadDevices();
+      statusEl.textContent = KEY ? "Sin cambios." : "Modo lectura · abrí desde la app para guardar.";
+    }catch(e){
+      statusEl.textContent = "No se pudo cargar la configuración (¿backend apagado?).";
+      main.innerHTML = '<div class="sec"><div class="card"><div class="row"><div class="meta"><div class="lab">Sin conexión con el backend</div><div class="dsc">Levantá el backend y recargá. '+esc(e.message)+'</div></div></div></div></div>';
+    }
+  }
+  function banner(msg){ const b=$("#banner"); b.textContent=msg; b.style.display="block"; }
+
+  // --- Dispositivos vinculados (tokens por dispositivo, revocables) ---
+  function fmtAgo(ts){ if(!ts) return "nunca usado"; const d=Date.now()/1000-ts;
+    if(d<60)return"hace instantes"; if(d<3600)return"hace "+Math.floor(d/60)+" min";
+    if(d<86400)return"hace "+Math.floor(d/3600)+" h"; return"hace "+Math.floor(d/86400)+" d"; }
+  async function loadDevices(){
+    if(!KEY) return;
+    try{
+      const r = await fetch("/api/devices", {headers: hdrs()});
+      if(!r.ok) return;
+      renderDevices((await r.json()).devices || []);
+    }catch(e){}
+  }
+  function renderDevices(devs){
+    const old = document.getElementById("devsec"); if(old) old.remove();
+    const sec = document.createElement("div"); sec.className="sec"; sec.id="devsec";
+    sec.innerHTML = "<h2>🔗 Dispositivos vinculados</h2>";
+    const card = document.createElement("div"); card.className="card";
+    if(!devs.length){
+      card.innerHTML='<div class="row"><div class="meta"><div class="dsc">Ninguno todavía. Usá 📱 Vincular para parear tu celular.</div></div></div>';
+    }
+    devs.forEach(d=>{
+      const row=document.createElement("div"); row.className="row";
+      const meta=document.createElement("div"); meta.className="meta";
+      meta.innerHTML='<div class="lab">'+esc(d.label||d.token_id)+(d.revoked?' · <span style="color:#ff6b6b">revocado</span>':'')+'</div>'+
+        '<div class="dsc">'+esc(d.scope||"")+' · '+(d.last_seen?("visto "+fmtAgo(d.last_seen)):"nunca usado")+'</div>';
+      const ctl=document.createElement("div"); ctl.className="ctl";
+      if(!d.revoked){ const b=document.createElement("button"); b.className="ghost"; b.textContent="Revocar";
+        b.addEventListener("click",()=>revokeDevice(d.token_id)); ctl.appendChild(b); }
+      row.appendChild(meta); row.appendChild(ctl); card.appendChild(row);
+    });
+    sec.appendChild(card); main.appendChild(sec);
+  }
+  async function revokeDevice(id){
+    if(!KEY) return;
+    try{ await fetch("/api/devices/revoke",{method:"POST",headers:hdrs(),body:JSON.stringify({token_id:id})}); loadDevices(); }catch(e){}
+  }
+
+  resetBtn.addEventListener("click", () => { values = JSON.parse(JSON.stringify(orig)); dirty = {}; render(); saveBtn.disabled = true; resetBtn.disabled = true; statusEl.textContent = "Sin cambios."; });
+
+  saveBtn.addEventListener("click", async () => {
+    if (!Object.keys(dirty).length) return;
+    saveBtn.disabled = true; statusEl.textContent = "Guardando…";
+    try{
+      const r = await fetch("/api/config", {method:"POST", headers: hdrs(), body: JSON.stringify(dirty)});
+      if (!r.ok) throw new Error("HTTP "+r.status);
+      const res = await r.json();
+      orig = JSON.parse(JSON.stringify(values)); dirty = {};
+      render(); resetBtn.disabled = true;
+      statusEl.textContent = "Guardado (" + (res.written||[]).length + "). Reabriendo…";
+      // Puente con la app: al cambiar el título, el diálogo Qt se cierra y se reabre solo
+      // con los valores frescos (ui/config_dialog.py). En navegador suelto es inocuo.
+      setTimeout(() => { document.title = "RAPHAEL_CFG_SAVED"; }, 650);
+    }catch(e){
+      saveBtn.disabled = false;
+      statusEl.textContent = "Error al guardar: " + e.message;
+    }
+  });
+
+  load();
+})();
+</script>
+</body>
+</html>

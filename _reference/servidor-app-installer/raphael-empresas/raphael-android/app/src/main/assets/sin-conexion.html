@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sin conexión</title>
+<style>
+:root{--fondo:#070b14;--linea:rgba(148,163,184,.18);--tinta:#e6edf7;--suave:#8b97ab;--cian:#22d3ee;--naranja:#f59e0b}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:var(--fondo);color:var(--tinta);font:16px/1.5 system-ui,sans-serif}
+main{max-width:420px;margin:0 auto;padding:14vh 22px 30px;text-align:center}
+.orbe{width:54px;height:54px;border-radius:50%;margin:0 auto 18px;background:radial-gradient(circle at 35% 30%,#e0fbff,#67e8f9 25%,#0891b2 60%,#0e3a52);opacity:.4;filter:grayscale(.5)}
+h1{margin:0;font-size:20px}
+p{color:var(--suave)}
+code{background:rgba(148,163,184,.14);padding:2px 8px;border-radius:8px;color:var(--tinta);word-break:break-all}
+.fila{display:flex;flex-direction:column;gap:10px;margin-top:24px}
+button{font:inherit;font-weight:700;border-radius:14px;padding:14px;border:1px solid var(--linea);background:transparent;color:var(--tinta)}
+button.p{background:var(--cian);border-color:var(--cian);color:#04212b}
+</style></head>
+<body><main>
+  <div class="orbe"></div>
+  <h1>No llego a tu Raphael</h1>
+  <p>Probé con <code id="dir">…</code></p>
+  <p>Revisá que la computadora con Raphael esté prendida y que el celular esté en el mismo wifi (o conectado al túnel).</p>
+  <div class="fila">
+    <button class="p" onclick="RaphaelApp.reintentar()">Reintentar</button>
+    <button id="cambiar" onclick="RaphaelApp.cambiarServidor()">Cambiar dirección</button>
+    <script>try { if (RaphaelApp.fijo()) document.getElementById("cambiar").style.display = "none"; } catch (e) {}</script>
+  </div>
+</main>
+<script>document.getElementById('dir').textContent=RaphaelApp.servidor()||'(sin dirección)';</script>
+</body></html>

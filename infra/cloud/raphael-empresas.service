@@ -1,0 +1,21 @@
+[Unit]
+Description=Raphael Empresas v2 (harness + orquestador + brigada Empresas + API)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=@USUARIO@
+WorkingDirectory=@RAIZ@
+EnvironmentFile=@RAIZ@/datos/meta.env
+EnvironmentFile=-@RAIZ@/datos/tienda.env
+ExecStart=@RAIZ@/venv/bin/raphael-empresas-api servir --instalacion @RAIZ@/datos/installation.yaml --datos @RAIZ@/datos --host 127.0.0.1 --port @PUERTO@
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=@RAIZ@/datos
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

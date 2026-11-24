@@ -1,0 +1,68 @@
+# Brigada Empresas (pieza 15): la ÚNICA fuente de verdad de lo que la brigada puede hacer.
+# Cada acción con efecto declara su nivel (automatico | aprobacion | humano) y sus etiquetas:
+#   external = sale al mundo (un mensaje a un cliente) · irreversible = no tiene vuelta atrás · spend = gasta plata.
+# La confianza progresiva del harness nunca baja sola a automático una acción `irreversible` o `spend`: lo propone y la
+# dueña confirma (y queda `confirmed_by` en la instalación).
+id: empresas
+name: Raphael Empresas
+version: 2.0.0
+contract: ">=2.1,<3"
+description: Atiende a los clientes por WhatsApp e Instagram, toma encargos a medida, lleva señas, turnos y avisos, y contesta con el catálogo de la tienda. Lo que sale al mundo o no tiene vuelta atrás lo decide la dueña.
+editions: [personal, cloud]
+cooks:
+  - {id: encargos, entry: "raphael_empresas.cooks.orders:Orders"}
+  - {id: cobros, entry: "raphael_empresas.cooks.payments:Payments"}
+  - {id: agenda, entry: "raphael_empresas.cooks.schedule:Schedule"}
+  - {id: tienda, entry: "raphael_empresas.cooks.store:Store"}
+  - {id: avisos, entry: "raphael_empresas.cooks.notices:Notices"}
+  - {id: tareas, entry: "raphael_empresas.cooks.tasks:TaskBoard"}
+  - {id: atencion, entry: "raphael_empresas.cooks.attention:Attention"}
+actions:
+  responder_duda: {level: humano, tags: [external], description: "contestarle a un cliente una pregunta que el bot no sabe"}
+  derivar_humano: {level: humano, description: "un reclamo o un cliente que pidió hablar con una persona"}
+  confirmar_turno: {level: aprobacion, tags: [external], description: "confirmarle a un cliente el día y la hora de un turno"}
+  enviar_recordatorio: {level: automatico, tags: [external], description: "recordarle a un cliente su turno, días antes"}
+  confirmar_pago: {level: aprobacion, tags: [irreversible], description: "dar por recibida la seña de un encargo"}
+  enviar_presupuesto: {level: aprobacion, tags: [external, irreversible], description: "mandarle el precio y la seña de un encargo al cliente"}
+  cancelar_pedido: {level: aprobacion, tags: [external, irreversible], description: "cancelar un encargo y avisarle al cliente"}
+  avisar_estado: {level: automatico, tags: [external], description: "avisarle al cliente que su encargo cambió de estado"}
+events:
+  publishes: [conversacion.derivada, encargo.creado, encargo.presupuesto_enviado, encargo.estado_cambiado, turno.pedido,
+              turno.confirmado, pago.confirmado]
+  consumes: [conversacion.derivada, encargo.presupuesto_enviado, encargo.estado_cambiado, turno.pedido, pago.confirmado,
+             pendiente.rechazado]
+commands:
+  owner_tasks: {read: true, description: "tareas del día para la Secretaria"}
+  listar: {read: true, description: "encargos activos (o todos con {'all': true})"}
+  ver: {read: true, description: "un encargo por número {'number': n}"}
+  estado: {read: false, description: "cambiar el estado de un encargo {'number': n, 'status': 'en_confeccion'|'prueba'|'listo'|'entregado'|'cancelado'}"}
+  turnos: {read: true, description: "turnos confirmados desde hoy"}
+  calendario: {read: true, description: "turnos confirmados agrupados por fecha"}
+  esperando: {read: true, description: "señas que todavía no llegaron"}
+  avisados: {read: true, description: "pagos avisados por clientes, sin confirmar"}
+  dudas: {read: true, description: "preguntas que el bot no supo responder"}
+  enviados: {read: true, description: "avisos de estado enviados a clientes"}
+  productos: {read: true, description: "productos del catálogo de la tienda ({'q': texto})"}
+  catalogo: {read: true, description: "estado del catálogo de la tienda"}
+  sincronizar: {read: false, description: "volver a leer el catálogo de la tienda ahora"}
+routing:
+  signals:
+    - {pattern: "\\bencargos?\\b|\\bpresupuestos?\\b|\\bsenas?\\b|\\bturnos?\\b|\\bclient[ae]s?\\b|\\bpedidos?\\b|\\bmi negocio\\b|\\bel taller\\b", weight: 2}
+    - {pattern: "\\bentregas?\\b|\\bcobr\\w+|\\bagenda\\b|\\bstock\\b|\\bcatalogo\\b|\\bventas?\\b", weight: 1}
+store:
+  space: empresas
+uninstall:
+  export: [orders, appointments, deposits, questions, notices, products]
+  delete: ["*"]
+setup: "raphael_empresas.health:validate"
+health: "raphael_empresas.health:check"
+config_schema:
+  type: object
+  additionalProperties: false
+  properties:
+    business: {type: object}
+    info: {type: object}
+    payments: {type: object}
+    orders: {type: object}
+    schedule: {type: object}
+    store: {type: object}

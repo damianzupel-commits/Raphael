@@ -1,0 +1,1155 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Raphael — Orquestador</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  :root{
+    --bg:#05070d; --panel:rgba(18,24,38,.72); --edge:rgba(120,170,255,.18);
+    --ink:#e8f0ff; --muted:#7f8db0; --cyan:#35e0ff; --violet:#9b6bff;
+    --green:#36f0a0; --amber:#ffc24b; --red:#ff5c7a; --blue:#4d8cff; --teal:#2ee6c8; --pink:#ff6bd6; --orange:#ff9f45;
+    --font:"Segoe UI",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;color:var(--ink);font-family:var(--font);overflow:hidden;background:
+      radial-gradient(900px 900px at 38% 47%,rgba(89,224,255,.10),transparent 60%),
+      radial-gradient(1100px 700px at 12% 0%,rgba(60,110,220,.16),transparent 60%),
+      radial-gradient(1000px 700px at 96% 112%,rgba(155,107,255,.17),transparent 55%),var(--bg)}
+  @keyframes breathe{0%,100%{transform:scale(.9);filter:brightness(.9)}50%{transform:scale(1.06);filter:brightness(1.2)}}
+  .app{max-width:1180px;margin:0 auto;height:100vh;display:flex;flex-direction:column;gap:12px;padding:18px 24px}
+  .head{display:flex;align-items:center;gap:14px}
+  .orb{width:30px;height:30px;border-radius:50%;flex:none;
+    background:radial-gradient(circle at 50% 40%,#fff,var(--cyan) 45%,#1b63ff 80%);
+    box-shadow:0 0 16px var(--cyan),0 0 36px rgba(53,224,255,.4);animation:breathe 3s ease-in-out infinite}
+  .head h1{margin:0;font-size:18px;letter-spacing:2px}
+  .head p{margin:2px 0 0;font-size:10px;color:var(--muted);letter-spacing:2px}
+  .head .modelo{margin-left:auto;text-align:right;font-size:10px;color:var(--muted);letter-spacing:1px;line-height:1.6}
+  .head .modelo b{color:var(--cyan);font-weight:600;letter-spacing:0}
+  .head .chip{background:rgba(8,11,20,.55);border:1px solid var(--edge);color:var(--muted);border-radius:999px;padding:6px 12px;
+    font:inherit;font-size:11px;letter-spacing:1px;cursor:pointer}
+  .head .chip b{color:var(--text,#dfe7ff)}
+  .head .chip.hot{color:var(--orange);border-color:color-mix(in srgb,var(--orange) 55%,transparent)}
+  .head .chip.hot b{color:var(--orange)}
+  body.sin-proceso .feed .ev.paso{display:none}  /* "Proceso: oculto": queda solo la respuesta (y errores / cortes) */
+  .vrow{border-left:3px solid var(--orange)} .vrow .nm b{color:var(--orange)}
+  .ask button.mic{background:transparent;color:var(--c);border:1px solid var(--edge);padding:0 16px;font-size:17px}
+  .ask button.mic.rec{color:var(--red);border-color:var(--red);animation:breathe 1s infinite}
+  .ask button.mic:disabled{opacity:.35}
+  .cook{border-left:3px solid var(--pink)}
+
+  /* ---------- Pestañas ---------- */
+  .tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;flex:none;scrollbar-width:thin;scrollbar-color:var(--edge) transparent}
+  .tabs::-webkit-scrollbar{height:6px}
+  .tabs::-webkit-scrollbar-track{background:transparent}
+  .tabs::-webkit-scrollbar-thumb{background:var(--edge);border-radius:6px}
+  .tab{flex:none;display:flex;align-items:center;gap:8px;padding:7px 13px;border-radius:11px;cursor:pointer;
+    border:1px solid var(--edge);background:rgba(255,255,255,.03);color:var(--ink);font:inherit;transition:.15s}
+  .tab:hover{border-color:color-mix(in srgb,var(--c) 60%,var(--edge))}
+  .tab .ti{font-size:14px}
+  .tab .tt{font-size:12px;font-weight:600;line-height:1.1;text-align:left}
+  .tab .ts{display:block;font-size:8px;letter-spacing:1px;color:var(--muted);font-weight:400}
+  .tab.on{background:color-mix(in srgb,var(--c) 16%,transparent);border-color:var(--c);color:#fff}
+  .tab.soon{opacity:.45}
+  .tab.soon:hover{border-color:var(--edge)}
+  .sep{flex:none;width:1px;background:var(--edge);margin:4px 4px}
+
+  .panes{flex:1;min-height:0;display:flex}
+  .pane{display:none;flex:1;min-width:0;flex-direction:column;gap:12px;min-height:0}
+  .pane.on{display:flex}
+  .phead{display:flex;align-items:center;gap:12px}
+  .phead .pic{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;font-size:18px;flex:none;
+    background:color-mix(in srgb,var(--c) 16%,transparent);border:1px solid color-mix(in srgb,var(--c) 40%,transparent)}
+  .phead h2{margin:0;font-size:16px;letter-spacing:1px}
+  .phead .sub{margin:2px 0 0;font-size:10px;color:var(--muted);letter-spacing:1px}
+  .phead .meta{margin-left:auto;text-align:right;font-size:10px;color:var(--muted);line-height:1.6}
+  .phead .meta b{color:var(--cyan);font-weight:600}
+  .ghost{background:rgba(255,255,255,.04);border:1px solid var(--edge);color:var(--ink);border-radius:10px;padding:6px 11px;
+    font:inherit;font-size:12px;cursor:pointer}
+  .ask{display:flex;gap:10px}
+  .ask input{flex:1;background:rgba(8,11,20,.7);border:1px solid var(--edge);border-radius:12px;color:var(--ink);
+    font:inherit;font-size:14px;padding:11px 14px;outline:none}
+  .ask input:focus{border-color:var(--c)}
+  .ask button{border:none;border-radius:12px;padding:0 22px;font:inherit;font-weight:700;font-size:13px;cursor:pointer;
+    color:#04121a;background:var(--c)}
+  .ask button:disabled{opacity:.45;cursor:default}
+  .cols{flex:1;min-height:0;display:grid;grid-template-columns:1fr;gap:14px}
+  .cols.two{grid-template-columns:1.5fr 1fr}
+  .side{display:flex;flex-direction:column;gap:14px;min-height:0}
+  .card{min-height:0;background:var(--panel);border:1px solid var(--edge);border-radius:16px;padding:13px 15px;
+    display:flex;flex-direction:column;gap:9px}
+  .card.grow{flex:1}
+  .card h3{margin:0;font-size:10px;letter-spacing:2px;color:var(--muted);display:flex;align-items:center;gap:8px}
+  .card h3 .r{margin-left:auto;cursor:pointer;color:var(--muted);background:none;border:none;font:inherit;font-size:10px}
+  .live{display:none;color:var(--c);font-size:9px;letter-spacing:1px}
+  .live.on{display:inline}
+  .live i{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--c);margin-right:5px;animation:breathe 1s infinite}
+  .feed,.list{flex:1;overflow:auto;display:flex;flex-direction:column;gap:6px;min-height:0}
+  .empty{color:var(--muted);font-size:12px;line-height:1.6;padding:6px 2px}
+  .turn{margin-top:8px;padding:9px 12px;border-radius:10px;background:rgba(255,255,255,.04);border-left:3px solid var(--violet);
+    font-size:13px;font-weight:600}
+  .ev{display:flex;gap:9px;align-items:flex-start;padding:7px 10px;border-radius:9px;background:rgba(8,11,20,.55);
+    border:1px solid transparent;font-size:12.5px;line-height:1.5}
+  .ev .mk{flex:none;width:18px;text-align:center}
+  .ev .tx{min-width:0;overflow-wrap:anywhere}
+  .ev small{color:var(--muted);font-size:11px}
+  .ev.route{border-color:color-mix(in srgb,var(--teal) 40%,transparent);background:color-mix(in srgb,var(--teal) 10%,transparent)}
+  .ev.ok .mk{color:var(--green)} .ev.bad{border-color:color-mix(in srgb,var(--red) 40%,transparent)} .ev.bad .mk{color:var(--red)}
+  .ev.final{border-color:color-mix(in srgb,var(--c) 40%,transparent);background:color-mix(in srgb,var(--c) 8%,transparent)}
+  .ev.final .tx{white-space:pre-wrap;font-size:13.5px}
+  .note{padding:7px 10px;border-radius:9px;background:rgba(8,11,20,.55);border:1px solid var(--edge)}
+  .note .nt{font-size:12px;font-weight:600}
+  .note .nm{font-size:10.5px;color:var(--muted);line-height:1.5}
+  .tag{display:inline-block;margin-left:5px;padding:0 6px;border-radius:6px;background:rgba(155,107,255,.18);font-size:9.5px}
+  textarea.dir{width:100%;min-height:130px;background:rgba(8,11,20,.7);border:1px solid var(--edge);border-radius:10px;
+    color:var(--ink);font:inherit;font-size:12.5px;padding:10px;outline:none;resize:vertical}
+  .soonview{flex:1;display:grid;place-items:center;text-align:center;color:var(--muted)}
+  .soonview .big{font-size:40px;margin-bottom:10px;opacity:.6}
+  .soonview h2{color:var(--ink);margin:0 0 6px;font-size:18px;letter-spacing:1px}
+  .warn{color:var(--amber)}
+  .pp{margin:4px 0 0;padding:8px;border-radius:8px;background:rgba(8,11,20,.7);border:1px solid var(--edge);white-space:pre-wrap;
+    font:11.5px/1.5 Consolas,monospace;color:var(--ink);max-height:220px;overflow:auto}
+  .badge{display:inline-block;padding:1px 7px;border-radius:7px;font-size:9px;letter-spacing:1px;border:1px solid var(--edge)}
+  .badge.draft{color:var(--amber);border-color:color-mix(in srgb,var(--amber) 50%,transparent)}
+  .badge.on{color:var(--green);border-color:color-mix(in srgb,var(--green) 50%,transparent)}
+  .rowb{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+  .btn-go{border:none;border-radius:10px;padding:8px 14px;font:inherit;font-weight:700;font-size:12px;cursor:pointer;color:#04121a;background:var(--green)}
+  .btn-go:disabled{opacity:.45;cursor:default}
+  .err{color:var(--red)}
+  select.ghost{max-width:200px}
+  /* ---- editor de video (pestaña Video) ---- */
+  .pane.scroll{overflow:auto;padding-right:4px}
+  .pane.scroll .cols{flex:none;min-height:260px}
+  .ed{flex:none;--c:var(--violet)}
+  .ed .edtop{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+  .ed .edtop select,.ed .edtop input{background:rgba(8,11,20,.7);border:1px solid var(--edge);color:var(--ink);border-radius:9px;font:inherit;font-size:12px;padding:5px 8px}
+  .ed .edtop .sp{flex:1}
+  .ed .edst{font-size:10.5px;color:var(--muted)} .ed .edst b{color:var(--ink)} .ed .edst .ia{color:var(--cyan)} .ed .edst .us{color:var(--green)}
+  .ed .edmain{display:grid;grid-template-columns:minmax(260px,1.1fr) minmax(240px,1fr) minmax(150px,.55fr);gap:10px;min-height:0}
+  .ed .edbox{background:rgba(8,11,20,.55);border:1px solid var(--edge);border-radius:12px;padding:8px;min-width:0}
+  .ed video{width:100%;max-height:230px;background:#000;border-radius:8px;display:block}
+  .ed .stage{position:relative;width:100%;max-height:230px;background:#000;border-radius:8px;overflow:hidden;margin:0 auto}
+  .ed .stage video{position:absolute;inset:0;width:100%;height:100%;max-height:none;object-fit:contain;border-radius:0}
+  .ed .ovl{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+  .ed .ovi{position:absolute;pointer-events:auto;cursor:move;touch-action:none;outline:1px dashed rgba(255,255,255,.35)}
+  .ed .ovi.sel{outline:2px solid var(--amber)} .ed .ovi img,.ed .ovi video{width:100%;height:auto;display:block;pointer-events:none;position:static}
+  .ed .ovi .rs{position:absolute;right:-6px;bottom:-6px;width:12px;height:12px;border-radius:3px;background:var(--amber);cursor:nwse-resize}
+  .ed .trn{position:absolute;left:0;top:0;bottom:0;background:repeating-linear-gradient(135deg,rgba(255,255,255,.55) 0 3px,transparent 3px 6px);pointer-events:none}
+  .ed .bin .it .fx{float:right;margin-left:6px;opacity:.75;cursor:pointer} .ed .bin .it .fx:hover{opacity:1}
+  .ed .edprev{font-size:10.5px;color:var(--muted);margin-top:5px;line-height:1.5}
+  .ed .insp{display:grid;grid-template-columns:auto 1fr;gap:4px 8px;align-items:center;font-size:11.5px;max-height:262px;overflow:auto}
+  .ed .insp label{color:var(--muted)} .ed .insp input,.ed .insp select{width:100%;background:rgba(8,11,20,.8);border:1px solid var(--edge);color:var(--ink);border-radius:7px;font:inherit;font-size:11.5px;padding:3px 6px}
+  .ed .insp h4{grid-column:1/-1;margin:0 0 3px;font-size:11px;letter-spacing:1px;color:var(--c)}
+  .ed .bin{display:flex;flex-direction:column;gap:3px;max-height:262px;overflow:auto;font-size:11.5px}
+  .ed .bin .it{padding:4px 7px;border-radius:7px;background:rgba(255,255,255,.04);cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ed .bin .it:hover{background:color-mix(in srgb,var(--c) 22%,transparent)}
+  .ed .tl{position:relative;overflow-x:auto;overflow-y:hidden;border:1px solid var(--edge);border-radius:12px;background:rgba(8,11,20,.55);user-select:none}
+  .ed .tlin{position:relative;min-height:150px}
+  .ed .ruler{position:relative;height:20px;border-bottom:1px solid var(--edge);cursor:pointer}
+  .ed .ruler i{position:absolute;top:0;bottom:0;border-left:1px solid rgba(255,255,255,.14);font-style:normal;font-size:9px;color:var(--muted);padding-left:3px}
+  .ed .trk{position:relative;height:38px;border-bottom:1px dashed rgba(255,255,255,.07)}
+  .ed .trk .lb{position:sticky;left:0;z-index:3;display:inline-block;width:30px;height:100%;background:rgba(8,11,20,.92);font-size:10px;color:var(--muted);line-height:38px;text-align:center}
+  .ed .clip{position:absolute;top:4px;height:30px;border-radius:7px;font-size:10.5px;line-height:30px;padding:0 8px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;cursor:grab;
+    background:color-mix(in srgb,var(--cc) 35%,transparent);border:1px solid color-mix(in srgb,var(--cc) 75%,transparent)}
+  .ed .clip.sel{outline:2px solid #fff;z-index:2}
+  .ed .clip .h{position:absolute;top:0;bottom:0;width:7px;cursor:ew-resize;background:rgba(255,255,255,.28)}
+  .ed .clip .h.l{left:0} .ed .clip .h.r{right:0}
+  .ed .play{position:absolute;top:0;bottom:0;width:2px;background:var(--red);z-index:4;pointer-events:none}
+  .ed .msg{font-size:11px;min-height:15px} .ed .msg.bad{color:var(--red)} .ed .msg.ok{color:var(--green)}
+  .ed .mini{background:rgba(255,255,255,.05);border:1px solid var(--edge);color:var(--ink);border-radius:8px;font:inherit;font-size:11.5px;padding:4px 9px;cursor:pointer}
+  .ed .mini:disabled{opacity:.4;cursor:default}
+</style>
+
+<div class="app">
+  <div class="head">
+    <div class="orb"></div>
+    <div><h1 id="marca">RAPHAEL · ORQUESTADOR</h1><p>UN PEDIDO → LA BRIGADA QUE CORRESPONDE</p></div>
+    <div class="modelo" id="orqmodelo" title="Modelo efectivo del orquestador (ruteo + diseñador de brigadas)">MODELO DEL ORQUESTADOR<br><b>cargando…</b></div>
+    <button class="chip" id="vozchip" title="Leer las respuestas en voz alta (voz local es-AR, en esta PC)">🔊 Leer respuestas: <b>OFF</b></button>
+    <button class="chip" id="procchip" title="Mostrar u ocultar los pasos intermedios (ruteo, plan, ayudantes, reporte). Oculto: solo ves la respuesta.">👁 Proceso: <b>visible</b></button>
+    <button class="chip" id="vivochip" title="Efímeros corriendo ahora en todas las brigadas: abrir el tablero">⚡ <b>0</b> efímeros en vivo</button>
+  </div>
+  <div class="tabs" id="tabs"></div>
+  <div class="panes" id="panes"></div>
+</div>
+
+<script>
+const TOKEN = "__TOKEN__";
+const AUTH = {Authorization: "Bearer " + TOKEN};
+const $ = (r, s) => r.querySelector(s);
+const esc = s => (s==null?"":String(s)).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+// Pestañas: el orquestador (auto-ruteo) + una por brigada. `brigade` = id en el registro de jefes.
+// Las "soon" son las de la Suite que todavía no tienen jefe (mismo molde, próximamente).
+const TABS = [
+  {id:"orq",           name:"Orquestador",    sub:"AUTO-RUTEO",     icon:"🧭", color:"var(--cyan)"},
+  {id:"cerebro",       name:"Cerebro",        sub:"NÚCLEO · MEMORIA", icon:"🧠", color:"var(--pink)", brigade:"cerebro"},
+  {id:"investigacion", name:"Investigación",  sub:"SCOUT · FORENSE",icon:"🔬", color:"var(--teal)", brigade:"investigacion"},
+  {id:"video",         name:"Video",          sub:"EDICIÓN · REDES", icon:"🎬", color:"var(--violet)", brigade:"video"},
+  {id:"brigadas",      name:"Brigadas",       sub:"CREAR · ACTIVAR", icon:"🧩", color:"var(--amber)", mgmt:true},
+  {id:"vivo",          name:"Efímeros",       sub:"EN VIVO",         icon:"⚡", color:"var(--orange)", live:true},
+  {sep:true},
+  {id:"seg",     name:"Seguridad",       sub:"PRÓXIMAMENTE", icon:"🛡️", color:"var(--blue)",   soon:true},
+  {id:"anti",    name:"Antimalware",     sub:"PRÓXIMAMENTE", icon:"🦠", color:"var(--green)",  soon:true},
+  {id:"repair",  name:"Autorreparación", sub:"PRÓXIMAMENTE", icon:"🔧", color:"var(--violet)", soon:true},
+  {id:"ops",     name:"Operaciones",     sub:"PRÓXIMAMENTE", icon:"⚙️", color:"var(--teal)",   soon:true},
+  {id:"geo",     name:"Geolocalización", sub:"PRÓXIMAMENTE", icon:"🌐", color:"var(--blue)",   soon:true},
+  {id:"trade",   name:"Trading",         sub:"PRÓXIMAMENTE", icon:"📈", color:"var(--amber)",  soon:true},
+  {id:"ingest",  name:"Ingesta",         sub:"PRÓXIMAMENTE", icon:"📥", color:"var(--orange)", soon:true},
+  {id:"content", name:"Contenido",       sub:"PRÓXIMAMENTE", icon:"🎬", color:"var(--violet)", soon:true},
+];
+const LABEL = {
+  research_topic:"buscando en la web", obsidian_save_note:"guardando nota", obsidian_search_notes:"buscando en tus notas",
+  obsidian_buscar_asociativo:"recorriendo tus notas por asociación", obsidian_list_notes:"listando notas",
+  fs_read_file:"leyendo archivo", fs_write_file:"escribiendo archivo", fs_list_dir:"mirando carpeta", fs_create_dir:"creando carpeta",
+  investigation_create_case:"creando caso", investigation_ingest_csv:"ingestando CSV",
+  investigation_ingest_whatsapp_export:"ingestando WhatsApp", investigation_ingest_telegram_export:"ingestando Telegram",
+  investigation_ingest_image:"leyendo EXIF", investigation_ingest_document:"ingestando documento",
+  investigation_propose_entities:"proponiendo entidades", investigation_propose_fusion:"proponiendo fusión",
+  investigation_export_report:"exportando informe",
+};
+const VIA = {override:"elegida a mano", reglas:"reglas", llm:"modelo del orquestador", default:"por defecto", comando:"comando", charla:"respuesta directa", conjunto:"trabajo conjunto", sistema:"sobre Raphael"};
+const BICON = {cerebro:"🧠", investigacion:"🔬", video:"🎬", orq:"🧭"};
+const ORQ_HELP = `En «Automático» el orquestador decide la brigada: lo que suena a <b>notas / memoria</b> va a <b>Cerebro</b>;
+  <b>investigar en la web</b> o <b>evidencia de un caso</b> va a <b>Investigación</b> (que delega en Scout o Forense).
+  Al principio de cada respuesta ves a cuál fue y por qué. Para forzar una brigada escribí <code>/cerebro …</code> o <code>/investigacion …</code>,
+  o abrí su pestaña y hablale directo.<br><br>
+  <b>Brigadas nuevas:</b> <code>/crear-brigada &lt;descripción&gt;</code> arma un <b>borrador</b> (no funciona todavía); lo revisás y recién lo activás con
+  <code>/activar-brigada &lt;id&gt; &lt;hash&gt;</code> o desde la pestaña «Brigadas». Una brigada creada se usa con <code>/&lt;id&gt; …</code> o desde su pestaña.`;
+
+const panes = {};     // id -> {el, busy}
+let meta = {};        // id de brigada -> {name, model, tools}
+
+// ---------- pestañas ----------
+const tabsEl = document.getElementById("tabs");
+function renderTabs(activeId){
+  tabsEl.innerHTML = "";
+  TABS.forEach(t => {
+    if(t.sep){ const s = document.createElement("div"); s.className = "sep"; tabsEl.appendChild(s); return; }
+    const b = document.createElement("button");
+    b.className = "tab" + (t.soon ? " soon" : "") + (t.id === activeId ? " on" : ""); b.dataset.id = t.id; b.style.setProperty("--c", t.color);
+    // el nombre de una brigada CREADA viene de un borrador: siempre escapado
+    b.innerHTML = `<span class="ti">${t.icon}</span><span class="tt">${esc(t.name)}<span class="ts">${esc(t.sub)}</span></span>`;
+    b.onclick = () => select(t.id);
+    tabsEl.appendChild(b);
+  });
+}
+renderTabs(null);
+
+function select(id){
+  const t = TABS.find(x => x.id === id) || TABS[0];
+  document.querySelectorAll(".tab").forEach(b => b.classList.toggle("on", b.dataset.id === t.id));
+  document.querySelectorAll(".pane").forEach(p => p.classList.remove("on"));
+  if(!panes[t.id]) panes[t.id] = buildPane(t);
+  panes[t.id].el.classList.add("on");
+  try{ sessionStorage.setItem("tab", t.id); }catch{}
+  if(!t.soon){ refreshSide(t); const i = $(panes[t.id].el, "input"); if(i) i.focus(); }
+  else if(t.id === "seg") refreshCocineros(panes[t.id], "seguridad");  // la pestaña es "seg"; la brigada, "seguridad"
+}
+
+// ---------- editor de video: el MISMO proyecto que edita la IA (tools video_proyecto_*) ----------
+const ED_COLOR = {V1:"var(--violet)", A1:"var(--green)", T1:"var(--amber)", O1:"var(--pink)", A2:"var(--blue)"};
+const ED_PISTAS = ["T1","O1","V1","A1","A2"];
+const ED_IMG = /\.(png|jpe?g|webp|gif)$/i;
+const ED_AUDIO = /\.(mp3|wav|m4a|aac|ogg|flac)$/i;
+function buildEditor(host){
+  const S = {proj:null, id:null, sel:null, t:0, pps:60, previewRev:null, previewFile:null, drag:null, busy:false};
+  host.innerHTML = `
+    <h3>🎞 EDITOR · LA IA Y VOS EDITAN EL MISMO PROYECTO <button class="r" id="edToggle">ocultar</button></h3>
+    <div id="edBody" style="display:flex;flex-direction:column;gap:8px">
+      <div class="edtop">
+        <select id="edSel" title="Proyecto"></select>
+        <button class="mini" id="edNew">+ Nuevo</button>
+        <span id="edNewF" style="display:none"><input id="edName" placeholder="Nombre" size="16"> <select id="edFmt"><option value="vertical">vertical (reels)</option><option value="horizontal">horizontal</option><option value="cuadrado">cuadrado</option></select> <button class="mini" id="edMk">Crear</button></span>
+        <span class="sp"></span>
+        <button class="mini" id="edUndo" title="Deshacer">↶</button><button class="mini" id="edRedo" title="Rehacer">↷</button>
+        <button class="mini" id="edSplit" title="Dividir el clip elegido donde está la línea roja">✂ Dividir</button>
+        <button class="mini" id="edDel">🗑 Borrar</button>
+        <button class="mini" id="edTxt">+ Texto</button><span id="edTxtF" style="display:none"><input id="edTxtIn" placeholder="Texto del título" size="22"> <button class="mini" id="edTxtOk">Agregar</button></span>
+        <button class="mini" id="edPrev">▶ Vista previa</button>
+        <button class="mini" id="edFinal">⬇ Render final</button>
+      </div>
+      <div class="edst" id="edSt">Sin proyecto: creá uno o pedile a la IA que arme el video.</div>
+      <div class="edmain">
+        <div class="edbox"><div class="stage" id="edStage" style="aspect-ratio:9/16;max-width:130px"><video id="edVid" controls preload="metadata"></video><div class="ovl" id="edOv"></div></div><div class="edprev" id="edPrevInfo"></div></div>
+        <div class="edbox"><div class="insp" id="edInsp"><h4>PARÁMETROS</h4><span style="grid-column:1/-1;color:var(--muted)">Elegí un clip en la línea de tiempo.</span></div></div>
+        <div class="edbox"><div class="edst" style="margin-bottom:4px">ARCHIVOS · click para agregar</div><div class="bin" id="edBin"></div></div>
+      </div>
+      <div class="tl" id="edTl"><div class="tlin" id="edTlIn"></div></div>
+      <div class="msg" id="edMsg"></div>
+    </div>`;
+  const $e = s => host.querySelector(s);
+  const msg = (t, c) => { const m = $e("#edMsg"); m.textContent = t || ""; m.className = "msg " + (c||""); };
+  const num = x => Math.round(x*100)/100;
+  const clipsDe = (p, pista) => (p && p.pistas[pista]) || [];
+  const todos = p => ED_PISTAS.flatMap(k => clipsDe(p,k).map(c => ({...c, pista:k})));
+  const selClip = () => S.proj ? todos(S.proj).find(c => c.id === S.sel) : null;
+
+  async function jget(path){ const r = await api(path); const j = await r.json(); if(!r.ok) throw new Error(j.detail || ("HTTP " + r.status)); return j; }
+  async function jpost(path, body){
+    const r = await api(path, {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(body||{})});
+    const j = await r.json().catch(() => ({})); if(!r.ok) throw new Error(typeof j.detail === "string" ? j.detail : ("HTTP " + r.status)); return j;
+  }
+  async function ops(lista){
+    if(!S.id) return msg("Primero creá o elegí un proyecto.", "bad");
+    try{ const j = await jpost(`/api/video/proyectos/${S.id}/ops`, {operaciones:lista, rev_base:S.proj.rev}); setProj(j.proyecto); msg(j.resumen.join(" · "), "ok"); }
+    catch(e){ msg(e.message, "bad"); if(/cambió/.test(e.message)) await cargar(); else draw(); }
+  }
+  function setProj(p){ S.proj = p; S.id = p.id; if(S.sel && !todos(p).some(c => c.id === S.sel)) S.sel = null; draw(); }
+  async function cargar(){ if(S.id) try{ setProj(await jget(`/api/video/proyectos/${S.id}`)); }catch(e){ msg(e.message, "bad"); } }
+  async function lista(elegir){
+    try{
+      const j = await jget("/api/video/proyectos"), s = $e("#edSel");
+      s.innerHTML = j.proyectos.length ? j.proyectos.map(p => `<option value="${esc(p.id)}">${esc(p.nombre)} · ${p.duracion}s</option>`).join("") : '<option value="">(sin proyectos)</option>';
+      const id = elegir || S.id || (j.proyectos[0] && j.proyectos[0].id);
+      if(id){ s.value = id; S.id = id; await cargar(); }
+    }catch(e){ msg(e.message, "bad"); }
+  }
+  async function medios(){
+    try{
+      const j = await jget("/api/video/medios"), b = $e("#edBin"), items = [];
+      for(const [carp, arr] of [["entrada", j.entrada||[]], ["salida", j.salida||[]], ["efectos", j.efectos||[]]]) for(const f of arr){
+        const n = typeof f === "string" ? f : f.archivo, au = ED_AUDIO.test(n), im = ED_IMG.test(n);
+        const ico = carp === "efectos" ? "🔊" : au ? "🎵" : im ? "🖼" : "🎬";
+        const ex = au && carp !== "efectos" ? '<span class="fx" data-m="fx" title="Como efecto de sonido (pista A2)">🔊</span>' : (!au && !im ? '<span class="fx" data-m="capa" title="Como capa superpuesta (pista O1)">▣</span>' : "");
+        items.push(`<div class="it" data-f="${esc(n)}" data-c="${carp}" title="${esc(carp)}/${esc(n)}">${ex}${ico} ${esc(n)}</div>`);
+      }
+      b.innerHTML = items.join("") || `<div class="edst">Poné videos en la carpeta <b>entrada</b> de Videos-Raphael.</div>`;
+      b.querySelectorAll(".it").forEach(it => it.onclick = ev => {
+        const f = it.dataset.f, carp = it.dataset.c, m = ev.target.dataset && ev.target.dataset.m, pos = num(S.t);
+        if(/\.srt$/i.test(f)) return msg("Ese archivo no va en la línea de tiempo.", "bad");
+        if(ED_IMG.test(f) || m === "capa") return ops([{op:"agregar_overlay", archivo:f, pos, dur:3}]);          // imagen/GIF → capa encima, en el cursor
+        if(ED_AUDIO.test(f)) return ops([{op:"agregar_clip", pista: carp === "efectos" || m === "fx" ? "A2" : "A1", archivo:f, pos}]);
+        ops([{op:"agregar_clip", pista:"V1", archivo:f}]);
+      });
+    }catch(e){ $e("#edBin").innerHTML = `<div class="edst err">${esc(e.message)}</div>`; }
+  }
+
+  function status(){
+    const p = S.proj, el = $e("#edSt");
+    if(!p){ el.innerHTML = "Sin proyecto: creá uno o pedile a la IA que arme el video."; return; }
+    const u = p.ultimo_cambio || {};
+    el.innerHTML = `<b>${esc(p.nombre)}</b> · ${p.formato} ${p.ancho}×${p.alto} · ${num(p.duracion)} s · rev ${p.rev} · último cambio: <span class="${u.por === "ia" ? "ia" : "us"}">${esc(u.por || "—")}</span> ${esc(u.resumen || "")}`;
+    $e("#edUndo").disabled = !p.puede_deshacer; $e("#edRedo").disabled = !p.puede_rehacer;
+  }
+  function draw(){
+    status(); inspector(); tiempo();
+    const p = S.proj, tl = $e("#edTlIn"); if(!p){ tl.innerHTML = ""; return; }
+    const dur = Math.max(p.duracion, 10) + 4, ancho = 40 + dur * S.pps; tl.style.width = ancho + "px";
+    let h = '<div class="ruler" id="edRuler">';
+    const paso = S.pps >= 40 ? 1 : 5; for(let s = 0; s <= dur; s += paso) h += `<i style="left:${40 + s*S.pps}px">${s}s</i>`;
+    h += "</div>";
+    for(const k of ED_PISTAS){
+      h += `<div class="trk" data-k="${k}"><span class="lb">${k}</span>`;
+      for(const c of clipsDe(p,k)){
+        const etq = k === "T1" ? "T: " + c.texto : (k === "O1" ? ({imagen:"🖼",gif:"✨",video:"🎬"}[c.tipo]||"") + " " : "") + c.archivo, w = Math.max(14, c.dur * S.pps);
+        h += `<div class="clip ${c.id === S.sel ? "sel" : ""}" data-id="${esc(c.id)}" data-k="${k}" style="--cc:${ED_COLOR[k]};left:${40 + c.pos*S.pps}px;width:${w}px" title="${esc(c.id)} · ${esc(etq)} · ${num(c.dur)} s">`
+           + (c.tdur > 0 ? `<span class="trn" style="width:${c.tdur*S.pps}px" title="transición: ${esc(c.transicion)}"></span>` : "") + '<span class="h l"></span>' + esc(c.id + " · " + etq) + '<span class="h r"></span></div>';
+      }
+      h += "</div>";
+    }
+    h += `<div class="play" id="edPlay" style="left:${40 + S.t*S.pps}px"></div>`;
+    tl.innerHTML = h;
+    tl.querySelectorAll(".clip").forEach(el => { el.onpointerdown = ev => arrastre(ev, el); });
+    $e("#edRuler").onpointerdown = ev => { const r = $e("#edTlIn").getBoundingClientRect(); mover(Math.max(0, (ev.clientX - r.left - 40) / S.pps)); };
+  }
+  function mover(t){
+    S.t = Math.max(0, t); const pl = $e("#edPlay"); if(pl) pl.style.left = (40 + S.t*S.pps) + "px";
+    const v = $e("#edVid"); if(S.previewFile && S.proj && S.previewRev === S.proj.rev && Math.abs(v.currentTime - S.t) > .25) v.currentTime = S.t;
+    previa();
+  }
+  // Capas sobre el reproductor: se ven y se arrastran (mover = x,y; esquina = escala). Con la vista previa renderizada ya vienen "horneadas", así que se ocultan.
+  function capas(vigente){
+    const p = S.proj, st = $e("#edStage"), ov = $e("#edOv"); if(!p) return;
+    const ar = p.ancho / p.alto, h = 230, w = Math.min(host.clientWidth * .3, h * ar);
+    st.style.aspectRatio = p.ancho + "/" + p.alto; st.style.maxWidth = Math.round(Math.max(110, w)) + "px";
+    if(vigente || S.drag === "ov"){ if(vigente) ov.innerHTML = ""; return; }
+    const act = clipsDe(p, "O1").filter(c => c.id === S.sel || (S.t >= c.pos && S.t < c.pos + c.dur));
+    ov.innerHTML = act.map(c => {
+      const url = `/api/video/media/${encodeURIComponent(c.archivo)}?tk=${encodeURIComponent(TOKEN)}`;
+      return `<div class="ovi ${c.id === S.sel ? "sel" : ""}" data-id="${esc(c.id)}" title="${esc(c.id)} · arrastrá para mover, la esquina cambia el tamaño" style="left:${c.x*100}%;top:${c.y*100}%;width:${c.escala*100}%;opacity:${c.opacidad};transform:translate(-50%,-50%) rotate(${c.rotacion}deg)">`
+        + (c.tipo === "video" ? `<video src="${url}" muted preload="metadata"></video>` : `<img src="${url}" alt="">`) + '<span class="rs"></span></div>';
+    }).join("");
+    ov.querySelectorAll(".ovi").forEach(el => el.onpointerdown = ev => arrastreCapa(ev, el));
+  }
+  function arrastreCapa(ev, el){
+    ev.preventDefault(); ev.stopPropagation(); const id = el.dataset.id, c = clipsDe(S.proj, "O1").find(x => x.id === id); if(!c) return;
+    const st = $e("#edStage").getBoundingClientRect(), esc_ = ev.target.classList.contains("rs");
+    if(S.sel !== id){ S.sel = id; host.querySelectorAll(".clip").forEach(x => x.classList.toggle("sel", x.dataset.id === id)); inspector(); }
+    host.querySelectorAll(".ovi").forEach(x => x.classList.toggle("sel", x === el));
+    el.setPointerCapture(ev.pointerId); S.drag = "ov"; let nx = c.x, ny = c.y, ne = c.escala, movido = false;
+    el.onpointermove = e => { movido = true;
+      if(esc_){ ne = Math.min(1, Math.max(.05, 2 * Math.abs(e.clientX - (st.left + c.x * st.width)) / st.width)); el.style.width = ne * 100 + "%"; }
+      else { nx = Math.min(1, Math.max(0, (e.clientX - st.left) / st.width)); ny = Math.min(1, Math.max(0, (e.clientY - st.top) / st.height)); el.style.left = nx * 100 + "%"; el.style.top = ny * 100 + "%"; } };
+    const fin = () => { el.onpointermove = el.onpointerup = el.onpointercancel = null; S.drag = false; };
+    el.onpointercancel = () => { fin(); draw(); };
+    el.onpointerup = () => { fin(); if(!movido) return;
+      ops(esc_ ? [{op:"ajustar", clip:id, escala:num(ne)}] : [{op:"ajustar", clip:id, x:num(nx), y:num(ny)}]); };
+  }
+  function previa(){
+    const p = S.proj, v = $e("#edVid"), info = $e("#edPrevInfo"); if(!p) return;
+    const vigente = S.previewFile && S.previewRev === p.rev;
+    capas(vigente);
+    if(vigente){ info.textContent = "Vista previa del proyecto actual."; return; }
+    const c = selClip() || clipsDe(p,"V1")[0];
+    if(c && c.archivo){
+      const url = `/api/video/media/${encodeURIComponent(c.archivo)}?tk=${encodeURIComponent(TOKEN)}`;
+      if(v.dataset.src !== url){ v.dataset.src = url; v.src = url; v.onloadedmetadata = () => { v.currentTime = c.inicio || 0; }; }
+      info.textContent = p.rev === S.previewRev ? "" : "Mirando el archivo original del clip; las capas (imágenes, GIFs) se ven encima y se arrastran. Para ver el proyecto armado (cortes, transiciones, efectos, sonido) tocá ▶ Vista previa.";
+    } else info.textContent = "Agregá un clip desde ARCHIVOS.";
+  }
+  function tiempo(){ const pl = $e("#edPlay"); if(pl) pl.style.left = (40 + S.t*S.pps) + "px"; previa(); }
+
+  // Arrastrar: el cuerpo mueve (V1 = cambia de orden, A1/T1 = cambia de posición); los bordes recortan. Se aplica UNA operación al soltar.
+  function arrastre(ev, el){
+    ev.preventDefault(); const id = el.dataset.id, k = el.dataset.k, c = todos(S.proj).find(x => x.id === id); if(!c) return;
+    S.sel = id; host.querySelectorAll(".clip").forEach(x => x.classList.toggle("sel", x === el)); inspector(); previa();   // sin redibujar: el clip que se arrastra tiene que seguir en el DOM
+    const borde = ev.target.classList.contains("h") ? (ev.target.classList.contains("l") ? "l" : "r") : null;
+    const x0 = ev.clientX, left0 = parseFloat(el.style.left), w0 = parseFloat(el.style.width); let dx = 0;
+    el.setPointerCapture(ev.pointerId); S.drag = true;
+    el.onpointermove = e => { dx = e.clientX - x0;
+      if(borde === "r") el.style.width = Math.max(14, w0 + dx) + "px";
+      else if(borde === "l"){ el.style.left = (left0 + dx) + "px"; el.style.width = Math.max(14, w0 - dx) + "px"; }
+      else if(k !== "V1") el.style.left = Math.max(40, left0 + dx) + "px";
+      else el.style.transform = `translateX(${dx}px)`; };
+    el.onpointercancel = () => { el.onpointermove = el.onpointerup = el.onpointercancel = null; S.drag = false; draw(); };
+    el.onpointerup = async e => {
+      el.onpointermove = el.onpointerup = el.onpointercancel = null; S.drag = false; const ds = dx / S.pps;
+      if(Math.abs(dx) < 3){ mover(S.t); draw(); return; }                       // click: solo elegir
+      const vel = c.velocidad || 1;
+      if(borde === "r"){
+        if(k === "T1" || (k === "O1" && c.tipo !== "video")) return ops([{op:"ajustar", clip:id, dur:num(Math.max(.2, c.dur + ds))}]);
+        return ops([{op:"recortar", clip:id, fin:num(c.fin + ds * vel)}]);
+      }
+      if(borde === "l"){
+        if(k === "T1" || (k === "O1" && c.tipo !== "video")) return ops([{op:"ajustar", clip:id, pos:num(Math.max(0, c.pos + ds)), dur:num(Math.max(.2, c.dur - ds))}]);
+        const lista = [{op:"recortar", clip:id, inicio:num(Math.max(0, c.inicio + ds * vel))}];
+        if(k !== "V1") lista.push({op:"mover", clip:id, pos:num(Math.max(0, c.pos + ds))});
+        return ops(lista);
+      }
+      if(k !== "V1") return ops([{op:"mover", clip:id, pos:num(Math.max(0, c.pos + ds))}]);
+      const v1 = clipsDe(S.proj, "V1"), centro = c.pos + ds + c.dur/2; let idx = 0;   // nuevo lugar: según dónde cae el centro
+      v1.filter(o => o.id !== id).forEach(o => { if(o.pos + o.dur/2 < centro) idx++; });
+      if(idx === v1.findIndex(o => o.id === id)) return draw();
+      return ops([{op:"mover", clip:id, indice:idx}]);
+    };
+  }
+
+  function inspector(){
+    const c = selClip(), el = $e("#edInsp"); if(!c){ el.innerHTML = '<h4>PARÁMETROS</h4><span style="grid-column:1/-1;color:var(--muted)">Elegí un clip en la línea de tiempo.</span>'; return; }
+    const campo = (lbl, k, v, extra) => `<label>${lbl}</label><input data-k="${k}" value="${esc(v)}" ${extra||""}>`;
+    const sel = (lbl, k, v, opts) => `<label>${lbl}</label><select data-k="${k}">${opts.map(o => `<option ${o===v?"selected":""}>${o}</option>`).join("")}</select>`;
+    let h = `<h4>${esc(c.id)} · ${c.pista}${c.archivo ? " · " + esc(c.archivo) : ""}</h4>`;
+    if(c.pista === "T1") h += campo("texto","texto",c.texto) + campo("empieza (s)","pos",c.pos) + campo("dura (s)","dur",c.dur) + campo("tamaño","tamano",c.tamano)
+      + sel("lugar","posicion",c.posicion,["arriba","centro","abajo"]) + sel("color","color",c.color,["blanco","negro","amarillo","rojo","verde","azul","cian"]);
+    else if(c.pista === "O1"){
+      h += campo("centro x 0–1","x",c.x) + campo("centro y 0–1","y",c.y) + campo("tamaño 0.05–1","escala",c.escala) + campo("opacidad 0–1","opacidad",c.opacidad)
+        + campo("giro (°)","rotacion",c.rotacion) + campo("empieza en (s)","pos",c.pos);
+      h += c.tipo === "video" ? campo("desde (s)","inicio",c.inicio) + campo("hasta (s)","fin",c.fin) : campo("dura (s)","dur",c.dur);
+      h += campo("fundido entrada (s)","fundido_in",c.fundido_in) + campo("fundido salida (s)","fundido_out",c.fundido_out);
+    } else {
+      h += campo("desde (s del original)","inicio",c.inicio) + campo("hasta (s)","fin",c.fin);
+      if(c.pista === "A1" || c.pista === "A2") h += campo("empieza en (s)","pos",c.pos);
+      h += campo("volumen 0–4","volumen",c.volumen);
+      if(c.pista === "V1") h += campo("velocidad","velocidad",c.velocidad) + campo("brillo","brillo",c.brillo) + campo("contraste","contraste",c.contraste)
+        + campo("saturación","saturacion",c.saturacion) + campo("zoom","zoom",c.zoom) + campo("desenfoque 0–20","desenfoque",c.desenfoque) + campo("nitidez 0–2","nitidez",c.nitidez)
+        + campo("viñeta 0–1","vineta",c.vineta) + sel("espejo","espejo",c.espejo ? "si" : "no",["no","si"]) + sel("girar","rotacion",String(c.rotacion),["0","90","180","270"])
+        + sel("filtro","filtro",c.filtro,["ninguno","bn","sepia","calido","frio","vintage","contraste_fuerte"])
+        + sel("transición (entra con)","transicion",c.transicion,["ninguna","fundido","fundido_negro","fundido_blanco","disolver","deslizar_izq","deslizar_der","deslizar_arriba","deslizar_abajo","limpiar","circulo","zoom","pixelar","radial"])
+        + campo("transición dura (s)","transicion_dur",c.transicion_dur);
+      h += campo("fundido entrada (s)","fundido_in",c.fundido_in) + campo("fundido salida (s)","fundido_out",c.fundido_out);
+    }
+    el.innerHTML = h;
+    el.querySelectorAll("[data-k]").forEach(i => i.onchange = () => {
+      const k = i.dataset.k, v = i.tagName === "SELECT" || ["texto","posicion","color"].includes(k) ? i.value : i.value.replace(",", ".");
+      if(["inicio","fin"].includes(k) && c.pista !== "O1" || (["inicio","fin"].includes(k) && c.tipo === "video")) ops([{op:"recortar", clip:c.id, [k]:v}]); else ops([{op:"ajustar", clip:c.id, [k]:v}]);
+    });
+  }
+
+  // ---- botones ----
+  $e("#edToggle").onclick = () => { const b = $e("#edBody"), ocultar = b.style.display !== "none"; b.style.display = ocultar ? "none" : "flex"; $e("#edToggle").textContent = ocultar ? "mostrar" : "ocultar"; };
+  $e("#edSel").onchange = async e => { S.id = e.target.value; S.sel = null; S.previewFile = null; await cargar(); };
+  $e("#edNew").onclick = () => { const f = $e("#edNewF"); f.style.display = f.style.display === "none" ? "inline" : "none"; $e("#edName").focus(); };
+  $e("#edMk").onclick = async () => { const n = $e("#edName").value.trim(); if(!n) return msg("Poné un nombre.", "bad");
+    try{ const j = await jpost("/api/video/proyectos", {nombre:n, formato:$e("#edFmt").value}); $e("#edNewF").style.display = "none"; $e("#edName").value = ""; S.previewFile = null; await lista(j.proyecto.id); msg("Proyecto creado.", "ok"); }catch(e){ msg(e.message, "bad"); } };
+  $e("#edUndo").onclick = async () => { try{ setProj((await jpost(`/api/video/proyectos/${S.id}/deshacer`)).proyecto); }catch(e){ msg(e.message, "bad"); } };
+  $e("#edRedo").onclick = async () => { try{ setProj((await jpost(`/api/video/proyectos/${S.id}/rehacer`)).proyecto); }catch(e){ msg(e.message, "bad"); } };
+  $e("#edDel").onclick = () => { const c = selClip(); if(!c) return msg("Elegí un clip.", "bad"); ops([{op:"borrar", clip:c.id}]); };
+  $e("#edSplit").onclick = () => { const c = selClip() || (S.proj && clipsDe(S.proj,"V1").find(x => S.t > x.pos && S.t < x.pos + x.dur)); if(!c) return msg("Poné la línea roja adentro de un clip (o elegilo).", "bad"); ops([{op:"dividir", clip:c.id, en:num(S.t)}]); };
+  $e("#edTxt").onclick = () => { const f = $e("#edTxtF"); f.style.display = f.style.display === "none" ? "inline" : "none"; $e("#edTxtIn").focus(); };
+  $e("#edTxtOk").onclick = () => { const t = $e("#edTxtIn").value.trim(); if(!t) return msg("Escribí el texto.", "bad"); $e("#edTxtIn").value = ""; $e("#edTxtF").style.display = "none"; ops([{op:"agregar_texto", texto:t, pos:num(S.t), dur:3}]); };
+  async function render(calidad){
+    if(!S.id) return msg("Primero creá o elegí un proyecto.", "bad"); if(S.busy) return;
+    S.busy = true; $e("#edPrev").disabled = $e("#edFinal").disabled = true; msg(calidad === "preview" ? "Generando la vista previa…" : "Renderizando el video final (puede tardar)…");
+    const rev = S.proj.rev;
+    try{
+      const j = await jpost(`/api/video/proyectos/${S.id}/render`, {calidad});
+      if(calidad === "preview"){ S.previewFile = j.archivo; S.previewRev = rev; const v = $e("#edVid"), url = `/api/video/media/${encodeURIComponent(j.archivo)}?tk=${encodeURIComponent(TOKEN)}`;
+        v.dataset.src = url; v.src = url; v.onloadedmetadata = () => { v.currentTime = S.t; }; v.play().catch(() => {}); msg("Vista previa lista.", "ok"); previa(); }
+      else { msg(`Listo: ${j.archivo} (en la carpeta salida/ de Videos-Raphael)`, "ok"); medios(); }
+    }catch(e){ msg(e.message, "bad"); }
+    S.busy = false; $e("#edPrev").disabled = $e("#edFinal").disabled = false;
+  }
+  $e("#edPrev").onclick = () => render("preview"); $e("#edFinal").onclick = () => render("final");
+  $e("#edVid").ontimeupdate = () => { const p = S.proj; if(p && S.previewFile && S.previewRev === p.rev && !S.drag){ S.t = $e("#edVid").currentTime; const pl = $e("#edPlay"); if(pl) pl.style.left = (40 + S.t*S.pps) + "px"; } };
+
+  // ---- la IA cambia el proyecto: se ve al toque (consulta cada 2 s mientras la pestaña está abierta) ----
+  setInterval(async () => {
+    if(document.hidden || S.drag || S.busy || !S.id || !host.closest(".pane.on")) return;
+    try{ const p = await jget(`/api/video/proyectos/${S.id}`);
+      if(S.proj && p.rev !== S.proj.rev){ const ia = p.ultimo_cambio && p.ultimo_cambio.por === "ia"; setProj(p); if(ia) msg("La IA cambió el proyecto: " + (p.ultimo_cambio.resumen || ""), "ok"); }
+    }catch(e){}
+  }, 2000);
+  lista(); medios();
+  return {S, lista, medios, ops, abierto: () => S.proj ? {id:S.id, rev:S.proj.rev, clip:S.sel, tiempo:num(S.t)} : null};
+}
+
+// ---------- pane ----------
+function buildPane(t){
+  const el = document.createElement("div"); el.className = "pane"; el.style.setProperty("--c", t.color);
+  document.getElementById("panes").appendChild(el);
+  if(t.mgmt) return buildBrigadasPane(t, el);
+  if(t.live) return buildVivoPane(t, el);
+  if(t.soon){
+    el.innerHTML = `<div class="soonview"><div><div class="big">${t.icon}</div><h2>${esc(t.name)}</h2>
+      <p>Esta brigada se arma con el mismo molde que Cerebro e Investigación.<br>Próximamente.</p>
+      ${t.id === "seg" ? '<div class="card" style="--c:var(--pink);text-align:left;margin-top:14px;min-width:340px"><h3>COCINEROS · PERMANENTES</h3><div class="list" id="cocineros"><div class="empty">—</div></div></div>' : ""}</div></div>`;
+    return {el, busy:false};
+  }
+  const orq = !t.brigade;
+  let sideHtml = t.id === "cerebro" ? `
+      <div class="side">
+        <div class="card" id="dirCard" style="display:none;--c:var(--amber)">
+          <h3>DIRECTRICES DE CEREBRO <span class="r" id="dirStatus"></span></h3>
+          <textarea class="dir" id="dirText"></textarea>
+          <div style="display:flex;justify-content:flex-end"><button class="ghost" id="dirSave">Guardar directrices</button></div>
+        </div>
+        <div class="card grow" style="--c:var(--green)">
+          <h3>LO QUE HIZO SOLO <button class="r" data-act="refresh" title="Actualizar">↻</button></h3>
+          <div class="list" id="activity"><div class="empty">—</div></div>
+        </div>
+      </div>` : t.id === "investigacion" ? `
+      <div class="side">
+        <div class="card" style="--c:var(--blue)"><h3>AYUDANTES</h3><div class="list" id="helpers"><div class="empty">—</div></div></div>
+        <div class="card grow" style="--c:var(--violet)">
+          <h3>NOTAS CAPTURADAS <button class="r" data-act="refresh" title="Actualizar">↻</button></h3>
+          <div class="list" id="notes"><div class="empty">—</div></div>
+        </div>
+      </div>` : "";
+  // Panel COCINEROS (agentes permanentes de la brigada) en la vista de CADA brigada, sale del spec (/api/cocineros).
+  const cookCard = '<div class="card" style="--c:var(--pink)"><h3>COCINEROS · PERMANENTES <button class="r" data-act="refresh" title="Actualizar">↻</button></h3>'
+    + '<div class="list" id="cocineros" style="flex:none;max-height:240px"><div class="empty">—</div></div></div>';
+  if(!orq){
+    if(sideHtml) sideHtml = sideHtml.replace('<div class="side">', '<div class="side">' + cookCard);
+    else sideHtml = '<div class="side">' + cookCard + '</div>';
+  }
+  const placeholder = orq ? "Escribí un pedido y el orquestador elige la brigada" :
+    t.created ? "Hablale directo a esta brigada" :
+    t.id === "cerebro" ? "¿Qué sé de...? (algo de tus notas)" : "Investigar en la web (Scout) o trabajar evidencia de un caso (Forense)";
+  el.innerHTML = `
+    <div class="phead"><div class="pic">${t.icon}</div>
+      <div><h2>${esc(t.name)}</h2><p class="sub">${esc(t.sub)}</p></div>
+      ${t.id === "cerebro" ? '<button class="ghost" id="dirBtn" style="margin-left:auto">✎ Directrices</button>' : ""}
+      <div class="meta" id="meta" style="${t.id === "cerebro" ? "" : "margin-left:auto"}">${orq ? "" : "cargando…"}</div></div>
+    <div class="ask"><input autocomplete="off" placeholder="${esc(placeholder)}"><button>Enviar</button><button class="mic" type="button" title="Hablar: graba tu voz y la transcribe en esta PC (local)">🎙</button></div>
+    <div class="cols ${sideHtml ? "two" : ""}">
+      <div class="card grow">
+        <h3>${orq ? "FEED" : "RESPUESTA"} <span class="live"><i></i>TRABAJANDO</span><button class="r" data-act="clear">limpiar</button></h3>
+        <div class="feed"><div class="empty">${orq ? ORQ_HELP : "Hablale directo a esta brigada: acá ves cada paso y la respuesta."}</div></div>
+      </div>${sideHtml}
+    </div>`;
+  const p = {el, busy:false, tab:t};
+  if(t.id === "video"){  // editor de video: se inserta entre la barra de pedido y las columnas
+    el.classList.add("scroll");
+    const card = document.createElement("div"); card.className = "card ed"; el.insertBefore(card, $(el, ".cols"));
+    p.editor = buildEditor(card);
+  }
+  const send = () => ask(p);
+  $(el, ".ask button").onclick = send;
+  const mic = $(el, ".ask .mic"); if(mic) mic.onclick = () => toggleMic(p);
+  $(el, ".ask input").addEventListener("keydown", e => { if(e.key === "Enter") send(); });
+  const clr = $(el, '[data-act="clear"]'); if(clr) clr.onclick = () => { $(el, ".feed").innerHTML = ""; };
+  const rf = $(el, '[data-act="refresh"]'); if(rf) rf.onclick = () => refreshSide(t);
+  if(t.id === "cerebro"){ $(el, "#dirBtn").onclick = () => toggleDir(p); $(el, "#dirSave").onclick = () => saveDir(p); }
+  renderMeta(p);
+  return p;
+}
+
+// El nombre del asistente sale de la config (IDENTIDAD_ASISTENTE): la UI no lo lleva escrito.
+function pintarMarca(nombre){
+  if(!nombre) return;
+  const h = document.getElementById("marca"); if(h) h.textContent = String(nombre).toUpperCase() + " · ORQUESTADOR";
+  document.title = nombre + " — Orquestador";
+}
+function renderMeta(p){
+  const t = p.tab, el = $(p.el, "#meta"); if(!el || !t) return;
+  if(!t.brigade){  // pestaña del orquestador: su propio modelo
+    el.innerHTML = ORQ ? `modelo del orquestador<br><b>${esc(ORQ.label)}</b>` : ""; return;
+  }
+  const m = meta[t.brigade];
+  if(!m){ el.innerHTML = '<span class="warn">sin datos</span>'; return; }
+  if(m.error){ el.innerHTML = `<span class="warn">${esc(m.error)}</span>`; return; }
+  // Modelo EFECTIVO de cada rol de la brigada (cada uno tiene el suyo, intercambiable por config): jefe + ayudantes.
+  const r = m.roles;
+  const lineas = r ? [`jefe: <b>${esc(r.jefe.modelo)}</b>`, ...(r.ayudantes||[]).map(a => `${esc(a.modo)}: <b>${esc(a.modelo)}</b>`)]
+                   : [`<b>${esc(m.model_label || m.model || "")}</b>`];
+  el.innerHTML = `${lineas.join("<br>")}<br>${m.tools} skills · persistente`;
+}
+
+async function api(path, opts){
+  const r = await fetch(path, {...(opts||{}), headers:{...AUTH, ...((opts&&opts.headers)||{})}});
+  if(r.status === 401 && staleToken()) throw new Error("recargando");
+  return r;
+}
+// Si el orquestador se reinició con la ventana abierta, el token quedó viejo: se recarga UNA vez.
+function staleToken(){
+  if(sessionStorage.getItem("reloaded")) return false;
+  sessionStorage.setItem("reloaded", "1"); location.reload(); return true;
+}
+
+async function loadMeta(){
+  try{
+    const r = await api("/api/meta"); if(!r.ok) throw 0;
+    sessionStorage.removeItem("reloaded");
+    const j = await r.json();
+    meta = Object.fromEntries(j.brigades.map(b => [b.id, b]));
+    ORQ = j.orquestador || null;
+    VOZMODELO = j.voz || null;
+    pintarMarca(j.asistente);
+  }catch{ meta = {}; }
+  const om = document.getElementById("orqmodelo");
+  if(om) om.innerHTML = ORQ ? `MODELO DEL ORQUESTADOR<br><b>${esc(ORQ.label)}</b>${VOZMODELO && VOZMODELO.label !== ORQ.label ? `<br>voz: <b>${esc(VOZMODELO.label)}</b>` : ""}` : "MODELO DEL ORQUESTADOR<br><b>sin datos</b>";
+  Object.values(panes).forEach(p => p.tab && renderMeta(p));
+}
+
+// ---------- paneles laterales ----------
+async function refreshCocineros(p, bid){
+  const el = $(p.el, "#cocineros"); if(!el) return;
+  try{
+    const d = (await (await api("/api/cocineros")).json()).brigadas || {};
+    const b = d[bid];
+    if(!b){ el.innerHTML = '<div class="empty">Sin datos de esta brigada.</div>'; return; }
+    el.innerHTML = (b.cocineros||[]).map(c => `<div class="note cook">
+        <div class="nt">🧑‍🍳 ${esc(c.nombre)} <small style="font-weight:400;color:var(--muted)">· ${esc(c.rol)}${c.memoria ? " · memoria persistente" : ""}</small></div>
+        <div class="nm">${esc(c.detalle)}<br>modelo: <b style="color:var(--cyan)">${esc(c.modelo)}</b> · ${c.tools} tools</div></div>`).join("")
+      || '<div class="empty">Esta brigada no tiene agentes permanentes.</div>';
+    if((b.efimeros||[]).length)
+      el.innerHTML += `<div class="empty">Efímeros que puede crear (nacen por tarea y mueren): ${(b.efimeros||[]).map(e => `<b>${esc(e.modo)}</b> <small>${esc(e.modelo)}</small>`).join(" · ")}</div>`;
+  }catch{ el.innerHTML = '<div class="empty">No se pudo leer.</div>'; }
+}
+
+async function refreshSide(t){
+  const p = panes[t.id]; if(!p) return;
+  if(t.brigade) refreshCocineros(p, t.brigade);
+  try{
+    if(t.id === "cerebro"){
+      const d = await (await api("/api/cerebro/activity?limit=30")).json();
+      const ICON = {reindex:"🔄", consolidacion:"🌙", conclusion:"💡", info:"·"};
+      $(p.el, "#activity").innerHTML = (d.items||[]).map(it => `<div class="note"><div class="nt" style="font-weight:500">${ICON[it.action]||"·"} ${esc(it.detail)}</div></div>`).join("")
+        || '<div class="empty">Todavía no trabajó solo. (Se activa con CEREBRO_PROACTIVE_ENABLED en el Raphael completo.)</div>';
+    } else if(t.mgmt){
+      refreshBrigadas(p);
+    } else if(t.id === "investigacion"){
+      const s = await (await api("/api/investigacion/skills")).json();
+      $(p.el, "#helpers").innerHTML = (s.skills||[]).map(x => `<div class="note">
+        <div class="nt">${x.modo === "forense" ? "🔬 Forense" : "🔭 Scout"} <small style="font-weight:400;color:var(--muted)">· efímero · ${x.tools.length} tools</small></div>
+        <div class="nm">${esc(x.descripcion)}<br>corre en: ${esc(x.modelo)}</div></div>`).join("");
+      const n = await (await api("/api/investigacion/notes?limit=30")).json();
+      $(p.el, "#notes").innerHTML = (n.notes||[]).map(x => `<div class="note"><div class="nt">${esc(x.title)}</div>
+        <div class="nm">${esc((x.created||"").slice(0,10))}${(x.tags||[]).slice(0,3).map(g => `<span class="tag">${esc(g)}</span>`).join("")}</div></div>`).join("")
+        || '<div class="empty">Todavía no hay notas capturadas.</div>';
+    }
+  }catch{ /* un panel lateral caído no rompe el chat */ }
+}
+
+async function toggleDir(p){
+  const card = $(p.el, "#dirCard");
+  if(card.style.display === "none"){
+    card.style.display = "flex";
+    try{ $(p.el, "#dirText").value = (await (await api("/api/cerebro/directrices")).json()).text || ""; }catch{}
+  } else card.style.display = "none";
+}
+async function saveDir(p){
+  const st = $(p.el, "#dirStatus"); st.textContent = "guardando…";
+  try{
+    const r = await api("/api/cerebro/directrices", {method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({text: $(p.el, "#dirText").value})});
+    st.textContent = r.ok ? "✓ guardado (aplica en el próximo turno)" : "✗ error";
+  }catch{ st.textContent = "✗ error"; }
+}
+
+// ---------- chat ----------
+function add(feed, cls, mk, html){
+  const e = document.createElement("div");
+  e.className = "ev " + cls; e.innerHTML = `<div class="mk">${mk}</div><div class="tx">${html}</div>`;
+  feed.appendChild(e); feed.scrollTop = feed.scrollHeight;
+}
+// "Connection error." casi siempre es el modelo local (Ollama) apagado: se lo decimos.
+let ORQ = null;      // modelo efectivo del orquestador: {label, provider, ...}
+let VOZMODELO = null;      // modelo efectivo de la VOZ del orquestador (el que redacta el mensaje final)
+const hint = t => /connection error/i.test(t||"") ? ` — no se pudo hablar con el modelo (${ORQ ? ORQ.label : "ver .env"}): revisá la key del proveedor y la conexión.` : "";
+const HICON = {scout:"🔭", forense:"🔬", recuperador:"🧠", escaneo:"📡", reporte:"📄"};
+const VIAPLAN = {"reglas":"por reglas", "llm":"lo planificó el jefe", "reglas (respaldo)":"por reglas (sin plan del modelo)"};
+const VIAVOZ = {"llm":"", "llm+fuentes":" · fuentes completadas por código", "llm+directriz":" · abreviado por tus directrices", "plantilla":" · mensaje de respaldo por plantilla"};
+// El reporte interno del jefe (fuente de verdad del mensaje): inspeccionable, TODO escapado.
+function reporteHtml(r){
+  if(!r) return "";
+  const li = xs => xs.map(x => `<div class="nm">${x}</div>`).join("");
+  const partes = [`<div class="nm"><b>${esc(r.resumen||"")}</b></div>`,
+    li((r.hallazgos||[]).map(h => `• ${esc(h.texto)} <small>${esc(h.ayudante||"")}${(h.fuentes||[]).length ? " · " + esc(h.fuentes.join("; ")) : ""}</small>`)),
+    (r.fuentes||[]).length ? `<div class="nm">Fuentes: ${r.fuentes.map(f => esc(f.titulo || f.ref)).join("; ")}</div>` : "",
+    (r.artefactos||[]).length ? `<div class="nm">Creado: ${r.artefactos.map(a => esc(a.tipo + " " + a.ref)).join("; ")}</div>` : "",
+    (r.no_encontrado||[]).length ? `<div class="nm">No encontrado: ${r.no_encontrado.map(esc).join("; ")}</div>` : "",
+    li((r.propuestas_pendientes||[]).map(x => `<span class="warn">⚠ PROPUESTA (requiere tu aprobación)</span> <code>${esc(x.id)}</code> — ${esc(x.descripcion)}`)),
+    li((r.fallos||[]).map(f => `<span class="err">✗ ${esc(f.ayudante)} (${esc(f.motivo)})</span> ${esc(f.detalle)}`)),
+    li((r.avisos||[]).map(a => `<span class="warn">⚠ ${esc(a)}</span>`)),
+    `<details><summary class="nm" style="cursor:pointer">reporte completo (JSON)</summary><pre class="pp">${esc(JSON.stringify(r, null, 1))}</pre></details>`];
+  return partes.join("");
+}
+
+// Pasos intermedios: se pueden ocultar con el chip "Proceso". Nunca se ocultan la respuesta, un error ni un corte del watchdog.
+let verProceso = true; try{ verProceso = localStorage.getItem("proceso") !== "0"; }catch{}
+function pintarProceso(){
+  document.body.classList.toggle("sin-proceso", !verProceso);
+  const chip = document.getElementById("procchip");
+  if(chip){ chip.classList.toggle("hot", !verProceso); chip.innerHTML = `👁 Proceso: <b>${verProceso ? "visible" : "oculto"}</b>`; }
+  document.querySelectorAll(".feed").forEach(f => { f.scrollTop = f.scrollHeight; });
+}
+document.getElementById("procchip").onclick = () => {
+  verProceso = !verProceso; try{ localStorage.setItem("proceso", verProceso ? "1" : "0"); }catch{}
+  pintarProceso();
+};
+pintarProceso();
+const esPaso = ev => !(ev.type === "final" || ev.type === "error" || (ev.type === "watchdog" && ev.action === "cut"));
+
+function onEvent(p, ev){
+  const feed = $(p.el, ".feed");
+  const antes = feed.children.length;
+  if(ev.type === "route") p.conjunto = ev.via === "conjunto";
+  pintarEvento(p, ev);
+  if(esPaso(ev)) for(let i = antes; i < feed.children.length; i++) feed.children[i].classList.add("paso");
+  // trabajo conjunto: cada paso dice de qué brigada es (el id viene del registro; va escapado igual)
+  if(p.conjunto && ev.brigada && ev.type !== "route" && ev.type !== "final") for(let i = antes; i < feed.children.length; i++){
+    const tx = feed.children[i].querySelector(".tx");
+    if(tx) tx.insertAdjacentHTML("afterbegin", `<small>[${ev.conjunto ? "🧭 todas" : (BICON[ev.brigada] || "🧩") + " " + esc(ev.brigada)}]</small> `);
+  }
+}
+function pintarEvento(p, ev){
+  const feed = $(p.el, ".feed"), name = ev.name || "";
+  if(ev.type === "route"){
+    if(p.tab.brigade) return;  // en la pestaña de una brigada el destino ya está elegido
+    add(feed, "route", "🧭", `Ruteó a <b>${BICON[ev.brigade] || "🧩"} ${esc(ev.name)}</b> <small>· ${esc(VIA[ev.via]||ev.via)} — ${esc(ev.reason)}</small>`);
+  } else if(ev.type === "plan"){
+    const ds = (ev.delegaciones||[]).map(d => `<b>${esc(d.modo)}</b>`).join(ev.paralelo ? " + " : " → ");
+    add(feed, "route", "🗺", `El jefe planificó: ${ds} <small>· ${esc(VIAPLAN[ev.via]||ev.via)}${ev.paralelo ? " · en paralelo" : ""} — ${esc(ev.motivo||"")}</small>`);
+  } else if(ev.type === "delegacion"){
+    add(feed, "run", HICON[ev.modo] || "⚡", `Delegó en el ayudante <b>${esc(ev.modo)}</b> <small>${esc(ev.modelo||"")} · ${esc(ev.tarea||"")}</small>`);
+  } else if((ev.type === "tool" || ev.type === "tool_result") && name.startsWith("delegar:")){
+    /* compat: la delegación y su resultado ya se muestran con `delegacion` y `resultado_ayudante` */
+  } else if(ev.type === "resultado_ayudante"){
+    add(feed, ev.ok?"ok":"bad", ev.ok?"⇧":"✗", `<b>${esc(ev.ayudante)}</b> le reportó al jefe <small>· ${Number(ev.duracion_s)||0}s · ${Number(ev.fuentes)||0} fuente(s)${ev.ok ? "" : " · FALLÓ"}</small><br><small>${esc(ev.resumen||"")}</small>`);
+  } else if(ev.type === "sintesis"){
+    add(feed, "run", "🧑‍🍳", `El jefe sintetiza <small>${esc(ev.modelo||"")}</small>`);
+  } else if(ev.type === "reporte"){
+    add(feed, "route", "📋", `<b>Reporte interno</b> del jefe al orquestador <small>· confianza ${esc((ev.reporte||{}).confianza||"?")}${(ev.reporte||{}).sintesis_degradada ? " · SÍNTESIS DEGRADADA" : ""}</small>${reporteHtml(ev.reporte)}`);
+  } else if(ev.type === "latido"){
+    /* el motor avisa que sigue vivo esperando a un modelo: es para el watchdog, no se muestra */
+  } else if(ev.type === "reparto"){
+    const ts = Object.entries(ev.tareas||{}).map(([b, t]) => `<div class="nm">${BICON[b] || "🧩"} <b>${esc(b)}</b>: ${esc(t)}</div>`).join("");
+    add(feed, "route", "🧭", `El orquestador repartió el pedido <small>${esc(ev.modelo||"")}${ev.via === "llm" ? "" : ev.via === "pedido" ? " · cada brigada recibe el pedido entero" : " · alguna recibe el pedido entero"} · ${(ev.niveles||[]).length > 1 ? "en cadena: " + (ev.niveles||[]).map(n => n.map(esc).join(" + ")).join(" → ") : "en paralelo"}</small>${ts}`);
+  } else if(ev.type === "etapa"){
+    add(feed, "route", "⛓", `<b>${esc(ev.brigada)}</b> arranca con el resultado de ${(ev.despues_de||[]).map(b => `<b>${esc(b)}</b>`).join(", ")}`);
+  } else if(ev.type === "concluyendo"){
+    add(feed, "run", "🧭", `El orquestador saca la conclusión <small>${esc(ev.modelo||"")}</small>`);
+  } else if(ev.type === "conclusion"){
+    add(feed, ev.texto ? "route" : "bad", "🧭", ev.texto ? `<b>Conclusión del orquestador</b> <small>· confianza ${esc(ev.confianza||"?")}</small><div class="nm">${esc(ev.texto)}</div>`
+      : `Sin conclusión del orquestador <small>· ${esc(ev.motivo||"")}</small>`);
+  } else if(ev.type === "comunicacion"){
+    add(feed, "run", "🗣", `El orquestador redacta el mensaje <small>${esc(ev.modelo||"")}</small>`);
+  } else if(ev.type === "start"){
+    /* el pedido ya está en el encabezado del turno */
+  } else if(ev.type === "tool"){
+    add(feed, "run", "→", `${esc(LABEL[name]||name)} <small>${ev.ayudante ? esc(ev.ayudante) + " · " : ""}${esc(ev.args||"")}</small>`);
+  } else if(ev.type === "tool_result"){
+    add(feed, ev.ok?"ok":"bad", ev.ok?"✓":"✗", `<small>${esc(ev.summary||"")}</small>`);
+  } else if(ev.type === "final"){
+    // El `final` es SIEMPRE del orquestador: su voz (LLM), o texto de código literal (comando / gate / watchdog).
+    const tt = ev.tiempos, tiempos = tt ? ` · ${Number(tt.total)||0}s (plan ${Number(tt.plan)||0} · ayudantes ${Number(tt.ayudantes)||0} · síntesis ${Number(tt.sintesis)||0} · voz ${Number(tt.voz)||0})` : "";
+    const quien = ev.origen === "orquestador" ? `<br><small>orquestador${esc(ev.modelo ? " · " + ev.modelo : "")}${esc(VIAVOZ[ev.via]||"")}${ev.fidelidad && !ev.fidelidad.ok ? " · ⚠ sin verificar" : ""}${tiempos}</small>` : "";
+    add(feed, "final", "✓", esc((ev.reply || "(sin texto)") + hint(ev.reply)) + quien);
+    if(leer && ev.reply) hablar(ev.reply);  // "leer respuestas": la sintetiza Piper (local) y se reproduce acá
+  } else if(ev.type === "watchdog"){
+    add(feed, ev.action === "cut" ? "bad" : "route", "🐕", `<b>Watchdog</b> · ${esc(ev.message || "")}`);
+  } else if(ev.type === "error"){
+    add(feed, "bad", "✗", `Error: ${esc((ev.message||"") + hint(ev.message))}`);
+  }
+}
+
+// Lo que el usuario tiene abierto en el editor (proyecto, clip elegido, cursor) viaja con el pedido: así "dividí este clip acá" se entiende.
+function contextoEditor(p){
+  const a = p.editor && p.editor.abierto && p.editor.abierto(); if(!a) return "";
+  return `\n\n[Panel de edición abierto: proyecto "${a.id}" (rev ${a.rev})${a.clip ? ", clip elegido " + a.clip : ""}, cursor en ${a.tiempo} s. Leé el proyecto antes de cambiarlo.]`;
+}
+async function ask(p){
+  const input = $(p.el, ".ask input"), q = input.value.trim();
+  if(p.busy || !q) return;
+  stopVoz();  // no hablar encima de la respuesta anterior
+  p.busy = true; $(p.el, ".ask button").disabled = true; $(p.el, ".live").classList.add("on"); input.value = "";
+  const feed = $(p.el, ".feed"), empty = $(feed, ".empty"); if(empty) empty.remove();
+  const t = document.createElement("div"); t.className = "turn"; t.textContent = q; feed.appendChild(t);
+  try{
+    const resp = await api("/api/chat", {method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({message: q + contextoEditor(p), brigade: p.tab.brigade || null})});
+    if(!resp.ok){ onEvent(p, {type:"error", message:"HTTP " + resp.status}); }
+    else {
+      const reader = resp.body.getReader(), dec = new TextDecoder();
+      let buf = "";
+      while(true){
+        const {value, done} = await reader.read();
+        if(done) break;
+        buf += dec.decode(value, {stream:true});
+        let i;
+        while((i = buf.indexOf("\n")) >= 0){
+          const line = buf.slice(0, i).trim(); buf = buf.slice(i + 1);
+          if(line){ try{ onEvent(p, JSON.parse(line)); }catch{} }
+        }
+      }
+    }
+  }catch(e){ if(String(e.message) !== "recargando") onEvent(p, {type:"error", message:String(e)}); }
+  finally{
+    p.busy = false; $(p.el, ".ask button").disabled = false; $(p.el, ".live").classList.remove("on"); input.focus();
+    if(p.tab.id === "investigacion" || p.tab.id === "cerebro") refreshSide(p.tab);  // notas/actividad nuevas
+    if(/^\s*\/(crear|activar|desactivar|descartar)-brigada\b/i.test(q)) loadBrigadas();  // un comando pudo cambiar las pestañas
+  }
+}
+
+// ---------- brigadas creadas: borrador -> revisión -> activación (nada funciona sin el OK de Damian) ----------
+let activeTab = "orq";
+const _select = select;
+select = function(id){ activeTab = id; _select(id); };
+
+async function loadBrigadas(){
+  // Las brigadas creadas y ACTIVAS aparecen como pestañas propias; un borrador NUNCA tiene pestaña.
+  let d; try{ d = await (await api("/api/brigadas")).json(); }catch{ return; }
+  const ids = new Set((d.activas||[]).map(b => b.id));
+  for(let i = TABS.length - 1; i >= 0; i--){
+    const t = TABS[i];
+    if(t.created && !ids.has(t.id)){ TABS.splice(i, 1); if(panes[t.id]){ panes[t.id].el.remove(); delete panes[t.id]; } }
+  }
+  const at = TABS.findIndex(t => t.mgmt);
+  (d.activas||[]).forEach(b => {
+    if(TABS.some(t => t.id === b.id)) return;
+    TABS.splice(at, 0, {id:b.id, name:b.nombre, sub:"CREADA · AYUDANTES", icon:"🧩",
+                        color:"var(--violet)", brigade:b.id, created:true});
+  });
+  renderTabs(TABS.some(t => t.id === activeTab) ? activeTab : "orq");
+  if(!TABS.some(t => t.id === activeTab)) select("orq");
+  loadMeta();
+}
+
+function buildBrigadasPane(t, el){
+  el.innerHTML = `
+    <div class="phead"><div class="pic">${t.icon}</div>
+      <div><h2>${esc(t.name)}</h2><p class="sub">BORRADOR → REVISÁS → ACTIVÁS</p></div>
+      <div class="meta">Nada de lo que se crea funciona<br>hasta que <b>vos</b> lo activás.</div></div>
+    <div class="cols two">
+      <div class="side">
+        <div class="card" style="--c:var(--amber)"><h3>CREAR UN BORRADOR <span class="live" id="blive"><i></i>DISEÑANDO</span></h3>
+          <textarea class="dir" id="bdesc" placeholder="Describí la brigada: qué hace, con qué herramientas, cómo se reparten los pedidos…"></textarea>
+          <div style="display:flex;gap:8px;justify-content:flex-end;align-items:center">
+            <select class="ghost" id="bej"><option value="">Cargar un ejemplo…</option></select>
+            <button class="ghost" id="bdisenar">Diseñar borrador (modelo del orquestador)</button></div>
+          <div class="empty" id="bmsg">Lo diseña el modelo del orquestador (el de la cabecera) a partir de tu descripción; vos revisás todo antes de activar.</div></div>
+        <div class="card grow" style="--c:var(--cyan)"><h3>BORRADORES · NO OPERATIVOS <button class="r" id="brefresh" title="Actualizar">↻</button></h3>
+          <div class="list" id="bdrafts"><div class="empty">—</div></div>
+          <h3 style="margin-top:6px">ACTIVAS</h3><div class="list" id="bactive"><div class="empty">—</div></div></div>
+      </div>
+      <div class="card grow" style="--c:var(--green)"><h3>REVISIÓN</h3>
+        <div class="list" id="breview"><div class="empty">Elegí un borrador para revisar todo lo que va a poder hacer: prompts, tools con su nivel de privilegio, dónde corre cada modelo, ruteo y validación.</div></div></div>
+    </div>`;
+  const p = {el, busy:false, tab:t, mgmt:true};
+  $(el, "#brefresh").onclick = () => refreshBrigadas(p);
+  $(el, "#bdisenar").onclick = () => disenarBorrador(p);
+  $(el, "#bej").onchange = e => { const v = e.target.value; e.target.value = ""; if(v) cargarEjemplo(p, v); };
+  return p;
+}
+
+function bmsg(p, html, cls){ const m = $(p.el, "#bmsg"); m.className = "empty " + (cls||""); m.innerHTML = html; }
+
+async function refreshBrigadas(p){
+  let d; try{ d = await (await api("/api/brigadas")).json(); }catch{ return; }
+  const sel = $(p.el, "#bej");
+  if(sel.options.length === 1) (d.ejemplos||[]).forEach(id => { const o = document.createElement("option"); o.value = id; o.textContent = id; sel.appendChild(o); });
+  const row = (b, on) => `<div class="note"><div class="nt">${esc(b.nombre)} <span class="badge ${on ? "on" : "draft"}">${on ? "ACTIVA" : (b.aprobacion_invalida ? "APROBACIÓN INVÁLIDA" : "BORRADOR")}</span></div>
+      <div class="nm"><code>${esc(b.id)}</code> · hash ${esc(b.hash_corto)}${b.n_tools_sensibles ? ` · <span class="warn">⚠ ${b.n_tools_sensibles} tool(s) sensible(s)</span>` : ""}<br>${esc(b.proposito)}</div>
+      <div class="rowb"><button class="ghost" data-rev="${esc(b.id)}">Revisar</button>
+        ${on ? `<button class="ghost" data-off="${esc(b.id)}">Desactivar</button>` : `<button class="ghost" data-del="${esc(b.id)}">Descartar</button>`}</div></div>`;
+  $(p.el, "#bdrafts").innerHTML = (d.borradores||[]).map(b => row(b, false)).join("") || '<div class="empty">Sin borradores.</div>';
+  $(p.el, "#bactive").innerHTML = (d.activas||[]).map(b => row(b, true)).join("") || '<div class="empty">Ninguna brigada creada está activa.</div>';
+  p.el.querySelectorAll("[data-rev]").forEach(b => b.onclick = () => revisar(p, b.dataset.rev));
+  p.el.querySelectorAll("[data-off]").forEach(b => b.onclick = () => desactivar(p, b.dataset.off));
+  p.el.querySelectorAll("[data-del]").forEach(b => b.onclick = () => descartar(p, b.dataset.del));
+}
+
+async function postJson(path, body){
+  const r = await api(path, {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(body||{})});
+  let j = {}; try{ j = await r.json(); }catch{}
+  return {ok:r.ok, status:r.status, j};
+}
+function errText(j){ return esc(j.detail || "error") + (j.errores ? "<br>• " + j.errores.map(esc).join("<br>• ") : ""); }
+
+async function disenarBorrador(p){
+  const desc = $(p.el, "#bdesc").value.trim(); if(!desc) return;
+  const btn = $(p.el, "#bdisenar"); btn.disabled = true; $(p.el, "#blive").classList.add("on"); bmsg(p, "Diseñando con el modelo del orquestador… puede tardar un rato.");
+  try{
+    const {ok, j} = await postJson("/api/brigadas/crear", {descripcion: desc});
+    if(ok){ bmsg(p, `Borrador «${esc(j.nombre)}» creado. <b>No está activo</b>: revisalo abajo.`); await refreshBrigadas(p); showReview(p, j); }
+    else bmsg(p, errText(j), "err");
+  }catch(e){ bmsg(p, esc(String(e)), "err"); }
+  finally{ btn.disabled = false; $(p.el, "#blive").classList.remove("on"); }
+}
+
+async function cargarEjemplo(p, id){
+  try{
+    const ej = (await (await api("/api/brigadas/ejemplos")).json()).ejemplos[id];
+    const {ok, j} = await postJson("/api/brigadas/borrador", {draft: ej});
+    if(ok){ bmsg(p, `Ejemplo «${esc(id)}» cargado como borrador. <b>No está activo</b>.`); await refreshBrigadas(p); showReview(p, j); }
+    else bmsg(p, errText(j), "err");
+  }catch(e){ bmsg(p, esc(String(e)), "err"); }
+}
+
+async function revisar(p, id){
+  try{ const r = await api("/api/brigadas/" + encodeURIComponent(id)); showReview(p, await r.json()); }catch{}
+}
+
+function showReview(p, rv){
+  const box = $(p.el, "#breview"); if(!rv || !rv.roles){ box.innerHTML = `<div class="empty err">${esc((rv && rv.detail) || "sin datos")}</div>`; return; }
+  const lvl = n => n === "ok" ? "" : n === "sensible" ? "⚠ " : "✗ ";
+  const roles = rv.roles.map(r => `<div class="note"><div class="nt">${esc(r.rol)} <small style="font-weight:400;color:var(--muted)">· ${esc(r.donde)}</small></div>
+      ${r.descripcion ? `<div class="nm">${esc(r.descripcion)}</div>` : ""}
+      ${r.tools.map(t => `<div class="nm" style="${t.nivel !== "ok" ? "color:var(--amber)" : ""}">${lvl(t.nivel)}${esc(t.nombre)}${t.motivo ? " — " + esc(t.motivo) : ""}</div>`).join("")}
+      <details><summary class="nm" style="cursor:pointer">prompt completo</summary><pre class="pp">${esc(r.prompt)}</pre></details></div>`).join("");
+  const ruteo = rv.ruteo ? `<div class="note"><div class="nt">Ruteo <small style="font-weight:400;color:var(--muted)">· gana la primera regla; si ninguna → ${esc(rv.ruteo.default)}</small></div>
+      ${rv.ruteo.reglas.map(r => `<div class="nm"><code>/${esc(r.patron)}/</code> → ${esc(r.modo)}</div>`).join("") || '<div class="nm">(sin reglas: todo va al default)</div>'}</div>` : "";
+  const val = `<div class="note"><div class="nt">Validación</div><div class="nm">${esc(rv.validacion.criterio)}<br>pasos: alcance, ${rv.validacion.pasos.map(x => esc(x.id) + " (" + esc(x.tipo) + ")").join(", ")}</div></div>`;
+  const warns = rv.advertencias.map(w => `<div class="nm warn">⚠ ${esc(w)}</div>`).join("");
+  const errs = (rv.errores_vigentes||[]).map(e => `<div class="nm err">✗ ${esc(e)}</div>`).join("");
+  const draft = rv.estado !== "activa";
+  box.innerHTML = `<div class="note"><div class="nt">${esc(rv.nombre)} <span class="badge ${draft ? "draft" : "on"}">${draft ? "BORRADOR · NO OPERATIVO" : "ACTIVA"}</span></div>
+      <div class="nm"><code>${esc(rv.id)}</code> — ${esc(rv.proposito)}</div></div>${roles}${ruteo}${val}${warns ? `<div class="note">${warns}</div>` : ""}${errs ? `<div class="note">${errs}</div>` : ""}
+    <div class="note"><div class="nm">Hash del contenido que se aprueba: <code>${esc(rv.hash_corto)}</code></div>
+      <div class="rowb">${draft && !errs ? '<button class="btn-go" id="bact">✓ Activar esta brigada</button>' : ""}${draft ? "" : '<button class="ghost" id="boff">Desactivar</button>'}</div></div>
+    ${draft && rv.draft ? `<div class="note"><details><summary class="nt" style="cursor:pointer">Editar el borrador (JSON)</summary>
+        <div class="nm">Guardar crea una versión nueva de este borrador (otro hash). La anterior queda en el historial. Nada se activa.</div>
+        <textarea id="bedit" spellcheck="false" style="width:100%;min-height:220px;margin-top:6px;font-family:ui-monospace,monospace;font-size:12px;background:rgba(8,11,20,.7);color:inherit;border:1px solid var(--edge);border-radius:8px;padding:8px">${esc(JSON.stringify(rv.draft, null, 2))}</textarea>
+        <div class="rowb"><button class="ghost" id="bsave">Guardar como nueva versión</button></div></details>
+      ${(rv.versiones||[]).length ? `<div class="nm" style="margin-top:6px">Versiones anteriores: ${rv.versiones.slice().reverse().map(v => `<button class="ghost" data-ver="${esc(v.hash)}" title="Volver a esta versión (queda como borrador)">${esc(v.hash_corto)} · ${esc((v.creado||"").slice(0,16))}</button>`).join(" ")}</div>` : ""}</div>` : ""}`;
+  const a = $(box, "#bact"); if(a) a.onclick = () => activar(p, rv);
+  const o = $(box, "#boff"); if(o) o.onclick = () => desactivar(p, rv.id);
+  const sv = $(box, "#bsave"); if(sv) sv.onclick = () => guardarEdicion(p, rv);
+  box.querySelectorAll("[data-ver]").forEach(b => b.onclick = () => restaurarVersion(p, rv.id, b.dataset.ver));
+}
+
+// Editar un borrador = guardar otro con el MISMO id (el servidor lo valida entero de nuevo y guarda la versión anterior).
+async function guardarEdicion(p, rv){
+  let draft;
+  try{ draft = JSON.parse($(p.el, "#bedit").value); }catch(e){ bmsg(p, "El JSON no es válido: " + esc(String(e.message||e)), "err"); return; }
+  if(!draft || draft.id !== rv.id){ bmsg(p, `El id no se cambia al editar (tiene que seguir siendo <code>${esc(rv.id)}</code>). Para otro id, creá otro borrador.`, "err"); return; }
+  try{
+    const {ok, j} = await postJson("/api/brigadas/borrador", {draft});
+    if(ok){ bmsg(p, `Borrador «${esc(j.nombre)}» guardado como versión nueva (hash <code>${esc(j.hash_corto)}</code>). <b>No está activo</b>.`); await refreshBrigadas(p); showReview(p, j); }
+    else bmsg(p, errText(j), "err");
+  }catch(e){ bmsg(p, esc(String(e)), "err"); }
+}
+async function restaurarVersion(p, id, hash){
+  try{
+    const {ok, j} = await postJson("/api/brigadas/" + encodeURIComponent(id) + "/restaurar", {hash});
+    if(ok){ bmsg(p, `«${esc(id)}» volvió a la versión <code>${esc(j.hash_corto)}</code>. Sigue siendo un borrador.`); await refreshBrigadas(p); showReview(p, j); }
+    else bmsg(p, errText(j), "err");
+  }catch(e){ bmsg(p, esc(String(e)), "err"); }
+}
+
+async function activar(p, rv){
+  // EL gate: una acción explícita, sobre el hash exacto que se está viendo. Sin esto nada creado funciona.
+  const sens = rv.roles.flatMap(r => r.tools).filter(t => t.nivel === "sensible").map(t => t.nombre + " (" + t.motivo + ")");
+  const msg = `Vas a ACTIVAR «${rv.nombre}» (${rv.id}).\n\n` + (sens.length ? "Tools de ALTO PRIVILEGIO:\n - " + sens.join("\n - ") + "\n\n" : "")
+    + (rv.advertencias.filter(w => /NUBE|COMPARTIDO/.test(w)).join("\n") + "\n\n").replace(/^\n+/, "")
+    + `Hash del contenido: ${rv.hash_corto}\n\n¿Aprobás ESTE contenido? Quedás como responsable de lo que haga.`;
+  if(!confirm(msg)) return;
+  const {ok, j} = await postJson("/api/brigadas/" + encodeURIComponent(rv.id) + "/activar", {hash: rv.hash});
+  if(ok){ bmsg(p, `✓ «${esc(rv.nombre)}» activada. Ya tiene su pestaña y se valida con <code>python -m validation.todas ${esc(rv.id)}</code>.`); }
+  else bmsg(p, errText(j), "err");
+  await refreshBrigadas(p); await loadBrigadas(); revisar(p, rv.id);
+}
+
+async function desactivar(p, id){
+  if(!confirm("¿Desactivar «" + id + "»? Vuelve a borrador y deja de funcionar.")) return;
+  const {ok, j} = await postJson("/api/brigadas/" + encodeURIComponent(id) + "/desactivar");
+  bmsg(p, ok ? `«${esc(id)}» desactivada: volvió a borrador.` : errText(j), ok ? "" : "err");
+  await refreshBrigadas(p); await loadBrigadas(); if(ok) revisar(p, id);
+}
+
+async function descartar(p, id){
+  if(!confirm("¿Descartar el borrador «" + id + "»? Se borra.")) return;
+  const r = await api("/api/brigadas/" + encodeURIComponent(id), {method:"DELETE"});
+  let j = {}; try{ j = await r.json(); }catch{}
+  bmsg(p, r.ok ? `Borrador «${esc(id)}» descartado.` : errText(j), r.ok ? "" : "err");
+  await refreshBrigadas(p); $(p.el, "#breview").innerHTML = '<div class="empty">Elegí un borrador para revisarlo.</div>';
+}
+
+// ---------- VOZ LOCAL (STT: botón 🎙 -> /api/voz/transcribir · TTS: "Leer respuestas" -> /api/voz/hablar) ----------
+let VOZ = {enabled:false, stt:{ok:false, motivo:"cargando…"}, tts:{ok:false, motivo:"cargando…"}};
+let leer = false; try{ leer = localStorage.getItem("leer") === "1"; }catch{}
+let audioActual = null, rec = null;   // reproducción en curso / grabación en curso: {p, mr, chunks, stream, timer}
+
+function pintarVoz(){
+  const chip = document.getElementById("vozchip");
+  if(chip){
+    const ok = !!(VOZ.tts && VOZ.tts.ok);
+    chip.classList.toggle("hot", leer && ok);
+    chip.innerHTML = `🔊 Leer respuestas: <b>${leer && ok ? "ON" : "OFF"}</b>`;
+    chip.title = ok ? "Leer las respuestas en voz alta (voz local es-AR, en esta PC)" : "Voz no disponible: " + ((VOZ.tts && VOZ.tts.motivo) || "?");
+    chip.style.opacity = ok ? "1" : ".55";
+  }
+  document.querySelectorAll(".ask .mic").forEach(b => {
+    const ok = !!(VOZ.stt && VOZ.stt.ok);
+    b.disabled = !ok && !(rec && rec.p.el.contains(b));
+    if(!rec) b.title = ok ? "Hablar: graba tu voz y la transcribe en esta PC (local)" : "Dictado no disponible: " + ((VOZ.stt && VOZ.stt.motivo) || "?");
+  });
+}
+async function loadVoz(){
+  try{ const r = await api("/api/voz"); if(r.ok) VOZ = await r.json(); }catch{}
+  pintarVoz();
+}
+document.getElementById("vozchip").onclick = () => {
+  if(!(VOZ.tts && VOZ.tts.ok)){ alert("La lectura en voz alta no está disponible:\n" + ((VOZ.tts && VOZ.tts.motivo) || "?")); return; }
+  leer = !leer; try{ localStorage.setItem("leer", leer ? "1" : "0"); }catch{}
+  if(!leer) stopVoz();
+  pintarVoz();
+};
+
+function stopVoz(){
+  if(audioActual){ try{ audioActual.pause(); URL.revokeObjectURL(audioActual.src); }catch{} audioActual = null; }
+}
+// Lectura POR ORACIONES (O-10): se sintetiza y suena la primera oración mientras se van pidiendo las siguientes, así el
+// primer sonido llega enseguida aunque el mensaje sea largo. Un mensaje nuevo (o "parar") corta la cola.
+let turnoVoz = 0;
+function oraciones(texto){
+  const partes = String(texto||"").split(/(?<=[.!?…])\s+/).map(s => s.trim()).filter(Boolean), out = [];
+  for(const p of partes){ if(out.length && (out[out.length-1].length < 40)) out[out.length-1] += " " + p; else out.push(p); }  // no cortar en pedacitos
+  return out;
+}
+async function sintetizar(texto){
+  const r = await api("/api/voz/hablar", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({texto})});
+  return r.ok ? URL.createObjectURL(await r.blob()) : null;
+}
+async function hablar(texto){
+  stopVoz();
+  const mio = ++turnoVoz, partes = oraciones(texto);
+  try{
+    let siguiente = partes.length ? sintetizar(partes[0]) : null;
+    for(let i = 0; i < partes.length; i++){
+      const url = await siguiente;
+      siguiente = i + 1 < partes.length ? sintetizar(partes[i + 1]) : null;   // la próxima se pide mientras suena esta
+      if(mio !== turnoVoz) return;
+      if(!url) continue;
+      const a = new Audio(url); audioActual = a;
+      await new Promise(res => { a.onended = a.onerror = res; a.play().catch(res); });
+      URL.revokeObjectURL(url); if(audioActual === a) audioActual = null;
+      if(mio !== turnoVoz) return;
+    }
+  }catch{ /* si el navegador bloquea el audio o falla la síntesis, el texto igual está en pantalla */ }
+}
+
+function micStatus(p, html){
+  const feed = $(p.el, ".feed"); if(!feed) return;
+  const empty = $(feed, ".empty"); if(empty) empty.remove();
+  add(feed, "route", "🎙", html);
+}
+async function toggleMic(p){
+  const btn = $(p.el, ".ask .mic");
+  if(rec){ if(rec.p === p) rec.mr.stop(); return; }   // segundo clic: termina y transcribe
+  stopVoz();
+  let stream;
+  try{ stream = await navigator.mediaDevices.getUserMedia({audio:true}); }
+  catch(e){ micStatus(p, `No pude usar el micrófono: ${esc(e.name || e)}. Dale permiso al micrófono a esta ventana.`); return; }
+  const mime = ["audio/webm;codecs=opus", "audio/webm", "audio/ogg;codecs=opus"].find(m => window.MediaRecorder && MediaRecorder.isTypeSupported(m)) || "";
+  const mr = new MediaRecorder(stream, mime ? {mimeType:mime} : {}), chunks = [];
+  rec = {p, mr, chunks, stream, timer: setTimeout(() => mr.state === "recording" && mr.stop(), 90000)};  // tope de 90 s
+  mr.ondataavailable = e => { if(e.data && e.data.size) chunks.push(e.data); };
+  mr.onstop = async () => {
+    clearTimeout(rec.timer); stream.getTracks().forEach(t => t.stop());
+    const blob = new Blob(chunks, {type: mr.mimeType || mime || "audio/webm"}); rec = null;
+    btn.classList.remove("rec"); btn.textContent = "…"; btn.disabled = true;
+    try{
+      if(blob.size < 1500) throw new Error("no se escuchó nada");
+      const r = await api("/api/voz/transcribir", {method:"POST", headers:{"Content-Type": blob.type}, body: blob});
+      const j = await r.json().catch(() => ({}));
+      if(!r.ok) throw new Error(j.detail || ("HTTP " + r.status));
+      const input = $(p.el, ".ask input");
+      if(j.texto){ input.value = (input.value ? input.value + " " : "") + j.texto; input.focus(); micStatus(p, `Transcripto en esta PC: «${esc(j.texto)}» <small>— revisalo y apretá Enviar</small>`); }
+      else micStatus(p, "No entendí nada: probá de nuevo.");
+    }catch(e){ micStatus(p, "No se pudo transcribir: " + esc(e.message || e)); }
+    finally{ btn.textContent = "🎙"; pintarVoz(); }
+  };
+  mr.start(); btn.classList.add("rec"); btn.textContent = "⏹"; btn.disabled = false;
+  btn.title = "Grabando… tocá de nuevo para terminar";
+}
+
+// ---------- EFÍMEROS EN VIVO (tablero global, polling cada 2 s a /api/efimeros) ----------
+let LIVE = {activos:[], recientes:[], skew:0};
+const hhmmss = ts => new Date(ts * 1000).toLocaleTimeString("es-AR", {hour12:false});
+const fmtSec = n => { n = Math.max(0, Math.floor(n)); return n >= 60 ? Math.floor(n/60) + " min " + (n%60) + " s" : n + " s"; };
+
+function buildVivoPane(t, el){
+  el.innerHTML = `
+    <div class="phead"><div class="pic">${t.icon}</div>
+      <div><h2>Efímeros en vivo</h2><p class="sub">AYUDANTES QUE ESTÁN CORRIENDO AHORA · TODAS LAS BRIGADAS</p></div>
+      <div class="meta">Se crean por tarea y mueren.<br><b>Tablero en tiempo real</b> (se actualiza cada 2 s)</div></div>
+    <div class="cols two">
+      <div class="card grow" style="--c:var(--orange)"><h3>CORRIENDO AHORA <span class="live on"><i></i>EN VIVO</span></h3>
+        <div class="list" id="vactivos"><div class="empty">—</div></div></div>
+      <div class="card grow" style="--c:var(--muted)"><h3>TERMINARON HACE POCO</h3>
+        <div class="list" id="vrecientes"><div class="empty">—</div></div></div>
+    </div>`;
+  const p = {el, busy:false, tab:t, live:true};
+  setTimeout(() => renderVivo(p), 0);
+  return p;
+}
+
+function renderVivo(p){
+  const act = $(p.el, "#vactivos"), rec = $(p.el, "#vrecientes"); if(!act || !rec) return;
+  act.innerHTML = (LIVE.activos||[]).map(a => `<div class="note vrow">
+      <div class="nt">⚡ <b>${esc(a.brigada_nombre||a.brigada)}</b> › ${esc(a.ayudante)} <small style="font-weight:400;color:var(--muted)">· ${esc(a.modo)} · ${esc(a.modelo)}</small></div>
+      <div class="nm">${a.tool ? "usando " + esc(LABEL[a.tool]||a.tool) + (a.args ? " <small>" + esc(a.args) + "</small>" : "") : "pensando…"} · paso ${Number(a.pasos)||0}</div>
+      <div class="nm">desde ${hhmmss(a.desde)} · <b class="vel" data-desde="${Number(a.desde)}">${fmtSec(a.segundos)}</b> · tarea: ${esc(a.tarea)}</div></div>`).join("")
+    || '<div class="empty">Ningún efímero corriendo ahora. Cuando una brigada delegue una tarea en un ayudante, aparece acá en vivo.</div>';
+  rec.innerHTML = (LIVE.recientes||[]).map(r => `<div class="note"><div class="nt" style="font-weight:500">${r.resultado === "ok" ? "✓" : "✗"} ${esc(r.brigada_nombre||r.brigada)} › ${esc(r.ayudante)}
+      <small style="font-weight:400;color:${r.resultado === "ok" ? "var(--green)" : "var(--red)"}">· ${esc(r.resultado)} · ${fmtSec(r.segundos)}</small></div>
+      <div class="nm">${esc(r.tarea)}${r.detalle ? "<br>" + esc(r.detalle) : ""}</div></div>`).join("")
+    || '<div class="empty">Todavía no terminó ninguno desde que arrancó el orquestador.</div>';
+}
+
+async function pollVivo(){
+  try{
+    const r = await api("/api/efimeros"); if(!r.ok) throw 0;
+    const j = await r.json();
+    LIVE = {...j, skew: (j.ahora||0) - Date.now()/1000};
+  }catch{ return; }
+  const n = (LIVE.activos||[]).length, chip = document.getElementById("vivochip");
+  if(chip){ chip.classList.toggle("hot", n > 0); chip.innerHTML = `⚡ <b>${n}</b> efímero${n === 1 ? "" : "s"} en vivo`; }
+  const p = panes["vivo"]; if(p && p.el.classList.contains("on")) renderVivo(p);
+}
+document.getElementById("vivochip").onclick = () => select("vivo");
+setInterval(pollVivo, 2000);
+setInterval(() => {  // el reloj de cada efímero corre cada segundo, sin esperar al siguiente polling
+  const now = Date.now()/1000 + (LIVE.skew||0);
+  document.querySelectorAll(".vel").forEach(e => { e.textContent = fmtSec(now - Number(e.dataset.desde)); });
+}, 1000);
+
+let start = "orq"; try{ start = sessionStorage.getItem("tab") || "orq"; }catch{}
+select(start);
+loadMeta();
+loadBrigadas();
+pollVivo();
+loadVoz();
+</script>

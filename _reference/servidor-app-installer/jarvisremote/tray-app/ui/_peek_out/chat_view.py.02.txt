@@ -1,0 +1,53 @@
+ch=1)
+
+        self._add_system_message('Decime qué necesitás, o tocá 🎙 para hablarme sin escribir.')
+
+    # ------------------------------------------------------------- layout
+
+    def _build_chat_column(self) -> QWidget:
+        column = QWidget()
+        column.setObjectName("chatArea")
+        layout = QVBoxLayout(column)
+        layout.setContentsMargins(16, 16, 16, 16)
+        layout.setSpacing(10)
+
+        self.scroll_area = QScrollArea()
+        self.scroll_area.setWidgetResizable(True)
+        self.scroll_area.setFrameShape(QFrame.NoFrame)
+        self._messages_container = QWidget()
+        self._messages_layout = QVBoxLayout(self._messages_container)
+        self._messages_layout.addStretch()
+        self.scroll_area.setWidget(self._messages_container)
+        layout.addWidget(self.scroll_area, stretch=1)
+
+        input_row = QHBoxLayout()
+        self.message_input = QLineEdit()
+        self.message_input.setObjectName("messageInput")
+        self.message_input.setPlaceholderText("Escribile algo a Jarvis...")
+        self.message_input.returnPressed.connect(self._on_send_clicked)
+        input_row.addWidget(self.message_input, stretch=1)
+
+        send_button = QPushButton("Enviar")
+        send_button.setObjectName("sendButton")
+        send_button.setCursor(Qt.PointingHandCursor)
+        send_button.clicked.connect(self._on_send_clicked)
+        input_row.addWidget(send_button)
+
+        layout.addLayout(input_row)
+        return column
+
+    # ------------------------------------------------------------- chat
+
+    def _add_bubble(self, author: str, text: str, object_name: str | None = None) -> QWidget:
+        # NoMinWidthLabel, no QLabel a secas -- el texto acá es de chat (del
+        # usuario o de Jarvis) y puede traer una URL/path/hash larguísimo sin
+        # espacios, que sin este fix estira la ventana principal (ver
+        # ui/widgets.py para el bug real).
+        label = NoMinWidthLabel(text)
+        label.setWordWrap(True)
+        label.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        label.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Minimum)
+
+        row = QHBoxLayout()
+        if author == "user":
+            label.setObje

@@ -1,0 +1,7 @@
+[Unit]
+Description=Copia diaria de la base de Raphael Empresas
+
+[Service]
+Type=oneshot
+User=@USUARIO@
+ExecStart=@RAIZ@/copia.sh @RAIZ@

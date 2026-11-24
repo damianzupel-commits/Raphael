@@ -1,0 +1,88 @@
+# raphael-core · Harness v2
+
+La base común de Raphael: el orquestador se para encima y las brigadas se montan y desmontan por configuración. Une la infraestructura de `raphael-harness` 0.4 (Empresas) con el motor de brigadas de JarvisRemote. El diseño completo está en `../../DISENO-V2.md`.
+
+## Estado
+Las seis tandas están hechas: H1 (cimientos), H2 (runtime y políticas), H3 (modelos y compatibilidad con Empresas), H4 (motor de jefes y efímeros, tools), H5 (cargador de manifiestos, suite de contrato, matriz y brigadas de ejemplo: la puerta de la fase 1) H6 (brigadas creadas por borrador con activación firmada), H7 (jefe caído, comandos de lectura, salud periódica y `setup` de tools) y H8 (la API que necesita el orquestador; contrato 2.1). 402 tests.
+
+**Raphael Empresas corre sobre el v2 sin cambiar su código:** los 74 tests de Empresas (harness viejo, las 6 brigadas y la integración) pasan con el puente `compat-shim/raphael_harness`. Para correr esa puerta en la PC:
+
+```bash
+.venv\Scripts\python scripts\regresion_empresas.py     # o el botón "Empresas sobre el v2" en Núcleo → Tests
+```
+
+## Probar
+```bash
+pip install -e ".[dev]"     # o sin instalar: python -m pytest (usa src/)
+python -m pytest
+ruff check src tests
+```
+Python ≥ 3.11. Dependencias: pydantic, pyyaml, httpx. Los tests corren sin red.
+
+## Hacer una brigada montable (para las piezas de brigadas)
+1. En `codigo\` de la pieza, una carpeta con `manifest.yaml` y el paquete de la brigada al lado (o en `src\`). Modelo: `ejemplos\saludo\` (cocinero + jefe con efímeros + tools) y `ejemplos\eco\` (lo mínimo).
+2. Que pase la suite de contrato en sus tests:
+   ```python
+   from raphael_core.testing.contract import run_contract_suite
+   def test_contrato():
+       r = run_contract_suite("ruta/a/la/brigada", edition="personal")   # y "cloud" si corre en la nube
+       assert r.ok, r.text()
+   ```
+3. Lo que puede declarar además (H7): `commands` (cuáles son `read: true`: solo esos los puede pedir el orquestador), `setup` (función que corre al montar y registra con `ctx.register_tool` las tools que no tienen `entry`) y `health` (se corre al montar y cada 5 min; 3 chequeos malos seguidos y la brigada deja de recibir mensajes hasta que vuelva a dar bien).
+4. El cargador la encuentra sola (carpeta `brigadas\` del proyecto, `RAPHAEL_DEV` o un paquete instalado con entry point `raphael.brigades`) y el panel la muestra en "Agregar brigadas".
+
+## Panel (app nativa)
+Esqueleto de la app de Raphael personal, con la estética del panel del orquestador (tkinter + Pillow). Se abre con `panel\abrir-panel.bat` o con el acceso directo del escritorio (la primera vez arma `.venv`).
+
+Desde H5 corre un `Runtime` de verdad con el cargador: lo que se ve sale del núcleo, no es maqueta.
+- **Arriba:** solo las brigadas montadas y, al final, "Agregar brigadas": catálogo con las de `brigadas\` que tengan `manifest.yaml`, las de ejemplo (#ej) y las creadas por borrador (#bor); elegís una y "Montar". A la derecha, estado y tareas en vivo, con **aprobar / rechazar** los pendientes.
+- **Izquierda:** el chat de lo elegido, uno por brigada y uno del orquestador. A una brigada con jefe le llega como pedido (`Runtime.ask`) y se muestra su reporte tal cual; a una con cocineros, sus cocineros; al orquestador, el núcleo reparte por interés (el orquestador de verdad es la pieza 02). Sin `NVIDIA_API_KEY` el jefe degrada y lo dice; no inventa.
+- **Derecha:** cocineros, efímeros (los que corren y los últimos que terminaron) y herramientas (doble clic: activar o desactivar; apagada, ningún efímero la ve).
+- **Se guarda en `.datos\`:** `installation.yaml` (qué está montado), `raphael.sqlite` (datos de las brigadas), `panel.sqlite` (chats) y `claves\` (la clave que firma las aprobaciones de borradores, protegida con DPAPI en Windows).
+- **La esfera** abre el orquestador: todo junto. Una brigada elegida muestra solo lo suyo.
+- **"Muestra"** llena todo con datos de ejemplo marcados como tales; **"⚙ Núcleo"** abre las herramientas del harness (estado, pruebas en vivo, manifiestos, **borradores**, auditoría, tests).
+- **Borradores:** pegás el JSON de una brigada, se valida y queda como BORRADOR con su revisión y su hash; "Activar" firma la aprobación sobre ese hash y la monta. Editarla después, o que desaparezca una tool que usa, la desactiva sola.
+
+Pendiente para la pieza 03 (servidor, app e instalador): heredar este esqueleto como base de la app.
+
+## API para el orquestador (contrato 2.1, H8)
+Lo que usa la pieza 02. Todo es aditivo: las brigadas con `contract: ">=2.0,<3"` siguen montando igual.
+
+- **Modelos de sus roles:** `ctx.ai(role, messages, private=False)`, `aai`, `has_ai`, `ai_label`. Solo `mando`, `voz` y `ruteo` (otro rol = `ActionError`); van con target `orquestador` (override `mando.orquestador` en `modelos.yaml`).
+- **Privacidad:** `ctx.is_private(brigada)` (jefe privado o lista `private` de `modelos.yaml`). Con `private=True` solo se usan modelos locales; si no hay, `None` y el orquestador sigue con plantilla.
+- **Catálogo:** `ctx.catalog()`; por brigada montada: nombre, descripción, jefe y su propósito, cocineros, acciones (nivel, etiquetas), comandos de lectura, `routing`, si es privada, si está caída y por qué. Sin datos de clientes.
+- **Ids reales:** cada `Proposal` de un reporte trae `pending_id` (número real del pendiente o `None` si el modelo la inventó, con aviso). El modelo no lo puede poner.
+- **Espacio propio:** `ctx.data` (espacio `_orchestrator`): propuestas por confirmar, conversación, sesiones. Ningún cocinero lo ve.
+- **Charla con la persona:** `Runtime.talk_to_owner(text, session=, channel=, on_event=)`; en el `OwnerContext`, `ctx.session`, `ctx.channel` y `await ctx.emit(evento)`. `OwnerReply.meta` para vía, fidelidad y tiempos.
+- **Ganchos:** `Orchestrator.consumes`, `configure(config)`, `tick(now, ctx)`, `on_event(event, data, ctx)`; en esos dos recibe un `OrchestratorContext` (lee y avisa con `ctx.notify`, nunca ejecuta).
+- **Entorno:** `ctx.edition`, `ctx.plan`, `ctx.identity`, `ctx.usage()`.
+- **Consultas con motivo:** `ctx.query_detail(...)` devuelve `QueryResult(ok, value, error)`; `query` sigue devolviendo el valor o `None`.
+- **Ruteo en el manifiesto:** `routing: {signals: [{pattern, weight: 1|2}], direct_only, safe_default}` (contrato 2.1).
+- **Orquestador por config:** `installation.orchestrator: {entry: "paquete.modulo:Clase" | nombre de entry point raphael.orchestrators, config: {...}}`; lo pone `Loader.apply()`. Si falla, queda el orden simple y el error en `errors["_orchestrator"]`.
+
+## Qué hay
+| Módulo | Qué hace |
+|---|---|
+| `contract.py` | `CONTRACT_VERSION = "2.1.0"` (semver) y `contract_compatible`; `Level` (`automatico`, `aprobacion`, `humano`), `Trust`, `Origin`; `Message`, `Action`, `Reply`, `OwnerReply`, `Health`, `ActionError`; las bases `Cook` y `Orchestrator` |
+| `manifest.py` | Esquema de `manifest.yaml`: cocineros, jefe, acciones con nivel obligatorio y etiquetas (`spend`, `irreversible`, `external`), tools (`dangerous`, `active_scan`), eventos, espacio, healthcheck, desmontaje, ediciones |
+| `installation.py` | Esquema de `installation.yaml`: edición (`personal` o `cloud`), plan, identidad, brigadas activas y su config, autonomía por acción, confianza progresiva, límites |
+| `store.py` | SQLite con un espacio por brigada (y `brigada/cocinero`), contadores, exportar y purgar |
+| `events.py` | Bus con manejadores sync o async, aislamiento de errores, dueño por suscripción, historial acotado, corte de ciclos |
+| `audit.py` | Registro de solo agregar (quién, qué, cuándo, por qué) que tacha secretos |
+| `isolation.py` | `Guard`: excepciones contenidas, tope de tiempo y pieza caída tras N fallas seguidas de un mismo método |
+| `policy.py` | Policy Engine sin pisos: nivel por instalación (brigada.acción > acción) > manifiesto > no declarada = aprobación; confianza progresiva (baja tras N aprobaciones sin cambios, sube con rechazo, cambios o corrección; lo que gasta o es irreversible nunca baja solo a automático: se propone) |
+| `approvals.py` | Pendientes de acción y propuestas de confianza; ids inventados o cerrados se rechazan |
+| `context.py` | `Context` (cocinero: sus datos, los de su brigada, eventos declarados, acciones), `OrchestratorContext` (lee todo, auditado; desde 2.1 también modelos de sus roles, catálogo, privacidad, espacio propio, entorno, avisos y consultas con motivo), `OwnerContext` (la persona ordena; desde 2.1 con sesión, canal y feed) |
+| `models/` | Pasarela de modelos: tres escalones (`pago`, `gratis`, `local`), cada rol con su orden de escalones, rotación dentro del escalón, pausa ante "límite alcanzado", pedidos por minuto, cupo diario, tope mensual del escalón pago; lo privado solo va a modelos en `localhost`; `modelos.yaml` hoy con NVIDIA en los tres |
+| `engine/` | Motor de brigadas portado de JarvisRemote: `spec.py` (BrigadeSpec, efímeros, reglas de ruteo), `chief.py` (el jefe planifica con reglas y, si hay más de un candidato, con su modelo; delega en paralelo con timeouts; sintetiza con el contrato y un reintento; si no, degrada explícito; memoria en el espacio de la brigada), `helper.py` (el efímero: modelo → tool → modelo con su caja), `reports.py` (contratos efímero → jefe → orquestador, versión 2 en inglés; cifras sin respaldo = rechazo), `live.py` (tablero en vivo de efímeros) |
+| `tools.py` | Gateway de tools: registro único, nada peligroso en la nube, caja por efímero (lista blanca) y compuerta de política: lo que no es automático queda pendiente y se ejecuta al aprobar; la persona puede apagar una tool |
+| `loader.py` | Cargador: encuentra brigadas por `manifest.yaml` (entry points `raphael.brigades`, carpetas de desarrollo o `RAPHAEL_DEV`), resuelve sus `entry`, valida su config contra `config_schema` y monta o desmonta lo que diga la instalación; una brigada rota no frena a las demás |
+| `testing/contract.py` | Suite de contrato (16 chequeos: manifiesto, contrato, edición, armado, salud, espacio propio, imports de hermanas, mensajes de prueba, acciones declaradas, nada sin OK, jefe, nube, desmontaje limpio, volver a montar) y matriz de montaje (todas / cada una apagada / cada una sola / ninguna) |
+| `drafts/` | Brigadas creadas por borrador (H6): `factory.py` (validación estricta contra el registro de tools, revisión, hash, compilación), `store.py` (borrador -> activa solo con la aprobación firmada sobre el hash exacto; se revalida en cada uso), `signing.py` (HMAC con clave protegida por DPAPI en Windows), `checks.py` (pasos de validación genéricos) |
+| `ejemplos/` | `saludo` (cocinero, jefe con dos efímeros, tools con y sin aprobación, una de escaneo que no entra en la nube) y `eco` (la brigada mínima) |
+| `compat/v1/` | El contrato de Empresas 0.4 (`Brigada`, `Accion`, `Harness`, `armar`…) sobre el v2; `compat-shim/raphael_harness` lo sirve con el nombre viejo |
+| `runtime.py` (H8, contrato 2.1) | Orquestador montable: `set_orchestrator` (config, suscripción a lo que nombra `consumes`; sus propios eventos `orquestador.*` no le llegan), `tick` y `on_event` aislados, `notify`/`notices` (avisos para la persona). `catalog()` (acciones, comandos de lectura, ruteo, privada, caída y por qué; más lo montable si hay Loader), `is_private`, `down_reason`. `ask()` ata las propuestas del reporte al número REAL del pendiente (`Proposal.pending_id`). `talk_to_owner(text, session=, channel=, on_event=)` y `OwnerReply.meta` |
+| `runtime.py` (H7) | Jefe sin tope de turno: 5 errores seguidos lo dejan caído (un reporte degradado no cuenta) y vuelve con `revive_chief` o al re-montar. Comandos: el orquestador solo corre los declarados de lectura; uno no declarado lo corre la persona, con aviso. Salud: `check_health` al montar y en `tick` cada 5 min. `setup` registra tools: una no declarada se acepta con aviso y pide aprobación (en la nube se rechaza) |
+| `runtime.py` | `Runtime`: recibir y despachar con aislamiento, acciones por política, aprobar/rechazar/resolver/corregir, montar y desmontar en caliente con jefe y tools (exporta y purga), `ask()` al jefe de una brigada, ticks, conversación, estado sin datos de clientes |
+| `text_es.py` | Fechas, horas y texto en español rioplatense (portado de Empresas) |
+| `testing/` | `Clock` controlable, `find_cross_imports` (chequeo AST) y la suite de contrato (`testing.contract`) |

@@ -1,0 +1,55 @@
+ctName(object_name or "bubbleUser")
+            row.addStretch()
+            row.addWidget(label, stretch=0)
+        else:
+            label.setObjectName(object_name or "bubbleAssistant")
+            row.addWidget(label, stretch=0)
+            row.addStretch()
+
+        wrapper = QWidget()
+        wrapper.setLayout(row)
+        self._messages_layout.insertWidget(self._messages_layout.count() - 1, wrapper)
+        self.scroll_area.verticalScrollBar().setValue(self.scroll_area.verticalScrollBar().maximum())
+        return wrapper
+
+    def _show_typing_indicator(self) -> None:
+        self._hide_typing_indicator()
+        self._typing_bubble = self._add_bubble("assistant", "Jarvis está pensando...", object_name="bubbleTyping")
+
+    def _hide_typing_indicator(self) -> None:
+        if self._typing_bubble is not None:
+            self._messages_layout.removeWidget(self._typing_bubble)
+            self._typing_bubble.deleteLater()
+            self._typing_bubble = None
+
+    def add_system_message(self, text: str) -> None:
+        label = NoMinWidthLabel(text)
+        label.setObjectName("bubbleSystem")
+        label.setWordWrap(True)
+        label.setAlignment(Qt.AlignCenter)
+        self._messages_layout.insertWidget(self._messages_layout.count() - 1, label)
+        self.scroll_area.verticalScrollBar().setValue(self.scroll_area.verticalScrollBar().maximum())
+
+    def _add_system_message(self, text: str) -> None:
+        self.add_system_message(text)
+
+    def _on_send_clicked(self) -> None:
+        text = self.message_input.text().strip()
+        if not text:
+            return
+        self.message_input.clear()
+        self._send_message(text)
+
+    def _send_message(self, text: str) -> None:
+        self._add_bubble("user", text)
+        self._show_typing_indicator()
+        self._request_thread = ChatRequestThread(text, self._conversation_id, self._bridge)
+        self._request_thread.start()
+
+    def _on_tool_selected(self, prompt_prefix: str) -> None:
+        self.message_input.setText(prompt_prefix)
+        self.message_input.setFocus()
+        self.message_input.setCursorPosition(len(prompt_prefix))
+
+    def _on_reply(self, author: str, text: str) -> None:
+     

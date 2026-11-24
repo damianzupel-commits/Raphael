@@ -1,0 +1,6 @@
+# Lo que hay que instalar en el VPS para esta instalación (rutas relativas a D:\Raphael Ultimate copiadas al servidor).
+# pip install -r requirements-vps.txt   (desde la carpeta que tenga nucleo\ y brigadas\)
+-e ./nucleo/01-harness/codigo/raphael-core
+-e ./nucleo/02-orquestador/codigo/raphael-orchestrator
+-e ./brigadas/15-raphael-empresas/codigo/raphael-empresas
+tzdata ; sys_platform == "win32"

@@ -1,0 +1,13 @@
+# En el mini PC del cliente:  cd raphael-servidor/despliegue && docker compose up -d --build
+services:
+  raphael:
+    build:
+      context: ../..                      # la carpeta con todos los repos raphael-*
+      dockerfile: raphael-servidor/despliegue/Dockerfile
+    image: raphael-servidor:local
+    restart: unless-stopped
+    env_file: ../../datos/.env
+    volumes:
+      - ../../datos:/datos                 # perfil.yaml, raphael.sqlite, servidor.json, backups/
+    ports:
+      - "8080:8080"                        # panel de la dueña en la red del local: http://IP-DEL-MINI-PC:8080

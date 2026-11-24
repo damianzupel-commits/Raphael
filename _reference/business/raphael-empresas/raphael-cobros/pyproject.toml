@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "raphael-cobros"
+dynamic = ["version"]
+description = "Brigada Cobros: registra avisos de pago de seña; la dueña confirma."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = ["raphael-harness>=0.1,<1.0"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[project.entry-points."raphael.brigadas"]
+cobros = "raphael_cobros:Cobros"
+
+[tool.setuptools.dynamic]
+version = {attr = "raphael_cobros.__version__"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

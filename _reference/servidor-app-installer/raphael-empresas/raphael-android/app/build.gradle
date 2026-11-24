@@ -1,0 +1,56 @@
+plugins {
+    id 'com.android.application'
+}
+
+// La firma sale de claves/firma.properties (no se sube a git). Sin ese archivo se compila con la clave de debug.
+def firma = new Properties()
+def archivoFirma = rootProject.file('claves/firma.properties')
+if (archivoFirma.exists()) archivoFirma.withInputStream { firma.load(it) }
+
+android {
+    namespace 'com.raphael.empresas'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId "com.raphael.empresas"
+        minSdk 26
+        targetSdk 35
+        versionCode 2
+        versionName "0.2.0"
+        // Dirección fija del servidor (nube): ./gradlew assembleRelease -Pservidor=https://minegocio.duckdns.org
+        // Con eso la app abre directo, sin pedir la dirección. Sin la opción, la app la pide la primera vez (modo LAN).
+        buildConfigField "String", "SERVIDOR_FIJO", "\"${(findProperty('servidor') ?: '').toString().replaceAll('/+$', '')}\""
+    }
+
+    buildFeatures {
+        buildConfig true
+    }
+
+    signingConfigs {
+        if (archivoFirma.exists()) {
+            release {
+                storeFile rootProject.file(firma['archivo'])
+                storePassword firma['clave']
+                keyAlias firma['alias']
+                keyPassword firma['clave']
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            if (archivoFirma.exists()) signingConfig signingConfigs.release
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation 'androidx.core:core:1.15.0'
+    implementation 'androidx.work:work-runtime:2.9.1'
+}

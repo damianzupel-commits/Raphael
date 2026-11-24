@@ -1,0 +1,26 @@
+# Catálogo de brigadas que un cliente puede sumar a su Raphael.
+# repo = nombre del repo (se descarga de RAPHAEL_FUENTE_REPOS/<repo>.git o de RAPHAEL_FUENTE_LOCAL/<repo>)
+# necesita = brigadas que tienen que estar activas antes (las brigadas no se importan entre sí,
+#            pero algunas solo tienen sentido con otra: Cobros cobra señas de presupuestos de Encargos)
+- nombre: atencion
+  repo: raphael-atencion
+  titulo: Atención
+  descripcion: Responde con la información de tu negocio, anota lo que no sabe y te pasa los reclamos.
+- nombre: encargos
+  repo: raphael-encargos
+  titulo: Encargos
+  descripcion: Toma pedidos a medida paso a paso y te deja el presupuesto sugerido para que lo apruebes.
+- nombre: cobros
+  repo: raphael-cobros
+  titulo: Cobros
+  descripcion: Registra cuando un cliente avisa que pagó la seña; vos confirmás con "Me llegó".
+  necesita: [encargos]
+- nombre: agenda
+  repo: raphael-agenda
+  titulo: Agenda
+  descripcion: Pide turnos, vos los confirmás, y manda recordatorios automáticos.
+- nombre: avisos
+  repo: raphael-avisos
+  titulo: Avisos
+  descripcion: Le avisa solo al cliente cada vez que cambia el estado de su pedido.
+  necesita: [encargos]

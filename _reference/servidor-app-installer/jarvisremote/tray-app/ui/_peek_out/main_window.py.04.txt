@@ -1,0 +1,45 @@
+         return
+        self.model_selector.setEnabled(False)
+        self.chat_view.add_system_message("Cambiando de modelo... puede tardar un momento.")
+        self._model_thread = ModelSwitchThread(model_id, self._model_bridge)
+        self._model_thread.start()
+
+    def _on_model_switched(self, model_id: str) -> None:
+        self.model_selector.setEnabled(True)
+        label = next((m["label"] for m in config.AVAILABLE_MODELS if m["id"] == model_id), model_id)
+        self.chat_view.add_system_message(f"Listo, ahora estoy usando el modelo: {label}.")
+
+    def closeEvent(self, event) -> None:
+        self.chat_view.shutdown()
+        super().closeEvent(event)
+
+
+_qt_thread: threading.Thread | None = None
+_window: MainWindow | None = None
+_lock = threading.Lock()
+
+
+def open_chat_window(icon=None, item=None) -> None:
+    global _qt_thread, _window
+    with _lock:
+        if _qt_thread is not None and _qt_thread.is_alive():
+            if _window is not None:
+                # QWidget no es thread-safe: pedirle que se muestre desde el
+                # hilo de pystray directo rompería la regla de un solo hilo de
+                # GUI. invokeMethod encola el show()/raise_() en el hilo de Qt.
+                from PySide6.QtCore import QMetaObject
+
+                QMetaObject.invokeMethod(_window, "show", Qt.QueuedConnection)
+                QMetaObject.invokeMethod(_window, "raise_", Qt.QueuedConnection)
+                QMetaObject.invokeMethod(_window, "activateWindow", Qt.QueuedConnection)
+            return
+        _qt_thread = threading.Thread(target=_run_qt_app, daemon=True)
+        _qt_thread.start()
+
+
+def _run_qt_app() -> None:
+    global _window
+    app = QApplication.instance() or QApplication([])
+    _window = MainWindow()
+    _window.show()
+    app.exec()

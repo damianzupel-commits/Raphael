@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Mapa de inteligencia · Raphael</title>
+<style>
+  :root{--accent:#35e6ff;--bg:#04060c;--txt:#dfe9f5;--mut:#7d93ac;--line:#1b2a3f}
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--txt);
+    font-family:"Segoe UI",system-ui,sans-serif}
+  body{display:flex;flex-direction:column}
+  /* el globo vive en su propia zona (#stage); los controles de capas van en una
+     barra aparte debajo, para no taparlo (pedido de Damian, 2026-10-18) */
+  #stage{position:relative;flex:1;min-height:0}
+  #c{position:absolute;inset:0;width:100%;height:100%;display:block}
+  header{position:relative;flex:none;display:flex;align-items:center;gap:12px;
+    padding:10px 18px;background:linear-gradient(180deg,#060b16,#060b16cc);z-index:5}
+  .dot{width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 10px var(--accent);
+    animation:p 2.4s infinite}
+  @keyframes p{0%,100%{opacity:.5}50%{opacity:1}}
+  header h1{font-size:13px;letter-spacing:.28em;margin:0;font-weight:600;text-transform:uppercase}
+  header .sub{color:var(--mut);font-size:11px;margin-left:auto}
+  #panel{position:absolute;top:12px;left:12px;width:230px;max-height:calc(100% - 24px);overflow-y:auto;z-index:5;
+    background:#0a111ee6;border:1px solid var(--line);border-radius:12px;padding:12px}
+  #panel h2{font-size:10px;letter-spacing:.18em;color:var(--accent);margin:0 0 8px;text-transform:uppercase}
+  .pt{display:flex;align-items:center;gap:8px;padding:6px 4px;border-top:1px solid #121e2e;cursor:pointer;font-size:12px}
+  .pt:first-child{border-top:none}
+  .pt .d{width:7px;height:7px;border-radius:50%;flex:none}
+  .pt .t{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pt .k{color:var(--mut);font-size:9px}
+  #ctrl{flex:none;display:flex;gap:8px;align-items:center;flex-wrap:wrap;
+    padding:8px 12px;background:#070d18;border-top:1px solid var(--line);max-height:30vh;overflow-y:auto}
+  .ctl{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .btn{background:#0a111ecc;border:1px solid var(--line);color:var(--txt);border-radius:20px;
+    padding:8px 14px;font-size:12px;cursor:pointer;user-select:none}
+  .btn.on{border-color:var(--accent);color:var(--accent);box-shadow:0 0 10px #35e6ff33}
+  #hint{position:absolute;bottom:10px;right:12px;color:var(--mut);font-size:10px;z-index:5;pointer-events:none}
+  #chatbar{position:relative;flex:none;z-index:6;display:flex;gap:8px;align-items:center;
+    padding:9px 12px;background:#060b16;border-top:1px solid var(--line)}
+  #chatbar input{flex:1;background:#0a111e;border:1px solid var(--line);color:var(--txt);
+    border-radius:20px;padding:9px 14px;font-size:13px;outline:none}
+  #chatbar input:focus{border-color:var(--accent)}
+  #chatbar button{background:var(--accent);color:#04121a;border:none;border-radius:50%;width:38px;height:38px;
+    font-size:15px;cursor:pointer;flex:none}
+  #chatreply{position:absolute;bottom:10px;left:12px;right:12px;z-index:5;color:var(--txt);font-size:12px;
+    background:#0a111ef2;border:1px solid var(--line);border-radius:10px;padding:8px 12px;display:none;max-height:40%;overflow-y:auto}
+  #empty{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);color:var(--mut);font-size:13px;
+    text-align:center;z-index:4;max-width:280px;line-height:1.5;display:none}
+  #campopup{position:absolute;top:16px;left:50%;transform:translateX(-50%);z-index:8;width:min(340px,92%);
+    background:#0a111eF2;border:1px solid var(--accent);border-radius:12px;padding:10px;display:none}
+  #campopup img{width:100%;border-radius:8px;display:block}
+  #campopup .t{color:var(--txt);font-size:13px;margin:8px 0 6px}
+  #campopup a{color:var(--accent);font-size:12px;text-decoration:none}
+  #campopup .x{position:absolute;top:6px;right:10px;color:var(--mut);cursor:pointer;font-size:16px}
+</style>
+</head>
+<body>
+  <header>
+    <span class="dot"></span><h1>Mapa de inteligencia</h1>
+    <span class="sub" id="sub">RAPHAEL</span>
+  </header>
+  <div id="stage">
+    <canvas id="c"></canvas>
+    <div id="panel"><h2>Inteligencia (<span id="cnt">0</span>)</h2><div id="list"></div></div>
+    <div id="hint">arrastrá para rotar · rueda para zoom</div>
+    <div id="campopup"><span class="x" id="cam-x">✕</span><img id="cam-img" alt=""><div class="t" id="cam-t"></div><a id="cam-a" target="_blank">Abrir cámara ↗</a></div>
+    <div id="chatreply"></div>
+    <div id="empty">Todavía no hay inteligencia en el mapa.<br>Pedile a Raphael que geolocalice una IP (ip_geolocate) y va a aparecer acá.</div>
+  </div>
+  <div id="ctrl"><span class="ctl" id="layers"></span><div class="btn" id="realBtn">🌍 Realista</div><div class="btn" id="spinBtn">⟳ Girar</div></div>
+  <div id="chatbar"><input id="chat-in" placeholder="Hablale a Raphael… (ej. geolocalizá 8.8.8.8)" autocomplete="off"><button id="chat-send">➤</button></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/satellite.js/5.0.0/satellite.min.js"></script>
+<script>
+(function(){
+  const KEY = new URLSearchParams(location.search).get("key") || "";
+  const R = 100;
+  const KIND_COLOR = {ip:0x35e6ff, target:0xff5c7a, evidence:0xb78cff, default:0x35e6ff};
+
+  const stageEl = document.getElementById("stage");
+  function stageW(){ return stageEl.clientWidth || innerWidth; }
+  function stageH(){ return stageEl.clientHeight || innerHeight; }
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(45, stageW()/stageH(), 1, 5000);
+  camera.position.set(0,0,320);
+  const renderer = new THREE.WebGLRenderer({canvas:document.getElementById("c"), antialias:true, alpha:true});
+  renderer.setSize(stageW(), stageH()); renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+
+  const globe = new THREE.Group(); scene.add(globe);
+  // esfera base (su material se cambia a textura realista con el toggle 🌍)
+  const baseSphere = new THREE.Mesh(new THREE.SphereGeometry(R,64,64),
+    new THREE.MeshBasicMaterial({color:0x0a1a2e}));
+  globe.add(baseSphere);
+  // graticula (wireframe)
+  const grat = new THREE.Mesh(new THREE.SphereGeometry(R*1.001,36,24),
+    new THREE.MeshBasicMaterial({color:0x1d3b56, wireframe:true, transparent:true, opacity:0.5}));
+  globe.add(grat);
+  // atmósfera
+  const atmo = new THREE.Mesh(new THREE.SphereGeometry(R*1.07,48,48),
+    new THREE.MeshBasicMaterial({color:0x35e6ff, transparent:true, opacity:0.06, side:THREE.BackSide}));
+  globe.add(atmo);
+
+  const pinsGroup = new THREE.Group(); globe.add(pinsGroup);
+  let flightsObj = null;
+
+  function toVec(lat, lon, r){
+    const phi=(90-lat)*Math.PI/180, theta=(lon+180)*Math.PI/180;
+    return new THREE.Vector3(-r*Math.sin(phi)*Math.cos(theta), r*Math.cos(phi), r*Math.sin(phi)*Math.sin(theta));
+  }
+
+  function addPin(p){
+    const color = KIND_COLOR[p.kind] || KIND_COLOR.default;
+    const base = toVec(p.lat, p.lon, R);
+    const top  = toVec(p.lat, p.lon, R*1.12);
+    // "spike" desde la superficie
+    const g = new THREE.BufferGeometry().setFromPoints([base, top]);
+    pinsGroup.add(new THREE.Line(g, new THREE.LineBasicMaterial({color, transparent:true, opacity:0.7})));
+    const dot = new THREE.Mesh(new THREE.SphereGeometry(1.8,10,10), new THREE.MeshBasicMaterial({color}));
+    dot.position.copy(top); pinsGroup.add(dot);
+  }
+
+  const seen = new Set();
+  function renderList(points){
+    const list=document.getElementById("list"); list.innerHTML="";
+    document.getElementById("cnt").textContent = points.length;
+    document.getElementById("empty").style.display = points.length ? "none" : "block";
+    points.slice(0,100).forEach(p=>{
+      const row=document.createElement("div"); row.className="pt";
+      const col="#"+((KIND_COLOR[p.kind]||KIND_COLOR.default).toString(16).padStart(6,"0"));
+      row.innerHTML='<span class="d" style="background:'+col+';box-shadow:0 0 6px '+col+'"></span>'+
+        '<span class="t">'+ (p.label||"punto").replace(/</g,"&lt;") +'<div class="k">'+(p.kind||"")+'</div></span>';
+      row.addEventListener("click",()=>flyTo(p.lat,p.lon));
+      list.appendChild(row);
+    });
+  }
+
+  let points=[];
+  function ingest(ps){
+    ps.forEach(p=>{ if(!seen.has(p.id)){ seen.add(p.id); points.unshift(p); addPin(p); }});
+    renderList(points);
+  }
+
+  // --- capas del mundo (todas 🟢 gratis/sin key, server-side) ---
+  const LAYERS=[
+    {id:"flights",     label:"✈ Vuelos",      color:0xffc24d, ep:"/api/geo/flights",             pick:d=>d.flights||[], live:true},
+    {id:"earthquakes", label:"🌋 Sismos",      color:0xff5c4d, ep:"/api/geo/layer/earthquakes",   pick:d=>d.points||[],  live:true},
+    {id:"news",        label:"📰 Noticias",    color:0x8ca2ff, ep:"/api/geo/layer/news",          pick:d=>d.points||[],  live:true},
+    {id:"iss",         label:"🛰 ISS",         color:0x49f0a6, ep:"/api/geo/layer/iss",           pick:d=>d.points||[],  live:true, big:true},
+    {id:"satellites",  label:"🛰 Satélites",   color:0xb0c4ff, ep:"/api/geo/layer/satellites",    sat:true,              live:true},
+    {id:"infra",       label:"🏢 Datacenters", color:0x5ce1a8, ep:"/api/geo/layer/infra",         pick:d=>d.points||[]},
+    {id:"fires",       label:"🔥 Incendios",   color:0xff7a3c, ep:"/api/geo/layer/fires",         pick:d=>d.points||[], live:true},
+    {id:"webcams",     label:"📷 Cámaras",     color:0x9affd0, ep:"/api/geo/layer/webcams",       pick:d=>d.points||[], clickable:true},
+    {id:"ships",       label:"🚢 Barcos",      color:0x6fd0ff, ep:"/api/geo/layer/ships",         pick:d=>d.points||[], live:true},
+    {id:"shodan",      label:"🛰 Shodan",      color:0xff5c7a, ep:"/api/geo/layer/shodan",        pick:d=>d.points||[]},
+    {id:"weather",     label:"🌤 Clima",       color:0xffe08a, ep:"/api/geo/layer/weather",       pick:d=>d.points||[], live:true},
+    {id:"opencellid",  label:"📶 Antenas",     color:0xb0b8c4, ep:"/api/geo/layer/opencellid",    pick:d=>d.points||[]},
+    {id:"cables",      label:"🔌 Cables",      color:0x5ce1ff, ep:"/api/geo/layer/cables",        lines:true},
+  ];
+  const layerData={};  // guarda los datos (con meta) de las capas clickeables
+  const layerOn={}, layerObj={};
+  function makePoints(data, color, r, size){
+    const pos=new Float32Array(data.length*3);
+    data.forEach((p,i)=>{ const v=toVec(p.lat,p.lon,r); pos[i*3]=v.x;pos[i*3+1]=v.y;pos[i*3+2]=v.z; });
+    const geo=new THREE.BufferGeometry(); geo.setAttribute("position",new THREE.BufferAttribute(pos,3));
+    return new THREE.Points(geo,new THREE.PointsMaterial({color, size:size||1.6, sizeAttenuation:true, transparent:true, opacity:0.85}));
+  }
+  function makeLines(lines, color, r){
+    const g=new THREE.Group(); const mat=new THREE.LineBasicMaterial({color, transparent:true, opacity:0.55});
+    lines.forEach(ln=>{ if(ln.length<2) return;
+      const pts=ln.map(p=>toVec(p[0],p[1],r)); g.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), mat)); });
+    return g;
+  }
+  function clearLayer(id){ const o=layerObj[id]; if(!o) return; globe.remove(o);
+    if(o.geometry) o.geometry.dispose(); else if(o.children) o.children.forEach(c=>c.geometry&&c.geometry.dispose());
+    delete layerObj[id]; }
+  async function loadLayer(L){
+    if(!layerOn[L.id]) return;
+    try{
+      if(L.sat){ return loadSatellites(L); }
+      const r=await fetch(L.ep,{headers:hdrs()}); if(!r.ok) return;
+      const j=await r.json();
+      if(L.lines){ clearLayer(L.id); const lns=j.lines||[]; if(lns.length){ const obj=makeLines(lns, L.color, R*1.006); layerObj[L.id]=obj; globe.add(obj); } return; }
+      const data=L.pick(j)||[];
+      clearLayer(L.id);
+      if(data.length){ const obj=makePoints(data, L.color, R*1.03, L.big?5:1.7); layerObj[L.id]=obj; globe.add(obj);
+        if(L.clickable) layerData[L.id]=data; }
+    }catch(e){}
+  }
+  async function loadSatellites(L){
+    if(typeof satellite==="undefined") return;
+    try{
+      const r=await fetch(L.ep,{headers:hdrs()}); if(!r.ok) return;
+      const lines=((await r.json()).tle||"").trim().split("\n");
+      const now=new Date(), gmst=satellite.gstime(now), pts=[];
+      for(let i=0;i+2<lines.length;i+=3){
+        try{
+          const rec=satellite.twoline2satrec(lines[i+1].trim(), lines[i+2].trim());
+          const pv=satellite.propagate(rec, now); if(!pv.position) continue;
+          const gd=satellite.eciToGeodetic(pv.position, gmst);
+          pts.push({lat:satellite.degreesLat(gd.latitude), lon:satellite.degreesLong(gd.longitude)});
+        }catch(x){}
+      }
+      clearLayer(L.id);
+      if(pts.length){ const obj=makePoints(pts, L.color, R*1.18, 1.5); layerObj[L.id]=obj; globe.add(obj); }
+    }catch(e){}
+  }
+  const layersEl=document.getElementById("layers");
+  LAYERS.forEach(L=>{
+    const b=document.createElement("div"); b.className="btn"; b.textContent=L.label;
+    b.addEventListener("click",()=>{ layerOn[L.id]=!layerOn[L.id]; b.classList.toggle("on",layerOn[L.id]);
+      if(layerOn[L.id]) loadLayer(L); else clearLayer(L.id); });
+    layersEl.appendChild(b);
+  });
+  setInterval(()=>{ LAYERS.forEach(L=>{ if(L.live && layerOn[L.id]) loadLayer(L); }); }, 20000);
+
+  // --- interacción: rotar + zoom + tap (cámaras) ---
+  let spin=true, drag=false, px=0, py=0, velX=0, velY=0, downX=0, downY=0;
+  const cv=renderer.domElement;
+  const raycaster=new THREE.Raycaster(); raycaster.params.Points.threshold=4;
+  function showCam(w){
+    const pop=document.getElementById("campopup"); const img=(w.meta&&w.meta.img)||"";
+    document.getElementById("cam-img").src=img; document.getElementById("cam-img").style.display=img?"block":"none";
+    document.getElementById("cam-t").textContent=w.label||"cámara";
+    const a=document.getElementById("cam-a"); a.href=(w.meta&&w.meta.url)||"#"; a.style.display=(w.meta&&w.meta.url)?"inline":"none";
+    pop.style.display="block";
+  }
+  document.getElementById("cam-x").addEventListener("click",()=>document.getElementById("campopup").style.display="none");
+  function handleTap(e){
+    const data=layerData["webcams"]; const obj=layerObj["webcams"]; if(!data||!obj) return;
+    const rect=cv.getBoundingClientRect();
+    raycaster.setFromCamera({x:((e.clientX-rect.left)/rect.width)*2-1, y:-((e.clientY-rect.top)/rect.height)*2+1}, camera);
+    const hit=raycaster.intersectObject(obj)[0];
+    if(hit && hit.index!=null && data[hit.index]) showCam(data[hit.index]);
+  }
+  cv.addEventListener("pointerdown",e=>{drag=true;px=e.clientX;py=e.clientY;downX=e.clientX;downY=e.clientY;});
+  addEventListener("pointerup",e=>{ if(drag && Math.abs(e.clientX-downX)<6 && Math.abs(e.clientY-downY)<6) handleTap(e); drag=false;});
+  addEventListener("pointermove",e=>{ if(!drag)return; const dx=e.clientX-px,dy=e.clientY-py; px=e.clientX;py=e.clientY;
+    velY=dx*0.005; velX=dy*0.005; globe.rotation.y+=velY; globe.rotation.x=Math.max(-1.3,Math.min(1.3,globe.rotation.x+velX)); });
+  cv.addEventListener("wheel",e=>{ e.preventDefault(); camera.position.z=Math.max(140,Math.min(600,camera.position.z+e.deltaY*0.3)); },{passive:false});
+  document.getElementById("spinBtn").classList.add("on");
+  document.getElementById("spinBtn").addEventListener("click",function(){ spin=!spin; this.classList.toggle("on",spin); });
+
+  // --- textura realista: NASA Blue Marble (dominio público) — reemplazo libre del Google 3D ---
+  let earthTex=null;
+  function setRealistic(on){
+    if(on){
+      if(!earthTex){ const ldr=new THREE.TextureLoader(); ldr.setCrossOrigin("anonymous");
+        earthTex=ldr.load("https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg", ()=>{ baseSphere.material.needsUpdate=true; }); }
+      baseSphere.material.map=earthTex; baseSphere.material.color.set(0xffffff); baseSphere.material.needsUpdate=true;
+      grat.material.opacity=0.12; atmo.material.opacity=0.13;
+    } else {
+      baseSphere.material.map=null; baseSphere.material.color.set(0x0a1a2e); baseSphere.material.needsUpdate=true;
+      grat.material.opacity=0.5; atmo.material.opacity=0.06;
+    }
+  }
+  document.getElementById("realBtn").addEventListener("click",function(){ const on=!this.classList.contains("on"); this.classList.toggle("on",on); setRealistic(on); });
+
+  function flyTo(lat,lon){ globe.rotation.y = -((lon+180)*Math.PI/180) - Math.PI/2; globe.rotation.x = (lat)*Math.PI/180; spin=false; document.getElementById("spinBtn").classList.remove("on"); }
+
+  function animate(){
+    requestAnimationFrame(animate);
+    if(spin && !drag) globe.rotation.y += 0.0012;
+    renderer.render(scene,camera);
+  }
+  animate();
+  function resize(){ camera.aspect=stageW()/stageH(); camera.updateProjectionMatrix(); renderer.setSize(stageW(),stageH()); }
+  addEventListener("resize",resize); resize();
+
+  // --- datos ---
+  function hdrs(){ return KEY?{Authorization:"Bearer "+KEY}:{}; }
+  async function load(){
+    try{ const r=await fetch("/api/geo/points",{headers:hdrs()}); if(r.ok){ ingest((await r.json()).points||[]); } }catch(e){}
+  }
+  function connect(){
+    try{
+      const ws=new WebSocket((location.protocol==="https:"?"wss://":"ws://")+location.host+"/ws/geo"+(KEY?("?key="+encodeURIComponent(KEY)):""));
+      ws.onmessage=ev=>{ try{ const d=JSON.parse(ev.data); if(d.type==="point") ingest([d]); else if(d.type==="snapshot") ingest(d.points||[]); }catch(e){} };
+      ws.onclose=()=>setTimeout(connect,3000); ws.onerror=()=>{try{ws.close();}catch(e){}};
+    }catch(e){}
+  }
+  // --- chat con Raphael, en el mismo lugar que el mapa ---
+  (function(){
+    const inp=document.getElementById("chat-in"), btn=document.getElementById("chat-send"), box=document.getElementById("chatreply");
+    if(!KEY){ inp.disabled=true; btn.disabled=true; inp.placeholder="Abrí desde la app para chatear"; return; }
+    function show(role,txt){ box.style.display="block"; const d=document.createElement("div"); d.style.margin="4px 0";
+      d.innerHTML='<b style="color:'+(role==="vos"?"#ffc24d":"var(--accent)")+'">'+role+':</b> '+String(txt).replace(/</g,"&lt;"); box.appendChild(d); box.scrollTop=box.scrollHeight; return d; }
+    async function send(){ const t=inp.value.trim(); if(!t) return; inp.value=""; show("vos",t); const last=show("raphael","…");
+      try{
+        const r=await fetch("/api/chat",{method:"POST",headers:Object.assign({"Content-Type":"application/json"},hdrs()),body:JSON.stringify({message:t,client_id:"globo"})});
+        const d=await r.json();
+        last.innerHTML='<b style="color:var(--accent)">raphael:</b> '+String(d.reply||"(sin respuesta)").replace(/</g,"&lt;");
+        box.scrollTop=box.scrollHeight;
+        load();  // refresca los pines por si geolocalizó algo
+      }catch(e){ last.innerHTML='<b style="color:#ff6b6b">error:</b> '+e.message; }
+    }
+    btn.addEventListener("click",send);
+    inp.addEventListener("keydown",e=>{ if(e.key==="Enter") send(); });
+  })();
+
+  load(); connect();
+})();
+</script>
+</body>
+</html>

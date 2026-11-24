@@ -1,0 +1,58 @@
+cidiendo con generate_image/generate_video (ver
+    # INFORME_COMPLETO.md, sección 4.5, y backend/app/tools/__init__.py,
+    # donde esas dos tools están comentadas). No reactivar ninguna de las dos
+    # puntas sin haber investigado la causa primero.
+    TOOLS: list[tuple[str, str, str]] = []
+
+    tool_selected = Signal(str)
+    voice_toggled = Signal(bool)
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setObjectName("sidebar")
+        self.setFixedWidth(64)
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(6, 16, 6, 16)
+        layout.setSpacing(8)
+
+        for icon, tooltip, prompt_prefix in self.TOOLS:
+            btn = QPushButton(icon)
+            btn.setObjectName("sidebarButton")
+            btn.setToolTip(tooltip)
+            btn.setCursor(Qt.PointingHandCursor)
+            btn.clicked.connect(lambda _checked=False, p=prompt_prefix: self.tool_selected.emit(p))
+            layout.addWidget(btn)
+
+        layout.addStretch()
+
+        self.voice_button = QPushButton("🎙")
+        self.voice_button.setObjectName("sidebarButton")
+        self.voice_button.setToolTip("Activar/desactivar escucha continua (\"hey Jarvis\")")
+        self.voice_button.setCheckable(True)
+        self.voice_button.setCursor(Qt.PointingHandCursor)
+        self.voice_button.toggled.connect(self.voice_toggled.emit)
+        layout.addWidget(self.voice_button)
+
+
+class ChatView(QWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self._bridge = ChatBridge()
+        self._bridge.reply_ready.connect(self._on_reply)
+
+        self._conversation_id: str | None = None
+        self._voice_listener: VoiceListener | None = None
+        self._typing_bubble: QWidget | None = None
+        self._request_thread: ChatRequestThread | None = None
+
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+
+        self.sidebar = Sidebar()
+        self.sidebar.tool_selected.connect(self._on_tool_selected)
+        self.sidebar.voice_toggled.connect(self._on_voice_toggled)
+        layout.addWidget(self.sidebar)
+
+        layout.addWidget(self._build_chat_column(), stret

@@ -1,0 +1,56 @@
+(self) -> QWidget:
+        bar = QWidget()
+        bar.setObjectName("topBar")
+        bar.setFixedHeight(56)
+        layout = QHBoxLayout(bar)
+        layout.addStretch()
+
+        self.model_selector = QComboBox()
+        for model in config.AVAILABLE_MODELS:
+            self.model_selector.addItem(model["label"], userData=model["id"])
+        current = self._current_model_id()
+        idx = self.model_selector.findData(current)
+        if idx >= 0:
+            self.model_selector.setCurrentIndex(idx)
+        self.model_selector.currentIndexChanged.connect(self._on_model_selected)
+        layout.addWidget(self.model_selector)
+
+        layout.addStretch()
+
+        settings_button = QPushButton("⚙")
+        settings_button.setObjectName("settingsButton")
+        settings_button.setToolTip("Configuración (permisos y conectores)")
+        settings_button.setCursor(Qt.PointingHandCursor)
+        settings_button.clicked.connect(self._on_open_settings)
+        layout.addWidget(settings_button)
+        layout.setContentsMargins(0, 0, 12, 0)
+        return bar
+
+    # ------------------------------------------------------------- ajustes
+
+    def _on_open_settings(self) -> None:
+        # Diálogo no-modal reusado -- así el usuario puede seguir chateando
+        # mientras lo tiene abierto, y no se acumulan instancias si lo abre
+        # varias veces desde el ícono.
+        if self._settings_dialog is None:
+            self._settings_dialog = SettingsDialog(self)
+        self._settings_dialog.show()
+        self._settings_dialog.raise_()
+        self._settings_dialog.activateWindow()
+
+    # ------------------------------------------------------------- modelo
+
+    def _current_model_id(self) -> str:
+        try:
+            text = config.ENV_PATH.read_text(encoding="utf-8")
+            for line in text.splitlines():
+                if line.startswith("LMSTUDIO_MODEL="):
+                    return line.split("=", 1)[1].strip()
+        except OSError:
+            pass
+        return config.AVAILABLE_MODELS[0]["id"]
+
+    def _on_model_selected(self, index: int) -> None:
+        model_id = self.model_selector.itemData(index)
+        if model_id == self._current_model_id():
+   

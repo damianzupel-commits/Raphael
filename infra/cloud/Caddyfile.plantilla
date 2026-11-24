@@ -1,0 +1,16 @@
+@DOMINIO@ {
+	encode gzip
+	# solo la API de la app y el webhook de Meta; todo lo demás, 404
+	@raphael path /api/v1/* /webhook/meta
+	handle @raphael {
+		reverse_proxy 127.0.0.1:@PUERTO@
+	}
+	handle {
+		respond "Raphael" 404
+	}
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options nosniff
+		-Server
+	}
+}

@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Raphael · soporte</title>
+<style>
+body{margin:0;font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:#f6f4f0;color:#1f2328}
+header{background:#1f2a44;color:#fff;padding:14px 18px;display:flex;gap:12px;align-items:center}header h1{font-size:18px;margin:0;flex:1}
+main{padding:16px;max-width:1100px;margin:0 auto}table{width:100%;border-collapse:collapse;background:#fff;border-radius:12px;overflow:hidden}
+th,td{text-align:left;padding:9px 10px;border-bottom:1px solid #e3dfd8;vertical-align:top;font-size:14px}th{color:#6b6f76;font-weight:600;background:#faf9f6}
+.al{color:#b3412f}.ok{color:#2f8f5b}code{font-size:13px}form{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}
+input,select,button{font:inherit;padding:8px 10px;border:1px solid #e3dfd8;border-radius:9px}button{background:#1f2a44;color:#fff;border:0;cursor:pointer}
+</style>
+</head>
+<body>
+<header><h1>Raphael · soporte</h1><button id="salir">Salir</button></header>
+<main>
+<form id="nueva"><input id="cli" placeholder="Cliente" required><select id="plan"><option>basico</option><option>pro</option><option>privado</option><option>premium</option></select>
+<input id="vence" type="date" title="Vence"><button>Crear licencia</button></form>
+<table><thead><tr><th>Cliente</th><th>Licencia</th><th>Estado</th><th>Último latido</th><th>Uso del mes</th><th>Alertas</th><th></th></tr></thead><tbody id="filas"></tbody></table>
+</main>
+<script>
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+let tok = ""; try { tok = sessionStorage.getItem("central") || ""; } catch (e) {}
+if (!tok) { tok = prompt("Token de administración") || ""; try { sessionStorage.setItem("central", tok); } catch (e) {} }
+async function api(ruta, cuerpo) {
+  const r = await fetch(ruta, {method: cuerpo ? "POST" : "GET", headers: {"Content-Type": "application/json", Authorization: "Bearer " + tok}, body: cuerpo ? JSON.stringify(cuerpo) : undefined});
+  if (r.status === 401) { try { sessionStorage.removeItem("central"); } catch (e) {} alert("Token inválido"); location.reload(); }
+  const d = await r.json(); if (!r.ok) { alert(d.detail || "Error"); throw d; } return d;
+}
+async function cargar() {
+  const xs = await api("/admin/instalaciones");
+  document.getElementById("filas").innerHTML = xs.map(x => `<tr>
+    <td><b>${esc(x.cliente)}</b><br><small>${esc(x.plan)} · ${Object.keys(x.brigadas || {}).join(", ")}</small></td>
+    <td><code>${esc(x.clave)}</code><br><small>vence ${esc(x.vence || "—")}</small></td>
+    <td class="${x.activa ? "ok" : "al"}">${x.activa ? "activa" : "suspendida"}<br><small>${esc(x.version || "")}</small></td>
+    <td>${esc(x.ultimo_latido || "—")}</td>
+    <td>${x.uso && x.uso.mensajes != null ? `${x.uso.mensajes} / ${x.uso.limite_mensajes}<br><small>US$ ${(x.uso.costo_usd || 0).toFixed(2)} IA</small>` : "—"}</td>
+    <td class="al">${x.alertas.map(esc).join("<br>")}</td>
+    <td><button data-c="${esc(x.clave)}" data-a="${x.activa ? 0 : 1}">${x.activa ? "Suspender" : "Reactivar"}</button></td></tr>`).join("");
+  document.querySelectorAll("[data-c]").forEach(b => b.onclick = async () => { await api("/admin/licencias/" + b.dataset.c, {activa: b.dataset.a === "1"}); cargar(); });
+}
+document.getElementById("nueva").onsubmit = async e => {
+  e.preventDefault();
+  const l = await api("/admin/licencias", {cliente: cli.value, plan: plan.value, vence: vence.value || null});
+  alert("Clave para el cliente: " + l.clave); cli.value = ""; cargar();
+};
+document.getElementById("salir").onclick = () => { try { sessionStorage.removeItem("central"); } catch (e) {} location.reload(); };
+cargar(); setInterval(cargar, 60000);
+</script>
+</body>
+</html>

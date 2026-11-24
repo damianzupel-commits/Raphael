@@ -1,0 +1,45 @@
+name: tests
+on: [push, pull_request]
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: raphael-harness
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository_owner }}/raphael-orquestador
+          path: raphael-orquestador
+          token: ${{ secrets.RAPHAEL_REPOS_TOKEN || github.token }}
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository_owner }}/raphael-atencion
+          path: raphael-atencion
+          token: ${{ secrets.RAPHAEL_REPOS_TOKEN || github.token }}
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository_owner }}/raphael-encargos
+          path: raphael-encargos
+          token: ${{ secrets.RAPHAEL_REPOS_TOKEN || github.token }}
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository_owner }}/raphael-cobros
+          path: raphael-cobros
+          token: ${{ secrets.RAPHAEL_REPOS_TOKEN || github.token }}
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository_owner }}/raphael-agenda
+          path: raphael-agenda
+          token: ${{ secrets.RAPHAEL_REPOS_TOKEN || github.token }}
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository_owner }}/raphael-avisos
+          path: raphael-avisos
+          token: ${{ secrets.RAPHAEL_REPOS_TOKEN || github.token }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pydantic pyyaml httpx pytest
+      - name: Tests del harness + prueba integrada con todas las brigadas
+        run: cd raphael-harness && python -m pytest -q

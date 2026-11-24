@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Raphael Empresas</title>
+<style>
+:root{--fondo:#070b14;--panel:rgba(15,23,42,.8);--linea:rgba(148,163,184,.18);--tinta:#e6edf7;--suave:#8b97ab;--cian:#22d3ee;--mal:#f87171}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:radial-gradient(900px 500px at 0 0,rgba(34,211,238,.09),transparent 60%),var(--fondo);color:var(--tinta);font:16px/1.5 system-ui,sans-serif}
+main{max-width:420px;margin:0 auto;padding:9vh 22px 30px;text-align:center}
+.orbe{width:64px;height:64px;border-radius:50%;margin:0 auto 18px;background:radial-gradient(circle at 35% 30%,#e0fbff,#67e8f9 25%,#0891b2 60%,#0e3a52);box-shadow:0 0 22px rgba(34,211,238,.8),0 0 50px rgba(34,211,238,.35);animation:l 3.2s ease-in-out infinite}
+@keyframes l{50%{transform:scale(1.05);box-shadow:0 0 30px rgba(34,211,238,.95),0 0 64px rgba(34,211,238,.45)}}
+h1{margin:0;font-size:21px;letter-spacing:.14em}
+p{color:var(--suave);margin:10px 0 0}
+form{display:flex;flex-direction:column;gap:12px;margin-top:26px}
+input{font:inherit;color:var(--tinta);background:rgba(2,6,23,.6);border:1px solid var(--linea);border-radius:14px;padding:14px 16px;outline:none;text-align:center}
+input:focus{border-color:var(--cian);box-shadow:0 0 0 3px rgba(34,211,238,.14)}
+button{font:inherit;font-weight:700;border:0;border-radius:14px;padding:14px;background:var(--cian);color:#04212b}
+button:disabled{opacity:.55}
+#msg{min-height:24px;font-size:14px;color:var(--mal)}
+#msg.ok{color:#34d399}
+details{margin-top:26px;text-align:left;border:1px solid var(--linea);border-radius:14px;background:var(--panel);padding:12px 16px;font-size:14px;color:var(--suave)}
+summary{cursor:pointer;color:var(--tinta)}
+b{color:var(--tinta)}
+</style></head>
+<body><main>
+  <div class="orbe"></div>
+  <h1>RAPHAEL · EMPRESAS</h1>
+  <p>Conectá la app con el Raphael de tu negocio.</p>
+  <form id="f">
+    <input id="dir" inputmode="url" autocapitalize="off" autocomplete="off" spellcheck="false" placeholder="192.168.1.50:8787">
+    <button id="b">Conectar</button>
+    <div id="msg"></div>
+  </form>
+  <details>
+    <summary>¿Dónde encuentro la dirección?</summary>
+    <p>En la computadora donde corre Raphael, abrí la pestaña <b>Estado</b> y buscá <b>Conectar el celular</b>: ahí aparece la dirección. El celular tiene que estar en el mismo wifi, o usar una dirección <b>https</b> si querés entrar desde cualquier lado.</p>
+  </details>
+</main>
+<script>
+var f=document.getElementById('f'),dir=document.getElementById('dir'),b=document.getElementById('b'),msg=document.getElementById('msg');
+function conectarResultado(r){
+  b.disabled=false; b.textContent='Conectar';
+  if(r.ok){ msg.className='ok'; msg.textContent='Conectado ✓ (Raphael '+(r.version||'')+')'; setTimeout(function(){RaphaelApp.guardar(r.url)},500); }
+  else { msg.className=''; msg.textContent=r.error||'No se pudo conectar.'; }
+}
+f.onsubmit=function(e){
+  e.preventDefault();
+  if(!dir.value.trim()){ msg.textContent='Escribí la dirección.'; return; }
+  b.disabled=true; b.textContent='Probando…'; msg.className=''; msg.textContent='';
+  RaphaelApp.probar(dir.value);
+};
+</script></body></html>

@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "raphael-central"
+dynamic = ["version"]
+description = "Central de Raphael: licencias de clientes y panel de soporte."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = ["fastapi>=0.110", "uvicorn>=0.29"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[tool.setuptools.package-data]
+raphael_central = ["*.html"]
+
+[tool.setuptools.dynamic]
+version = {attr = "raphael_central.__version__"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

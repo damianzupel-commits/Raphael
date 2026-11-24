@@ -1,0 +1,62 @@
+"""Vista de chat -- pestaña "Chat" de la ventana principal (ver
+`ui/main_window.py`). Contiene todo lo que antes vivía directo en el cuerpo
+de `MainWindow` (sidebar de utilidades + columna de mensajes + input + voz);
+se extrajo a su propio widget para que `MainWindow` pueda alojarla como una
+pestaña más junto a Codebase y Obsidian, sin cambiar ningún comportamiento.
+"""
+
+import requests
+from PySide6.QtCore import QObject, Qt, QThread, Signal
+from PySide6.QtWidgets import (
+    QFrame,
+    QHBoxLayout,
+    QLineEdit,
+    QPushButton,
+    QScrollArea,
+    QSizePolicy,
+    QVBoxLayout,
+    QWidget,
+)
+
+import config
+from ui.widgets import NoMinWidthLabel
+from voice_listener import VoiceListener
+
+
+class ChatBridge(QObject):
+    """Recibe eventos desde hilos de trabajo (HTTP, voz) y los reemite como
+    señales Qt -- así el hilo de la GUI es el único que toca los widgets."""
+
+    reply_ready = Signal(str, str)  # (autor, texto)
+
+
+class ChatRequestThread(QThread):
+    def __init__(self, message: str, conversation_id: str, bridge: ChatBridge):
+        super().__init__()
+        self._message = message
+        self._conversation_id = conversation_id
+        self._bridge = bridge
+
+    def run(self) -> None:
+        try:
+            resp = requests.post(
+                config.CHAT_URL,
+                json={"message": self._message, "conversation_id": self._conversation_id},
+                headers={"Authorization": f"Bearer {config.API_KEY}"},
+                timeout=config.CHAT_REQUEST_TIMEOUT_SECONDS,
+            )
+            resp.raise_for_status()
+            reply = resp.json().get("reply", "(sin respuesta)")
+        except requests.RequestException as exc:
+            reply = f"No pude conectarme con Jarvis: {exc}"
+        self._bridge.reply_ready.emit("assistant", reply)
+
+
+class Sidebar(QWidget):
+    """Barra de accesos directos. `tools` es una lista de (icono, tooltip,
+    prompt) -- agregar una utilidad nueva (ej. interpolación de frames) es
+    agregar una tupla acá, nada más."""
+
+    # Vacía a propósito: "Generar imagen"/"Generar video" se sacaron de la UI
+    # (no solo deshabilitadas atrás) por precaución de hardware -- la PC se
+    # apagó físicamente coin

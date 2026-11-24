@@ -1,0 +1,46 @@
+# Modelos de Raphael: qué IA usa cada ROL, en qué orden de ESCALONES.
+# Decidido el 21 nov 2026: tres escalones (pago, gratis, local). Hoy los tres apuntan a NVIDIA porque no hay
+# plata para un modelo pago ni modelo local todavía. Cambiar de proveedor = editar este archivo.
+# Las claves NUNCA van acá: cada proveedor nombra su variable de entorno.
+#
+# Ojo con NVIDIA (build.nvidia.com, revisado 21 nov 2026 en su foro de desarrolladores): el acceso gratis
+# ronda los 40 pedidos por minuto y varía por modelo; los términos lo plantean para desarrollo y pruebas,
+# no para producción. Verificar los términos oficiales antes de usarlo con clientes.
+#
+# Roles: mando (el orquestador), voz (lo que te habla), ruteo (decisiones chicas), jefe (planifica y
+# sintetiza), cocinero, efimero. Los nombres viejos (intencion, redaccion, resumen, secretaria, orquestador,
+# ayudante) se traducen solos. Cálculos, estados, avisos y permisos NUNCA pasan por la IA.
+
+providers:
+  nvidia:
+    base_url: https://integrate.api.nvidia.com/v1
+    model: nvidia/nemotron-3.5-super-vl-120b-a12b    # el de JarvisRemote (verificado allá el 11 nov 2026)
+    api_key_env: NVIDIA_API_KEY
+    usd_per_million_in: 0
+    usd_per_million_out: 0
+    rpm: 40
+    extra:
+      chat_template_kwargs: {enable_thinking: false}  # sin razonar responde en ~1 s (medido en JarvisRemote)
+
+tiers:
+  pago:   [nvidia]     # cuando haya plata: un proveedor potente acá
+  gratis: [nvidia]     # se pueden sumar más; rotan si uno se queda sin cupo
+  local:  [nvidia]     # cuando haya modelo local (Ollama o LM Studio en localhost). NVIDIA NO es local:
+                       # lo privado igual no sale de la PC (se mira la dirección, no el nombre del escalón)
+
+roles:
+  mando:    [pago, gratis, local]
+  voz:      [pago, gratis, local]
+  jefe:     [gratis, pago, local]
+  cocinero: [gratis, local]
+  efimero:  [gratis, local]
+  ruteo:    [local, gratis]
+
+# Por brigada o ayudante: "rol.id" -> escalones. Ej.: efimero.investigacion-scout: [gratis]
+overrides: {}
+
+# Lo privado solo usa modelos que corren en la PC (si no hay, sigue con reglas). Decisión de JarvisRemote.
+private: [memoria-cerebro, investigacion-forense]
+
+paid_tiers: [pago]
+paid_cap_usd_month: 0      # 0 = el escalón pago solo usa proveedores sin costo (hoy NVIDIA gratis)

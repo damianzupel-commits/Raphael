@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cerebro de Raphael en actividad</title>
+<style>
+  :root{
+    --surface-0:#faf9f5; --surface-1:#f0eee6; --surface-2:#ffffff;
+    --text-primary:#1f1f1c; --text-secondary:#6b6a63;
+    --border:#d7d5cb; --border-strong:#a8a69b; --radius:8px;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --surface-0:#1b1a17; --surface-1:#282723; --surface-2:#2f2e2a;
+      --text-primary:#ece9e0; --text-secondary:#a6a39a;
+      --border:#45443f; --border-strong:#6c6a61;
+    }
+  }
+  *{box-sizing:border-box;}
+  body{background:var(--surface-0); color:var(--text-primary); margin:0; padding:24px;
+    font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; line-height:1.55;}
+  .wrap{max-width:780px; margin:0 auto;}
+  h1{font-size:22px; font-weight:500; margin:0 0 4px;}
+  .sub{color:var(--text-secondary); font-size:14px; margin:0 0 18px;}
+  .row{display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:10px;}
+  .lbl{font-size:13px; color:var(--text-secondary); margin-right:2px;}
+  button{font:inherit; font-size:13px; color:var(--text-primary); background:var(--surface-2);
+    border:1px solid var(--border-strong); border-radius:var(--radius); padding:7px 12px; cursor:pointer;
+    transition:background .15s, transform .05s;}
+  button:hover:not(:disabled){background:var(--surface-1);}
+  button:active:not(:disabled){transform:scale(.98);}
+  button:disabled{opacity:.45; cursor:not-allowed;}
+  svg{display:block; max-width:680px; width:100%; margin:4px auto 0; overflow:visible;}
+  svg circle{transition:fill-opacity .45s ease, r .4s ease, stroke-width .3s;}
+  .nlabel{fill:var(--text-primary);}
+  line.edge{stroke:var(--border);}
+  line.edge.strong{stroke:var(--border-strong);}
+  #narra{background:var(--surface-1); border-radius:var(--radius); padding:12px 14px; margin:14px 0 10px;
+    font-size:14px; color:var(--text-primary); min-height:66px;}
+  .legend{display:flex; flex-wrap:wrap; gap:16px; font-size:12.5px; color:var(--text-secondary);}
+  .legend b{color:var(--text-primary); font-weight:500;}
+  .foot{color:var(--text-secondary); font-size:12px; margin-top:20px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Cerebro de Raphael en actividad</h1>
+  <p class="sub">El grafo de tu vault con las cuatro fases funcionando: búsqueda asociativa, pesos Hebbianos, consolidación y olvido adaptativo.</p>
+
+  <div class="row">
+    <span class="lbl">Lanzá una consulta:</span>
+    <button id="q1">auditar un repo</button>
+    <button id="q2">reglas de trading</button>
+    <button id="q3">cómo decide el agente</button>
+  </div>
+  <div class="row">
+    <button id="reinf" disabled>las usé juntas</button>
+    <button id="time">pasó una semana</button>
+    <button id="sleep" disabled>dormir y consolidar</button>
+    <button id="reset">reiniciar</button>
+  </div>
+
+  <svg id="g" viewBox="0 0 680 440" role="img" aria-label="Grafo del vault de Raphael"></svg>
+
+  <div id="narra">Tocá una de las tres consultas de arriba para ver la <strong>búsqueda asociativa</strong>: unas notas semilla se encienden y la activación se propaga por los links, atenuándose con la distancia.</div>
+
+  <div class="legend">
+    <span><b>tamaño</b> = fuerza de recuperación (Fase 4)</span>
+    <span><b>brillo</b> = activación ahora (Fase 1)</span>
+    <span><b>grosor del link</b> = peso Hebbiano (Fase 2)</span>
+    <span><b>nodo rosa</b> = síntesis del sueño (Fase 3)</span>
+  </div>
+
+  <p class="foot">Generado el 2026-10-05 · JarvisRemote / Raphael · la lógica que anima refleja app/obsidian/{spreading,hebbian,strength,consolidation}.py</p>
+</div>
+
+<script>
+(function(){
+  const NS="http://www.w3.org/2000/svg";
+  const svg=document.getElementById("g");
+  const narra=document.getElementById("narra");
+  const COL={ia:"#7F77DD",emb:"#1D9E75",seg:"#D85A30",trade:"#BA7517",syn:"#D4537E"};
+  const nodes={
+    agentes:{x:120,y:90,c:COL.ia,t:"ia",label:"Agentes IA"},
+    orquestacion:{x:220,y:150,c:COL.ia,t:"ia",label:"Orquestación"},
+    ruteo:{x:108,y:205,c:COL.ia,t:"ia",label:"Ruteo de modelos"},
+    embeddings:{x:265,y:260,c:COL.emb,t:"emb",label:"Embeddings"},
+    pentesting:{x:455,y:80,c:COL.seg,t:"seg",label:"Pentesting"},
+    owasp:{x:575,y:120,c:COL.seg,t:"seg",label:"OWASP"},
+    malware:{x:470,y:185,c:COL.seg,t:"seg",label:"Malware"},
+    esses:{x:450,y:305,c:COL.trade,t:"trade",label:"Fede Esses"},
+    ifvg:{x:572,y:280,c:COL.trade,t:"trade",label:"IFVG"},
+    trading:{x:500,y:385,c:COL.trade,t:"trade",label:"Trading"}
+  };
+  const syn={
+    syn_ia:{x:150,y:320,c:COL.syn,label:"Síntesis IA",members:["agentes","orquestacion","ruteo"]},
+    syn_seg:{x:605,y:60,c:COL.syn,label:"Síntesis seguridad",members:["pentesting","owasp","malware"]},
+    syn_trade:{x:615,y:378,c:COL.syn,label:"Síntesis trading",members:["esses","ifvg","trading"]}
+  };
+  const edges=[["agentes","orquestacion"],["orquestacion","ruteo"],["agentes","ruteo"],
+    ["orquestacion","embeddings"],["ruteo","embeddings"],
+    ["pentesting","owasp"],["pentesting","malware"],["owasp","malware"],
+    ["esses","ifvg"],["esses","trading"],["ifvg","trading"],
+    ["embeddings","pentesting"],["embeddings","esses"]];
+  const QUERIES={
+    q1:{seeds:["pentesting","owasp"],theme:"seg",name:"auditar un repo"},
+    q2:{seeds:["esses","ifvg"],theme:"trade",name:"reglas de trading"},
+    q3:{seeds:["agentes","ruteo"],theme:"ia",name:"cómo decide el agente"}
+  };
+  const adj={}; Object.keys(nodes).forEach(k=>adj[k]=[]);
+  const ek=(a,b)=>a<b?a+"|"+b:b+"|"+a;
+  const W={}; edges.forEach(([a,b])=>{adj[a].push(b);adj[b].push(a);W[ek(a,b)]=1;});
+  const boost={}; Object.keys(nodes).forEach(k=>boost[k]=0);
+  let act={}, lastTheme=null, revealed={}, lastActive=[];
+
+  const E={},N={},L={},SG={},SL={},SE={};
+  edges.forEach(([a,b])=>{const ln=document.createElementNS(NS,"line");ln.setAttribute("class","edge");svg.appendChild(ln);E[ek(a,b)]=ln;});
+  Object.entries(syn).forEach(([id,s])=>{s.members.forEach(m=>{const ln=document.createElementNS(NS,"line");ln.setAttribute("stroke",s.c);ln.setAttribute("stroke-dasharray","3 4");ln.style.opacity="0";ln.style.transition="opacity .5s";svg.appendChild(ln);SE[id+"|"+m]=ln;});});
+  function circ(x,y,fill){const c=document.createElementNS(NS,"circle");c.setAttribute("cx",x);c.setAttribute("cy",y);c.setAttribute("fill",fill);c.setAttribute("stroke",fill);c.setAttribute("stroke-width","0");svg.appendChild(c);return c;}
+  function lab(x,y,txt,fs){const t=document.createElementNS(NS,"text");t.setAttribute("x",x);t.setAttribute("y",y);t.setAttribute("text-anchor","middle");t.setAttribute("font-size",fs||"11.5");t.setAttribute("font-weight","500");t.setAttribute("class","nlabel");t.textContent=txt;svg.appendChild(t);return t;}
+  Object.entries(nodes).forEach(([id,n])=>{N[id]=circ(n.x,n.y,n.c);L[id]=lab(n.x,n.y,n.label);});
+  Object.entries(syn).forEach(([id,s])=>{const c=circ(s.x,s.y,s.c);c.style.opacity="0";c.style.transition="opacity .5s, r .4s";SG[id]=c;const t=lab(s.x,s.y,s.label,"11");t.style.opacity="0";t.style.transition="opacity .5s";SL[id]=t;});
+
+  const rFor=id=>21+Math.min(2,boost[id])*7;
+  function render(){
+    edges.forEach(([a,b])=>{const w=W[ek(a,b)];const ln=E[ek(a,b)];ln.setAttribute("x1",nodes[a].x);ln.setAttribute("y1",nodes[a].y);ln.setAttribute("x2",nodes[b].x);ln.setAttribute("y2",nodes[b].y);ln.classList.toggle("strong",w>1.05);ln.setAttribute("stroke-width",(1.4+(w-1)*2.6).toFixed(2));});
+    Object.keys(nodes).forEach(id=>{const r=rFor(id);const a=Math.min(1,act[id]||0);N[id].setAttribute("r",r.toFixed(1));N[id].setAttribute("fill-opacity",(0.22+a*0.78).toFixed(2));N[id].setAttribute("stroke-width",a>0.05?"2.5":"0");L[id].setAttribute("y",(nodes[id].y+r+13).toFixed(1));});
+    Object.entries(syn).forEach(([id,s])=>{const on=revealed[id];SG[id].setAttribute("r","18");SG[id].setAttribute("fill-opacity","0.9");SG[id].style.opacity=on?"1":"0";SL[id].setAttribute("y",(s.y+30).toFixed(0));SL[id].style.opacity=on?"1":"0";s.members.forEach(m=>{const ln=SE[id+"|"+m];ln.setAttribute("x1",s.x);ln.setAttribute("y1",s.y);ln.setAttribute("x2",nodes[m].x);ln.setAttribute("y2",nodes[m].y);ln.setAttribute("stroke-width","1.6");ln.style.opacity=on?"0.8":"0";});});
+  }
+  const say=h=>{narra.innerHTML=h;};
+
+  function runQuery(q){
+    const decay=0.6; act={}; q.seeds.forEach(s=>act[s]=1);
+    const snaps=[Object.assign({},act)]; let frontier={}; q.seeds.forEach(s=>frontier[s]=1);
+    for(let h=0;h<2;h++){const contrib={};Object.entries(frontier).forEach(([node,a])=>{adj[node].forEach(nb=>{const w=decay*W[ek(node,nb)];contrib[nb]=(contrib[nb]||0)+a*w;});});Object.entries(contrib).forEach(([nb,c])=>{act[nb]=(act[nb]||0)+c;});snaps.push(Object.assign({},act));frontier=contrib;}
+    lastTheme=q.theme;
+    const msgs=[
+      "<b>Semillas.</b> Las notas más parecidas a «"+q.name+"» (por coseno de embeddings) se encienden. Todavía no se propagó nada.",
+      "<b>Propagación, salto 1.</b> La activación salta por los <i>wikilinks</i> a los vecinos, atenuada por el decay (cada salto vale menos).",
+      "<b>Convergencia.</b> Lo que recibe activación desde varias semillas brilla más y <i>emerge</i> aunque no matcheara la consulta literal. Pensar en red, no en lista."
+    ];
+    snaps.forEach((snap,i)=>setTimeout(()=>{act=snap;render();say(msgs[i]);if(i===snaps.length-1){lastActive=Object.keys(act).filter(k=>act[k]>0.15);document.getElementById("reinf").disabled=false;document.getElementById("sleep").disabled=false;}},i*650));
+  }
+  document.getElementById("q1").onclick=()=>runQuery(QUERIES.q1);
+  document.getElementById("q2").onclick=()=>runQuery(QUERIES.q2);
+  document.getElementById("q3").onclick=()=>runQuery(QUERIES.q3);
+
+  document.getElementById("reinf").onclick=()=>{
+    let n=0; edges.forEach(([a,b])=>{if((act[a]||0)>0.15&&(act[b]||0)>0.15){W[ek(a,b)]=Math.min(3,W[ek(a,b)]+0.9);n++;}});
+    lastActive.forEach(id=>boost[id]=Math.min(2,boost[id]+0.7));
+    render();
+    say("<b>Fase 2 + 4 — se activaron juntas, se cablean juntas.</b> Reforcé "+n+" conexión(es) entre las notas que usaste (links más gruesos) y les subí la <i>fuerza de recuperación</i> (nodos más grandes). El grafo se auto-organiza según cómo asociás vos.");
+  };
+  document.getElementById("time").onclick=()=>{
+    Object.keys(boost).forEach(k=>boost[k]=boost[k]*0.707); act={};
+    document.getElementById("reinf").disabled=true;
+    render();
+    say("<b>Fase 4 — olvido adaptativo.</b> Pasó una semana sin usarlas: la fuerza de recuperación decae (los nodos se achican hacia lo neutro). <i>Nada se borra</i> — el crudo firmado queda; solo baja en el ranking para dejar arriba lo que de verdad usás.");
+  };
+  document.getElementById("sleep").onclick=()=>{
+    const th=lastTheme||"ia"; const id="syn_"+th; if(revealed[id]){say("Esa zona ya la consolidé. Lanzá otra consulta y reforzala para consolidar otra.");return;}
+    revealed[id]=true; const s=syn[id]; s.members.forEach(m=>boost[m]=Math.min(2,boost[m]+0.4));
+    for(let i=0;i<s.members.length;i++)for(let j=i+1;j<s.members.length;j++){const k=ek(s.members[i],s.members[j]);if(k in W)W[k]=Math.min(3,W[k]+0.6);}
+    render();
+    say("<b>Fase 3 — el sueño (consolidación).</b> Raphael agrupó las notas relacionadas y escribió una <i>nota de síntesis</i> nueva (rosa) que las enlaza y abstrae la lección común, reforzando sus links. Es <b>aditivo</b>: nunca toca ni borra las originales.");
+  };
+  document.getElementById("reset").onclick=()=>{
+    act={};Object.keys(boost).forEach(k=>boost[k]=0);Object.keys(W).forEach(k=>W[k]=1);revealed={};lastTheme=null;lastActive=[];
+    document.getElementById("reinf").disabled=true;document.getElementById("sleep").disabled=true;
+    render();say("Reiniciado. Lanzá una consulta para arrancar de nuevo.");
+  };
+  render();
+})();
+</script>
+</body>
+</html>

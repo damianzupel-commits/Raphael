@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "raphael-core"
+dynamic = ["version"]
+description = "Harness v2 de Raphael: contrato, manifiestos, políticas, almacén, eventos, modelos y motor de brigadas."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = ["pydantic>=2.5", "pyyaml>=6", "httpx>=0.27"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[tool.setuptools.dynamic]
+version = {attr = "raphael_core.__version__"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+raphael_core = ["*.yaml"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 130
+target-version = "py311"
+# copia EXACTA del test del harness de Empresas 0.4: no se reformatea (la gracia es que corra sin cambios)
+extend-exclude = ["tests/compat_v1/test_harness_v1.py"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "BLE"]

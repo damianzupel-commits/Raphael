@@ -1,0 +1,33 @@
+   self._hide_typing_indicator()
+        self._add_bubble(author, text)
+
+    # ------------------------------------------------------------- voz
+
+    def _on_voice_toggled(self, enabled: bool) -> None:
+        if enabled:
+            if self._voice_listener is None:
+                # require_wake_word=False: prender este botón ya es la señal de
+                # "escuchame" -- pedir además "hey Jarvis" sería redundante,
+                # solo tiene sentido para una escucha pasiva en background (que
+                # este botón no es).
+                self._voice_listener = VoiceListener(
+                    on_event=self._on_voice_event_threadsafe, require_wake_word=False
+                )
+            self._voice_listener.start()
+            self.add_system_message("Escucha activada. Hablá directo, sin decir nada antes.")
+        else:
+            if self._voice_listener is not None:
+                self._voice_listener.stop()
+            self.add_system_message("Escucha desactivada.")
+
+    def _on_voice_event_threadsafe(self, kind: str, text: str) -> None:
+        # VoiceListener llama esto desde su propio hilo de audio -- nunca tocar
+        # widgets acá directamente, todo pasa por la señal Qt (thread-safe).
+        if kind == "wake":
+            return
+        labels = {"transcript": "user", "reply": "assistant", "error": "assistant"}
+        self._bridge.reply_ready.emit(labels.get(kind, "assistant"), text)
+
+    def shutdown(self) -> None:
+        if self._voice_listener is not None:
+            self._voice_listener.stop()

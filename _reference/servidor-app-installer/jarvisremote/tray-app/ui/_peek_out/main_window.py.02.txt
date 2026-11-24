@@ -1,0 +1,66 @@
+nd: #14151a; }
+QLineEdit#codebasePathInput {
+    background: #1f2029; color: #e5e7eb; border: 1px solid #33343d; border-radius: 8px;
+    padding: 8px 12px; font-size: 13px;
+}
+QLabel#codebaseStatus, QLabel#obsidianStatus { color: #7d8190; font-size: 12px; }
+QLabel#obsidianDetailMeta { color: #9aa0ab; font-size: 12px; }
+QTreeWidget, QListWidget, QTextEdit {
+    background: #1b1c22; color: #e5e7eb; border: 1px solid #2a2b33; border-radius: 8px;
+}
+"""
+
+
+class ModelSwitchBridge(QObject):
+    model_switch_done = Signal(str)
+
+
+class ModelSwitchThread(QThread):
+    def __init__(self, model_id: str, bridge: ModelSwitchBridge):
+        super().__init__()
+        self._model_id = model_id
+        self._bridge = bridge
+
+    def run(self) -> None:
+        process_manager.set_active_model(self._model_id)
+        self._bridge.model_switch_done.emit(self._model_id)
+
+
+class MainWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Jarvis")
+        self.resize(900, 680)
+
+        self._model_bridge = ModelSwitchBridge()
+        self._model_bridge.model_switch_done.connect(self._on_model_switched)
+
+        self._settings_dialog: SettingsDialog | None = None
+        self._model_thread: ModelSwitchThread | None = None
+
+        central = QWidget()
+        central.setObjectName("chatArea")
+        root = QVBoxLayout(central)
+        root.setContentsMargins(0, 0, 0, 0)
+        root.setSpacing(0)
+
+        root.addWidget(self._build_top_bar())
+
+        self.tabs = QTabWidget()
+        self.chat_view = ChatView()
+        self.codebase_view = CodebaseView()
+        self.obsidian_view = ObsidianView()
+        self.investigation_view = InvestigationView()
+        self.tabs.addTab(self.chat_view, "💬  Chat")
+        self.tabs.addTab(self.codebase_view, "🗂  Codebase")
+        self.tabs.addTab(self.obsidian_view, "🧠  Obsidian")
+        self.tabs.addTab(self.investigation_view, "🔎  Investigación")
+        root.addWidget(self.tabs, stretch=1)
+
+        self.setCentralWidget(central)
+        self.setStyleSheet(STYLESHEET)
+        force_dark_title_bar(self)
+
+    # ------------------------------------------------------------- layout
+
+    def _build_top_bar

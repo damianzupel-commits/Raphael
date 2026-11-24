@@ -1,0 +1,54 @@
+"""Ventana principal de Jarvis para PC (PySide6).
+
+Reemplaza la vieja ventana de chat en Tkinter (chat_window.py). Diseño pedido
+por el usuario: chat al centro (elemento principal), selector de modelo arriba
+al centro, barra lateral izquierda con accesos directos a utilidades (generar
+imagen/video, más adelante otras) y un toggle de voz continua en un extremo de
+esa barra. Nada de configuración técnica cruda acá -- eso va a vivir en un
+ícono de ajustes aparte (pendiente de definir con el usuario).
+
+Además del chat, aloja dos pestañas más -- Codebase y Obsidian (ver
+`ui/codebase_view.py` y `ui/obsidian_view.py`) -- que exponen del lado
+visual las dos capacidades nativas del backend (`backend/app/codebase/` y
+`backend/app/obsidian/`). El chat en sí se extrajo a `ui/chat_view.py` para
+que quepa como una pestaña más sin cambiar su comportamiento.
+
+Corre en su propio hilo con su propio QApplication, igual que chat_window.py
+corría Tkinter en el suyo -- pystray sigue dueño del hilo principal en tray.py.
+Solo puede existir un QApplication por proceso, así que abrir "chat" una
+segunda vez no crea una instancia nueva: reusa la ventana ya viva.
+"""
+
+import threading
+
+from PySide6.QtCore import QObject, Qt, QThread, Signal
+from PySide6.QtWidgets import (
+    QApplication,
+    QComboBox,
+    QHBoxLayout,
+    QMainWindow,
+    QPushButton,
+    QTabWidget,
+    QVBoxLayout,
+    QWidget,
+)
+
+import config
+import process_manager
+from ui.chat_view import ChatView
+from ui.codebase_view import CodebaseView
+from ui.investigation_view import InvestigationView
+from ui.obsidian_view import ObsidianView
+from ui.settings_window import SettingsDialog
+from ui.theming import force_dark_title_bar
+
+# Tema oscuro fijo, sin opción de cambiar a claro -- pedido explícito de
+# Damian ("es lo que usa la mayoría de la gente"). Ver también
+# _force_dark_title_bar() para que la barra de título nativa de Windows
+# acompañe (si no, quedaba blanca arriba de un contenido oscuro).
+STYLESHEET = """
+QMainWindow, QWidget#chatArea { background: #14151a; }
+QScrollArea { background: transparent; border: none; }
+QScrollArea > QWidget > QWidget { background: transparent; }
+QWidget#sidebar { background: #16171c; }
+QW

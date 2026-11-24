@@ -1,0 +1,197 @@
+package com.raphael.empresas.app
+
+import android.app.Application
+import android.os.Build
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.launch
+
+/** Una burbuja del chat con la Secretaria. */
+data class ChatEntry(val fromOwner: Boolean, val text: String, val tasks: List<TaskItem> = emptyList(),
+                     val options: List<OptionItem> = emptyList(), val suggestions: List<String> = emptyList())
+
+enum class Tab { HOY, PENDIENTES, ENCARGOS, AGENDA, MAS }
+
+/**
+ * El estado de la app. Toda decisión (aprobar, rechazar, resolver, cambiar un estado) va al servidor, que la pasa por
+ * el Policy Engine del harness: la app no decide nada por su cuenta y no guarda datos de clientes.
+ */
+class AppViewModel(app: Application) : AndroidViewModel(app) {
+    val prefs = Prefs(app)
+
+    var loggedIn by mutableStateOf(prefs.loggedIn)
+        private set
+    var busy by mutableStateOf(false)
+        private set
+    var message by mutableStateOf<String?>(null)
+    var tab by mutableStateOf(Tab.HOY)
+
+    var summary by mutableStateOf<Summary?>(null)
+        private set
+    val pending = mutableStateListOf<Pending>()
+    val orders = mutableStateListOf<Order>()
+    var showAllOrders by mutableStateOf(false)
+    val appointments = mutableStateListOf<Appointment>()
+    val depositsWaiting = mutableStateListOf<Deposit>()
+    val depositsNotified = mutableStateListOf<Deposit>()
+    val questions = mutableStateListOf<Question>()
+    var catalogState by mutableStateOf<CatalogState?>(null)
+        private set
+    val products = mutableStateListOf<Product>()
+    val chat = mutableStateListOf<ChatEntry>()
+    var conversation by mutableStateOf<Pair<String, List<ChatLine>>?>(null)
+    val notices = mutableStateListOf<Notice>()
+    var unseenNotices by mutableStateOf(0)
+        private set
+    var channels by mutableStateOf<Channels?>(null)
+        private set
+
+    private fun run(block: suspend () -> Unit) {
+        viewModelScope.launch {
+            busy = true
+            try {
+                block()
+            } catch (e: ApiError) {
+                if (e.unauthorized) {
+                    prefs.clearSession()
+                    loggedIn = false
+                }
+                message = e.message
+            } finally {
+                busy = false
+            }
+        }
+    }
+
+    // --- sesión
+    fun login(server: String, key: String) = run {
+        val url = normalizeServer(server)
+        if (url.isBlank()) throw ApiError("Poné la dirección del servidor", 0)
+        val api = Api(url)
+        val h = api.health()
+        if (!h.optBoolean("ok")) throw ApiError("Ese servidor no tiene Raphael Empresas funcionando", 0)
+        val device = "${Build.MANUFACTURER} ${Build.MODEL}".take(80)
+        val s = api.login(key, device)
+        prefs.server = url
+        prefs.token = s.token
+        prefs.user = s.user
+        prefs.business = s.business
+        loggedIn = true
+        PendingWorker.schedule(getApplication())
+        refreshAll()
+    }
+
+    fun logout() = run {
+        try {
+            prefs.api().logout()
+        } catch (e: ApiError) {
+            // aunque el servidor no conteste, la sesión se borra del celular
+        }
+        PendingWorker.cancel(getApplication())
+        prefs.clearSession()
+        loggedIn = false
+        chat.clear()
+    }
+
+    // --- datos
+    fun refreshAll() = run {
+        val api = prefs.api()
+        summary = api.summary()
+        pending.replace(api.pending())
+        prefs.lastNotified = maxOf(prefs.lastNotified, pending.maxOfOrNull { it.id } ?: 0)
+        if (chat.isEmpty()) askNow(api, "buen día, ¿qué tareas tenemos hoy?", showOwner = false)
+    }
+
+    fun loadPending() = run {
+        pending.replace(prefs.api().pending())
+        summary = prefs.api().summary()
+    }
+
+    fun loadOrders() = run { orders.replace(prefs.api().orders(showAllOrders)) }
+    fun loadAgenda() = run { appointments.replace(prefs.api().appointments()) }
+
+    /** Con la app abierta, cada 30 s: pendientes y avisos nuevos, sin barra de carga ni mensajes de error. */
+    fun quietRefresh() {
+        if (!loggedIn || busy) return
+        viewModelScope.launch {
+            try {
+                val api = prefs.api()
+                val u = api.updates()
+                unseenNotices = u.noticesUnseen
+                if (u.pending != pending.size || (u.latest != (pending.maxOfOrNull { it.id } ?: 0))) pending.replace(api.pending())
+                prefs.lastNotified = maxOf(prefs.lastNotified, u.latest)
+            } catch (e: ApiError) {
+                if (e.unauthorized) {
+                    prefs.clearSession()
+                    loggedIn = false
+                }
+            }
+        }
+    }
+
+    fun loadMore() = run {
+        val api = prefs.api()
+        notices.replace(api.notices())
+        channels = api.channels()
+        if (notices.any { !it.seen }) {
+            api.markNoticesSeen()
+            prefs.lastNotice = maxOf(prefs.lastNotice, notices.maxOfOrNull { it.id } ?: 0)
+        }
+        unseenNotices = 0
+        val (w, n) = api.deposits()
+        depositsWaiting.replace(w)
+        depositsNotified.replace(n)
+        questions.replace(api.questions())
+        val (st, ps) = api.catalog()
+        catalogState = st
+        products.replace(ps)
+    }
+
+    fun openConversation(contact: String) = run { conversation = contact to prefs.api().conversation(contact) }
+
+    // --- decisiones (todas pasan por el servidor y su Policy Engine)
+    fun approve(p: Pending, changes: Map<String, Any> = emptyMap()) = run {
+        val text = prefs.api().approve(p.id, changes)
+        message = if (text != null) "Listo. Se le mandó: ${text.take(160)}" else "Aprobado"
+        pending.replace(prefs.api().pending())
+    }
+
+    fun reject(p: Pending, reason: String) = run {
+        prefs.api().reject(p.id, reason)
+        message = "Rechazado"
+        pending.replace(prefs.api().pending())
+    }
+
+    fun resolve(p: Pending, reply: String) = run {
+        prefs.api().resolve(p.id, reply)
+        message = if (reply.isBlank()) "Marcado como resuelto" else "Respuesta enviada"
+        pending.replace(prefs.api().pending())
+    }
+
+    fun setStatus(o: Order, status: String) = run {
+        prefs.api().setOrderStatus(o.number, status)
+        message = "Encargo #${o.number}: ${Order.STATUS_NAMES[status] ?: status}"
+        orders.replace(prefs.api().orders(showAllOrders))
+    }
+
+    // --- Secretaria
+    fun ask(text: String) = run { askNow(prefs.api(), text, showOwner = true) }
+
+    private suspend fun askNow(api: Api, text: String, showOwner: Boolean) {
+        if (showOwner) chat.add(ChatEntry(true, text))
+        val r = api.secretary(text)
+        chat.add(ChatEntry(false, r.text, r.tasks, r.options, r.suggestions))
+        if (r.text.contains("Aprobada") || r.text.contains("Rechazada") || r.text.contains("resuelta") || r.text.contains("Hecho")) {
+            pending.replace(api.pending())
+        }
+    }
+
+    private fun <T> MutableList<T>.replace(items: List<T>) {
+        clear()
+        addAll(items)
+    }
+}

@@ -1,0 +1,39 @@
+# Brigada de ejemplo del Harness v2: la puerta de la fase 1 (se monta y se desmonta sin romper nada).
+# Tiene un poco de todo para que la suite de contrato lo pruebe: un cocinero, un jefe con efímeros, acciones con
+# niveles, tools (una con aprobación, una de escaneo activo que no entra en la nube y una que registra su setup),
+# comandos (uno de lectura y uno que escribe), eventos, config y healthcheck.
+id: saludo
+name: Brigada de saludo
+version: 1.0.0
+contract: ">=2.0,<3"
+description: Saluda, recuerda cuántas veces escribió cada contacto y propone un regalo (que siempre aprueba una persona).
+cooks:
+  - {id: saludador, entry: "ejemplo_saludo.cooks:Greeter"}
+chief: "ejemplo_saludo.spec:SPEC"
+actions:
+  saludar: {level: automatico, description: "contestar un saludo"}
+  regalar: {level: aprobacion, tags: [spend], description: "mandar un regalo al contacto"}
+tools:
+  - {name: leer_agenda, entry: "ejemplo_saludo.tools:read_agenda", description: "lee los eventos del día"}
+  - {name: anotar_regalo, entry: "ejemplo_saludo.tools:note_gift", level: aprobacion, tags: [spend], description: "anota un regalo para comprar"}
+  - {name: escanear_red, entry: "ejemplo_saludo.tools:scan_network", level: aprobacion, active_scan: true, description: "escanea la red local (solo en la PC)"}
+  - {name: contar_visitas, description: "cuántas veces escribió cada contacto (la registra setup)"}
+setup: "ejemplo_saludo.setup:register"
+commands:
+  visitas: {read: true, description: "cuántas veces escribió cada contacto"}
+  olvidar: {read: false, description: "borra la cuenta de visitas de un contacto"}
+events:
+  publishes: [saludo.hecho]
+  consumes: [pendiente.creado]
+store:
+  space: saludo
+uninstall:
+  export: [visitas]
+  delete: [visitas]
+config_schema:
+  type: object
+  additionalProperties: false
+  properties:
+    saludo: {type: string}
+    max_regalos: {type: integer, minimum: 0, maximum: 10}
+health: "ejemplo_saludo.cooks:check"

@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "raphael-orquestador"
+dynamic = ["version"]
+description = "Orquestador de Raphael: decide qué brigada atiende cada mensaje."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = ["raphael-harness>=0.4,<1.0"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[project.entry-points."raphael.orquestador"]
+orquestador = "raphael_orquestador:OrquestadorRaphael"
+
+[tool.setuptools.dynamic]
+version = {attr = "raphael_orquestador.__version__"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

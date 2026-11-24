@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "raphael-avisos"
+dynamic = ["version"]
+description = "Brigada Avisos: avisa al cliente cuando cambia el estado de su pedido."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = ["raphael-harness>=0.1,<1.0"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[project.entry-points."raphael.brigadas"]
+avisos = "raphael_avisos:Avisos"
+
+[tool.setuptools.dynamic]
+version = {attr = "raphael_avisos.__version__"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

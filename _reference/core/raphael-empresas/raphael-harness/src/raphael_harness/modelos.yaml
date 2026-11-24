@@ -1,0 +1,43 @@
+# Capa de modelos: qué IA usa cada ROL según el PLAN del cliente.
+# Es configuración del producto (no del cliente). Cambiar de proveedor = editar este archivo.
+# Las claves nunca van acá: se leen de las variables de entorno indicadas en api_key_env.
+#
+# Roles:
+#   intencion  - entender qué quiere el cliente cuando las reglas no alcanzan
+#   redaccion  - redactar o pulir una respuesta
+#   resumen    - resumir una conversación para la dueña (reclamos)
+#   secretaria - charlar con la dueña (qué hay para hoy, qué hago primero) cuando las reglas no alcanzan
+# Cálculos, estados, avisos y permisos NUNCA pasan por la IA.
+
+planes:
+  basico:  {intencion: economico_nube, redaccion: economico_nube, resumen: economico_nube, secretaria: economico_nube}
+  pro:     {intencion: bueno_nube,     redaccion: bueno_nube,     resumen: local, secretaria: bueno_nube}
+  privado: {intencion: local,          redaccion: local,          resumen: local, secretaria: local}
+  premium: {intencion: top_nube,       redaccion: top_nube,       resumen: bueno_nube, secretaria: top_nube}
+
+proveedores:
+  # Completar base_url y model con los elegidos (ver "Preguntas abiertas" del contexto del producto).
+  economico_nube:
+    base_url: ""
+    model: ""
+    api_key_env: RAPHAEL_IA_ECONOMICO_KEY
+    usd_por_millon_in: 0.0
+    usd_por_millon_out: 0.0
+  bueno_nube:
+    base_url: ""
+    model: ""
+    api_key_env: RAPHAEL_IA_BUENO_KEY
+    usd_por_millon_in: 0.0
+    usd_por_millon_out: 0.0
+  top_nube:
+    base_url: ""
+    model: ""
+    api_key_env: RAPHAEL_IA_TOP_KEY
+    usd_por_millon_in: 0.0
+    usd_por_millon_out: 0.0
+  local:
+    base_url: "http://localhost:11434/v1"   # Ollama / LM Studio
+    model: ""
+    api_key_env: ""
+    usd_por_millon_in: 0.0
+    usd_por_millon_out: 0.0

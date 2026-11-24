@@ -1,0 +1,38 @@
+# Raíz de JarvisRemote
+
+- `.claude`
+- `.githooks`
+- `.gitignore`
+- `AGENTS.md`
+- `CLAUDE.md`
+- `COMANDAS.md`
+- `CONTEXTO-MAESTRO-RAPHAEL.md`
+- `ESTADO.md`
+- `Fundamentos_de_Jarvis.docx`
+- `INFORME_COMPLETO.md`
+- `LICENSE`
+- `PROVEEDORES.md`
+- `Propuestas_Mejoras_Raphael.pdf`
+- `QUICKSTART.md`
+- `README-DRAFT.md`
+- `README.md`
+- `TABLA.md`
+- `TRASPASO.md`
+- `_backups`
+- `_cocina-claude`
+- `android-app` (asignado)
+- `backend`
+- `content`
+- `docs` (en docs/jarvisremote)
+- `install.ps1`
+- `installer` (asignado)
+- `lab`
+- `make_pdf.py`
+- `negocio`
+- `proyectos`
+- `recetario`
+- `robotica`
+- `scripts`
+- `tools`
+- `tray-app` (asignado)
+- `vision`

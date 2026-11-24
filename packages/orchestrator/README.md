@@ -1,0 +1,44 @@
+# raphael-orchestrator · Orquestador de Raphael
+
+El único que habla con la persona y con las brigadas. Se para encima de `raphael-core` (harness v2, contrato 2.1) y no importa ninguna brigada: todo lo que sabe de ellas sale del catálogo del harness. Diseño y decisiones: `..\..\DISENO.md`.
+
+## Estado
+| Tanda | Qué | Estado |
+|---|---|---|
+| O1 | config, voz (verificador + plantilla), memoria de la charla, autoconocimiento | **hecha** (38 tests) |
+| O2 | ruteo (pedidos y clientes), turno simple, watchdog | **hecha** |
+| O3 | mando + DAG + trabajo conjunto | **hecha** |
+| O4 | confirmación con ids reales + Secretaria + modo `secretary` | **hecha** |
+| O5 | modo `master` completo, open loops, borradores | **hecha** (266 tests en total) |
+
+## Probar
+```bash
+python -m pytest        # usa src/ y raphael-core de nucleo\01-harness\codigo\raphael-core\src (o RAPHAEL_CORE_SRC)
+ruff check src tests
+```
+Python ≥ 3.11. Dependencias: raphael-core, pydantic, pyyaml. Los tests corren sin red.
+
+## Qué hay
+| Módulo | Qué hace |
+|---|---|
+| `config.py` | La config del orquestador (`installation.orchestrator.config`): modo `master` o `secretary`, voz (persona, directrices, reintentos, tope de la charla, temperatura), memoria, charla directa, autoconocimiento, borradores. Reemplaza las variables `ORQUESTADOR_*` de JarvisRemote. Sin proveedores ni claves |
+| `voice.py` | El rol `voz`: arma el mensaje desde un `InternalReport` v2. Verificador por código (cifras de la conclusión, pendientes por su número real `#N`, lo creado, fuentes, fallos; nada de cifras ni URLs inventadas), reintentos acotados, fuentes completadas por código y plantilla fiel por construcción. Charla corta con control. Todo lo que entra al prompt es dato |
+| `memory.py` | La charla por sesión en el espacio propio del orquestador (`_orchestrator`): ventana acotada + resumen determinista; solo la lee la voz |
+| `self_report.py` | "¿Qué brigadas tenés?": un `InternalReport` armado por código desde `ctx.catalog()` (trabajando, caídas y por qué, disponibles sin montar) |
+| `ports.py` | El puente con el harness: modelos por rol (`ctx.aai`) con `private=`, el clasificador del ruteo (local solo si `classifier_cloud: false`) y los ajustes de la voz desde la config y la identidad |
+| `routing.py` (O2) | Rol `ruteo`. Pedidos: elegida a mano (`/id` o pestaña) → charla → pregunta sobre el asistente → señales del manifiesto de cada brigada (dos con señal fuerte = trabajo conjunto; en empate gana la señal explícita que no es el destino seguro) → clasificador solo si hace falta y lo que devuelve se valida → destino seguro. Brigadas `direct_only` solo a mano; caídas no son candidatas. Clientes: conversación abierta → interés → modelo si nadie lo reclama → cocinero de red al final |
+| `watchdog.py` (O2) | Vigila la corrida del jefe sobre los eventos del motor v2: loop (idéntica, casi idéntica, misma respuesta), sin progreso (con latidos, más aire), timeout, errores seguidos; informa los efímeros que el jefe ya perdió. Corta, audita, marca el tablero y deja un aviso literal. Límites: los del jefe (catálogo) ganan a la config |
+| `plan.py` (O3) | El DAG del reparto: dependencias validadas por código (cada una es una brigada del plan, nada depende de sí mismo, sin ciclos; cualquier cosa rara = todo en paralelo con aviso), niveles por orden topológico y presupuesto (brigadas y etapas máximas) |
+| `command.py` (O3) | Rol `mando`: reparte (sub-tarea corta, sin cifras ni URLs nuevas, conserva la señal fuerte de su brigada; si no, el pedido entero) y concluye (solo con lo de los reportes, un reintento; si no, sin conclusión y se dice) |
+| `joint.py` (O3) | Trabajo conjunto: DAG por niveles con `ctx.ask` vigilado por nodo; la que depende recibe los reportes previos como dato; una que falla, que se corta o que se pasa del tiempo entra degradada y las demás siguen; `combine_reports` por código (confianza más baja, pendientes con su número real). Con una privada, mando y voz solo locales. Apagado por defecto en `secretary` |
+| `confirm.py` (O4) | Escrituras con ids reales: se arman por código contra lo que existe (pendiente abierto, nivel, contacto conocido, comando declarado), se proponen ("¿Confirmo?") y se ejecutan solo con un "sí" explícito (lista cerrada, el mensaje entero), revalidando antes, por el `OwnerContext`. Cualquier otra frase descarta la propuesta. Por sesión |
+| `secretary.py` (O4) | Rol Secretaria genérico: tareas = pendientes del harness + `owner_tasks` de cada brigada (que puede enriquecer SUS pendientes o sumar tareas); lista, recomendar, siguiente, ficha con contexto y opciones; órdenes por reglas ("aprobá la 2", "aprobá el #7", "rechazá…", "respondele a la 1: …") y con IA (JSON `decir`/`hacer`, validado); todo lo que escribe pasa por `confirm` |
+| `orchestrator.py` (O4, O5) | `RaphaelOrchestrator` (entry point `raphael`; en la instalación: `orchestrator: {entry: raphael_orchestrator.orchestrator:RaphaelOrchestrator, config: {...}}`). Primero los comandos de borradores; `secretary` = clientes con `order_cooks` y la dueña con la Secretaria; `master` = confirmación → Secretaria si es trabajo de tareas → ruteo y turno, con feed y `meta` |
+| `drafts_cmd.py` (O5) | `/brigadas`, `/crear-brigada {json}`, `/revisar-brigada`, `/activar-brigada <id> <hash>`, `/desactivar-brigada`, `/descartar-brigada`. Los interpreta código, solo si el mensaje empieza con el comando, y solo desde el `OwnerContext`. Activar no monta (eso es de la app). Apagado en la nube |
+| `proactive.py` (O5) | Avisos por los ganchos del harness: pendiente nuevo que resuelve una persona, jefe caído, salud mala, propuesta de confianza, recordatorio de pendientes viejos. Cada aviso una vez. Solo lee y avisa |
+| `turn.py` (O2) | El turno: `decide` (ruteo con el catálogo), `run_route`, `run_brigade` (`ctx.ask` vigilado → voz; privada → solo local), `run_chat`, `run_self`, `speak`. Un solo `final` por turno, del orquestador; lo de código sale literal. La charla queda en la sesión de `ctx.session` |
+
+Decisiones que se aplican acá: si un reporte viene de una brigada privada, la voz pide `private=True` (solo local; sin modelo local, plantilla); el orquestador nunca aprueba nada; lo de comandos, confirmaciones y watchdog sale literal (`voice.literal`).
+
+## Para las brigadas: aparecer en la lista de la Secretaria
+Declarar en el manifiesto el comando `owner_tasks: {read: true}` y que un cocinero lo atienda. Recibe `{"pending": [los pendientes abiertos de ESA brigada]}` y devuelve una lista de ítems (formato en el docstring de `secretary.py`): tareas propias con `title`, `reason`, `score` 0-100, `contact`, `options`; o `{"pending": N, "bonus": 0-40, "reason": ..., "options": [...]}` para enriquecer un pendiente suyo. Los comandos que no son de lectura que declare la brigada los puede proponer la Secretaria (siempre con confirmación).

@@ -1,0 +1,19 @@
+name: tests
+on: [push, pull_request]
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: raphael-encargos
+      - uses: actions/checkout@v4      # el contrato: la versión actual del harness
+        with:
+          repository: ${{ github.repository_owner }}/raphael-harness
+          path: raphael-harness
+          token: ${{ secrets.RAPHAEL_REPOS_TOKEN || github.token }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pydantic pyyaml httpx pytest
+      - run: cd raphael-encargos && python -m pytest -q

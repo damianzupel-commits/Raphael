@@ -1,0 +1,20 @@
+[Unit]
+Description=Raphael Empresas
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=@USUARIO@
+WorkingDirectory=@RAIZ@
+Environment=PYTHONPATH=@PYPATH@
+Environment=RAPHAEL_DIR=@RAIZ@/datos
+Environment=PYTHONUNBUFFERED=1
+Environment=RAPHAEL_NUBE=1
+ExecStart=@RAIZ@/venv/bin/python -m raphael_servidor correr --host 127.0.0.1 --puerto 8080
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+ProtectSystem=full
+
+[Install]
+WantedBy=multi-user.target
