@@ -10,7 +10,7 @@ PC y VPS.
 
 ## Convenciones
 - Código con nombres en inglés; documentación y mensajes al usuario en español rioplatense.
-- Proveedor de IA configurable por rol y por plan; para la v1 de Empresas es NVIDIA (decidido el 24 nov, ver CONTEXT §6).
+- Proveedor de IA configurable por rol y por plan; para la v1 de Empresas es OpenRouter (decidido el 24 nov, ver CONTEXT §6).
 
 ## Reglas
 - Se parte de lo que ya anda: se porta, no se tira. Los 21 tests originales de raphael-harness fueron la vara mínima; hoy el harness tiene 408 tests propios y la puerta del repo suma 824 (ver ESTADO).

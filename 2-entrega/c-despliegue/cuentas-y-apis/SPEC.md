@@ -19,7 +19,7 @@ Operativo, con Damián.
 - Cada acción declara su nivel de autonomía (automatico, aprobacion, humano) en el manifiesto.
 
 ## Estado
-Pendiente: crear la app de Meta, el número de prueba, la cuenta de Instagram de prueba y cargar la clave del proveedor de IA. El proveedor ya está elegido: NVIDIA para la v1 (24 nov, `NVIDIA_API_KEY`).
+Pendiente: crear la app de Meta, el número de prueba, la cuenta de Instagram de prueba y cargar la clave del proveedor de IA. El proveedor ya está elegido: OpenRouter para la v1 (24 nov, `OPENROUTER_API_KEY`; DeepSeek V4 Flash de principal y modelos `:free` de respaldo, siempre con `data_collection=deny`). NVIDIA gratis queda solo para desarrollo: sus términos no permiten producción. Detalle y supuestos sin verificar en `CONTEXT.md` §6.
 
 ## Criterios de aceptación (mínimos)
 - Pasa la suite de contrato del harness v2 (manifiesto válido, healthcheck, montar y desmontar).
