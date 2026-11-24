@@ -4,7 +4,7 @@ Servidor FastAPI de cada instalación: panel web, login, webhook de Meta (`/webh
 
 ## Cómo debe funcionar
 - Una instalación por cliente: usuario del sistema, carpeta, base, claves y dominio propios.
-- Sin `NVIDIA_API_KEY` (u otro proveedor) cae a reglas y lo avisa. Las claves las carga Damián en el servidor; nunca pasan por un chat.
+- Sin `OPENROUTER_API_KEY` (u otro proveedor) cae a reglas y lo avisa. Las claves las carga Damián en el servidor; nunca pasan por un chat.
 - Corre detrás de Caddy con HTTPS (Meta lo exige).
 
 ## Código existente

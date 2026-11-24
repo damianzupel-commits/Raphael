@@ -58,11 +58,15 @@ def gw(config=None, env=None, transport=None, edition="personal", limit=1000, pl
     return g, usage, reloj
 
 
-def test_el_yaml_de_fabrica_tiene_tres_escalones_con_nvidia():
+def test_el_yaml_de_fabrica_tiene_tres_escalones_con_openrouter_en_pago():
     c = load_models()
     assert set(c.tiers) == {"pago", "gratis", "local"}
-    assert all(c.tiers[t] == ["nvidia"] for t in c.tiers)
+    assert c.tiers == {"pago": ["openrouter"], "gratis": ["nvidia"], "local": []}
     assert c.providers["nvidia"].free and not c.providers["nvidia"].is_local
+    assert not c.providers["openrouter"].free and not c.providers["openrouter"].is_local
+    assert c.providers["openrouter"].extra["provider"] == {"data_collection": "deny"}
+    # NVIDIA gratis es solo para desarrollo: ningún rol de fábrica cae a ese escalón
+    assert all("gratis" not in chain for chain in c.roles.values())
     assert c.canonical("secretaria") == "mando" and c.canonical("redaccion") == "cocinero"
 
 

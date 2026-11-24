@@ -39,7 +39,7 @@ Armado del paquete, instalación en modo "solo archivos" (venv, paquetes, cheque
 - [ ] VPS Hetzner CX33 con Ubuntu 24.04, acceso por clave SSH, firewall con 22, 80 y 443.
 - [ ] Dominio DuckDNS apuntando a la IP del VPS.
 - [ ] `installation.yaml` real de la clienta (`perfil_a_instalacion.py`), con `store.source.url` y `store.public_url`.
-- [ ] `NVIDIA_API_KEY` cargada por Damián en el VPS (en `meta.env` o un `EnvironmentFile` aparte), nunca por chat; sin ella el harness degrada a reglas y lo avisa.
+- [ ] `OPENROUTER_API_KEY` cargada por Damián en el VPS (en `meta.env` o un `EnvironmentFile` aparte), nunca por chat; sin ella el harness degrada a reglas y lo avisa. NVIDIA gratis no se usa con clientes reales.
 - [ ] App de Meta con número de prueba: recién ahí `META_MODE=real`.
 - [ ] App Android compilada con `-Pservidor=https://<dominio>` y firmada con la clave respaldada fuera de git.
 

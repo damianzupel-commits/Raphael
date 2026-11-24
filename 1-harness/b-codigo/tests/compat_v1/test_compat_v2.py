@@ -30,21 +30,24 @@ class Eco(Brigada):
         return Respuesta("eco: " + msg.texto)
 
 
-def test_sin_config_usa_los_tres_escalones_con_nvidia():
+def test_sin_config_usa_openrouter_con_data_collection_deny():
     llamadas = []
 
     def transporte(url, cuerpo, headers):
-        llamadas.append((url, cuerpo["model"], headers.get("Authorization"), cuerpo.get("chat_template_kwargs")))
+        llamadas.append((url, cuerpo["model"], headers.get("Authorization"), cuerpo.get("provider")))
         return OK
 
-    h = armar(Eco(), config_modelos=None, env={"NVIDIA_API_KEY": "nv"}, transporte_ia=transporte)
+    h = armar(Eco(), config_modelos=None, env={"OPENROUTER_API_KEY": "or"}, transporte_ia=transporte)
     ctx = h._ctx("orquestador")
     assert ctx.hay_ia("secretaria") and ctx.ia("secretaria", [{"role": "user", "content": "hola"}]) == "listo"
-    url, modelo, auth, extra = llamadas[0]
-    assert url == "https://integrate.api.nvidia.com/v1/chat/completions" and auth == "Bearer nv"
-    assert modelo.startswith("nvidia/") and extra == {"enable_thinking": False}
+    url, modelo, auth, prov = llamadas[0]
+    assert url == "https://openrouter.ai/api/v1/chat/completions" and auth == "Bearer or"
+    assert prov == {"data_collection": "deny"}
     sin_clave = armar(Eco(), config_modelos=None, env={})
     assert not sin_clave._ctx("orquestador").hay_ia("secretaria")
+    # NVIDIA gratis es solo para desarrollo: tener su clave no habilita IA en producción
+    solo_nvidia = armar(Eco(), config_modelos=None, env={"NVIDIA_API_KEY": "nv"})
+    assert not solo_nvidia._ctx("orquestador").hay_ia("secretaria")
 
 
 def test_una_brigada_v1_rota_no_tumba_el_mensaje():
