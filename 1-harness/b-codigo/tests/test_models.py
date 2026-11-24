@@ -58,11 +58,19 @@ def gw(config=None, env=None, transport=None, edition="personal", limit=1000, pl
     return g, usage, reloj
 
 
-def test_el_yaml_de_fabrica_tiene_tres_escalones_con_nvidia():
+def test_el_yaml_de_fabrica_tiene_tres_escalones_con_openrouter_en_pago():
     c = load_models()
     assert set(c.tiers) == {"pago", "gratis", "local"}
-    assert all(c.tiers[t] == ["nvidia"] for t in c.tiers)
-    assert c.providers["nvidia"].free and not c.providers["nvidia"].is_local
+    assert c.tiers == {"pago": ["deepseek-flash"], "gratis": ["gratis-a", "gratis-b"], "local": []}
+    assert not c.providers["deepseek-flash"].free and not c.providers["deepseek-flash"].is_local
+    # todo lo que sale por OpenRouter exige proveedores que no guarden ni entrenen con los datos
+    for name in ("deepseek-flash", "gratis-a", "gratis-b"):
+        assert c.providers[name].extra["provider"] == {"data_collection": "deny"}
+    assert c.providers["gratis-a"].free and c.providers["gratis-b"].free
+    # NVIDIA gratis es solo para desarrollo: no está en ningún escalón
+    assert all("nvidia" not in ps for ps in c.tiers.values())
+    # lo que habla con la persona o planifica no cae a modelos gratis
+    assert all(c.roles[r] == ["pago"] for r in ("mando", "voz", "jefe"))
     assert c.canonical("secretaria") == "mando" and c.canonical("redaccion") == "cocinero"
 
 
