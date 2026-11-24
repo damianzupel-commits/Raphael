@@ -5,12 +5,12 @@
 
 ## Probar
 ```
-cd ..\raphael-empresas
-python scripts\arrancar.py --instalacion ..\instalacion\clienta.installation.yaml --datos ..\..\..\..\obra\datos-prueba --probar --estado --dev ..\..\..\..\nucleo\02-orquestador\codigo
+# desde la raíz del repo, con los paquetes instalados (ver requirements-vps.txt)
+python 1-harness/c-brigadas/15-empresas/b-codigo/scripts/arrancar.py --instalacion 2-entrega/c-despliegue/instalacion-clienta/clienta.installation.yaml --datos .data/datos-prueba --probar --estado
 ```
 `--probar` corre un recorrido de humo sin red en una base temporal. Sin `--probar` usa `--datos` (ahí queda `raphael.sqlite`).
 
 ## Subirla al VPS
-Con el kit de `..\despliegue\` (ver su `LEEME.md`): `armar_paquete.py` en la PC, `instalar-v2.sh <dominio>` en el VPS.
+Con el kit de `../vps/` (ver su `LEEME.md`): `armar_paquete.py` en la PC, `instalar-v2.sh <dominio>` en el VPS.
 Ahí quedan la API de la app, el webhook de Meta (`/webhook/meta`), HTTPS con Caddy, systemd y la copia diaria de la base.
-Pendiente para 03: revisar y adoptar ese kit; copia de la base fuera del servidor; alertas.
+El kit ya está adoptado (24 nov). Pendiente: copia de la base fuera del servidor y alertas.
