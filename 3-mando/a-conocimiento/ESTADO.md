@@ -10,18 +10,18 @@ Todo el trabajo está en `D:\Raphael Ultimate\raphael\`, repo único `damianzupe
 | --- | --- |
 | Harness (`1-harness/b-codigo`) | H1 a H8 hechas, contrato 2.1, 405 tests en verde en la nube y en Windows (24 nov); panel nativo (abre) |
 | Orquestador (`1-harness/c-brigadas/00-orquestador`) | O1 a O5 hechas, 266 tests en verde en la nube y en Windows (24 nov) |
-| Empresas (`1-harness/c-brigadas/15-empresas`) | Brigada nativa 2.0.0, 124 tests en verde en Windows (24 nov); API y canal de Meta (26 tests en verde); app Android 1.1.0 (APK compila, sin probar en teléfono); kit del VPS probado solo en modo "solo archivos" |
+| Empresas (`1-harness/c-brigadas/15-empresas`) | Brigada nativa 2.0.0, 124 tests en verde en Windows (24 nov); API y canal de Meta (26 tests en verde); app Android 1.1.0 (APK compila, sin probar en teléfono); kit del VPS probado solo en modo "solo archivos". **24 nov:** `INTERVIEW.md` y perfil borrador creados (PR abierto, esperando aprobación de Damián); **sin respuestas de la clienta todavía**, por eso no se tocaron módulos ni se cargó su perfil real |
 | Servidor, app e instalador | API y kit del VPS adoptados (24 nov): paquete, instalación "solo archivos", arranque, health y webhook probados en la nube con el árbol a/b/c; docs y rutas corregidas, checklist de montaje en `2-entrega/c-despliegue/vps/LEEME.md`. Falta montarlo en un VPS real (necesita VPS, DuckDNS y claves cargadas por Damián) |
 | Cuentas y APIs | Proveedor de IA: OpenRouter (24 nov, `OPENROUTER_API_KEY`, saldo ya cargado por Damián; falta cargar la clave en el VPS): DeepSeek V4 Flash de principal y modelos `:free` rotando de alternativa en roles chicos, siempre con `data_collection=deny`. NVIDIA gratis solo para desarrollo, sus términos no permiten producción. Slugs y precios son supuestos a verificar. Pendiente: VPS Hetzner, DuckDNS, app de Meta, número de prueba, Instagram de prueba |
 | Brigadas 05 a 14 y 16 | Solo spec y cocineros; código de referencia en `3-mando/c-referencia/<brigada>/` |
 
-Tests en la PC de Damián (Windows, Python 3.12) después de la mudanza, 24 nov: core 405, orchestrator 266, business 124, server 26, ruff limpio (821 en verde). Puerta: `3-mando\b-herramientas\gate.bat`.
+Tests en la PC de Damián (Windows, Python 3.12) después de la mudanza, 24 nov: core 405, orchestrator 266, business 124, server 26, ruff limpio (821 en verde). Puerta: `3-mando\b-herramientas\gate.bat`. El PR de la entrevista solo agrega documentos: no se corrieron tests en este cambio.
 
 ## Pendiente (en orden)
 1. ~~Versionar `raphael\` con git~~ hecho (24 nov, repo local). Falta: el repo privado y el push los hace Damián.
 2. ~~Correr los tests en la PC y arreglar la mudanza; puerta en `3-mando/b-herramientas/`~~ hecho (24 nov, `3-mando\b-herramientas\gate.bat`).
 3. Cuentas y APIs: VPS Hetzner (CX33), DuckDNS, app de Meta con número de prueba (proveedor de IA ya elegido: OpenRouter).
-4. Entrevista a la clienta (demo de Mi Tienda IA) → `1-harness/c-brigadas/15-empresas/INTERVIEW.md`; ajustar Empresas.
+4. Entrevista a la clienta (demo de Mi Tienda IA): **preguntas listas en `1-harness/c-brigadas/15-empresas/INTERVIEW.md`** (24 nov, con supuestos marcados y revisión de alcance de Tienda). Falta: que Damián las haga, anotar sus respuestas, cargar su perfil (`a-historia/perfil-clienta.borrador.yaml` → `perfil_a_instalacion.py`) y ajustar los módulos (INTERVIEW §10).
 5. Montar Empresas en el VPS y probar la app en un teléfono.
 6. Recién después, una brigada por vez.
 
