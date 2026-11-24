@@ -1,0 +1,37 @@
+# BORRADOR del perfil de la clienta real (pieza 15, 24 nov 2026).
+# NO es el perfil real: la clienta todavía no respondió la entrevista (ver ../INTERVIEW.md).
+# Cada valor marcado SUPUESTO sale del piloto (Taller Ejemplo / Ana) o de una suposición razonable,
+# y se corrige con sus respuestas. Lo marcado FALTA no tiene dato y no se inventa.
+# Mismo formato que `installation.brigades.empresas.config` (ver src/raphael_empresas/config.py).
+# No se validó contra el esquema en esta sesión (no se corrieron los tests).
+# Cuando haya respuestas: copiar este bloque a clienta.installation.yaml o pasarlo por scripts/perfil_a_instalacion.py.
+business:
+  name: "FALTA"            # INTERVIEW 0.1
+  owner: "FALTA"           # INTERVIEW 0.1
+  tone: voseo_emojis       # SUPUESTO, 0.4
+info:
+  hours: "FALTA"           # INTERVIEW 4.1 (el piloto decía lunes a sábado de 10 a 19)
+  shipping: "FALTA"        # SUPUESTO del piloto: envíos a todo el país por correo
+  payment_methods: [transferencia, efectivo]   # SUPUESTO, 3.2
+  location: "FALTA"        # 0.2
+  faq:
+    - question: "¿Trabajan con telas que lleva la clienta?"
+      answer: "SUPUESTO del piloto: sí, podés traer tu tela; te decimos si sirve para el modelo que querés."
+      keywords: [mi tela, traer tela, llevo la tela]
+payments:
+  deposit_pct: 50          # SUPUESTO, 3.1
+  alias: "FALTA"           # 3.2
+  holder: "FALTA"          # 3.2
+orders:
+  prices: []               # FALTA, 2.1 (los precios del piloto NO son de ella)
+  surcharges: []           # FALTA, 2.2
+  required_steps: [prenda, ocasion, fecha, detalles, referencias, medidas, nombre]   # SUPUESTO, 2.3
+  urgent_if_days_under: 15 # SUPUESTO, 2.4
+schedule:
+  reminder_days_before: 3  # SUPUESTO, 4.3
+  slots: []                # FALTA, 4.1
+store:
+  source: {kind: none, url: "", format: json}   # SUPUESTO A (ver INTERVIEW §9), 6.1
+  public_url: ""
+  refresh_minutes: 60
+  low_stock: 2

@@ -15,3 +15,10 @@ Una entrada por sesión: fecha y "Resumen de cierre" de 3 a 6 líneas (qué se h
 - Tienda: adaptadores Tiendanube, Shopify (GraphQL) y WooCommerce, de solo lectura, tokens por variable de entorno (cambia la decisión de dejarlos para después: Damián pidió construir todo). App 1.1.0: avisos, estado de los canales, notificación por avisos, refresco cada 30 s.
 - Tests: brigada 124, API 26, núcleo 405 y orquestador 266 sin cambios, regresión vieja 74; app con lint en 0 errores, 7 tests de modelos y el de contrato contra la API real. Ruff limpio.
 - Pendientes en DISENO.md §10 (03 adopta el kit y el canal; 04 las cuentas de Meta; Damián el token de la tienda si la clienta usa una plataforma).
+
+## 24 nov 2026 · Resumen de cierre · preparación de la entrevista a la clienta
+- Creado `INTERVIEW.md` (raíz de esta rama): preguntas por módulo con el supuesto actual y una columna de respuesta; las ★ bloquean la entrega.
+- Creado `a-historia/perfil-clienta.borrador.yaml`: perfil con cada dato marcado SUPUESTO o FALTA. No se cargaron los precios ni los datos del piloto como si fueran de ella. No se validó contra el esquema ni se corrieron tests (solo documentos).
+- Revisión de alcance de Tienda (INTERVIEW §9): se mantiene solo lectura; se supone que no tiene tienda web (`kind: none`) hasta que responda 6.1; los tres adaptadores de plataforma siguen sin probarse contra tiendas reales.
+- No se ajustó ningún módulo: sin respuestas serían inventos. Los ajustes posibles y de qué pregunta dependen están en INTERVIEW §10.
+- Pendiente: que Damián haga la entrevista y anote las respuestas; después, cargar el perfil real y ajustar módulos. Tema para Legales (16): factura/monotributo y qué datos de clientas se guardan (Ley 25.326, a verificar con fuente vigente).
