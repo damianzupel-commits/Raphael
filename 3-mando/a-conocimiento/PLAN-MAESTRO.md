@@ -47,7 +47,7 @@ Cada pieza tiene su rama, su README y su log (`a-historia/log.md` de cada pieza)
 | 1 | Harness | `1-harness/b-codigo` | Hecho H1 a H8, contrato 2.1, 408 tests en verde en la PC de Damián. Panel nativo abre. Incluye el compat-shim `raphael_harness` (74 tests de Empresas viejo pasan sobre v2). |
 | 2 | Orquestador | `1-harness/c-brigadas/00-orquestador` | Hecho O1 a O5, 266 tests en verde. |
 | 3 | Servidor, app e instalador | `2-entrega/b-codigo/`, `2-entrega/c-despliegue/` | API FastAPI y canal Meta existen (26 tests, Meta en modo mock). App Android 1.1.0 (APK compila, **sin probar en teléfono**). Kit del VPS (systemd, Caddy, instalar/actualizar, copia diaria, armado de paquete) probado **solo en modo "solo archivos"**. Falta montarlo en un VPS real. |
-| 4 | Cuentas y APIs | operativo | Proveedor de IA elegido: NVIDIA para la v1. Pendiente: VPS Hetzner, DuckDNS, app de Meta, número de prueba, Instagram de prueba. **Nunca recibe claves en el chat.** |
+| 4 | Cuentas y APIs | operativo | Proveedor de IA elegido: OpenRouter (24 nov; NVIDIA gratis solo desarrollo). Pendiente: VPS Hetzner, DuckDNS, app de Meta, número de prueba, Instagram de prueba. **Nunca recibe claves en el chat.** |
 
 ### 3.2 Raphael Empresas (chat 15, `1-harness/c-brigadas/15-empresas`)
 
@@ -104,7 +104,7 @@ El repo sigue el patrón a/b/c de a tres (ver `README.md` de la raíz): `1-harne
 ```
 Cuentas y APIs (4) ──► Servidor/app/instalador (3) ──► Empresas funcionando en el VPS
         │                                                    ▲
-        └─ proveedor de IA (NVIDIA, ya elegido)              │
+        └─ proveedor de IA (OpenRouter, ya elegido)           │
 Entrevista a la clienta ──► ajustes en Empresas (15) ────────┘
 Harness (1) + Orquestador (2): hechos; las brigadas 5–14 y 16 dependen de ellos.
 ```
@@ -152,7 +152,7 @@ Si Damián pide otro orden, gana lo que él diga.
 - Secretaria: rol genérico del orquestador (habla con la dueña en la clienta; en personal reporta al maestro).
 - Trading: toda ejecución con aprobación.
 - Seguridad en la nube: solo defensiva y pasiva. El pentest activo solo en la PC.
-- Proveedor de IA para la v1 de Empresas: NVIDIA (`NVIDIA_API_KEY`, que el harness ya lee). Sigue configurable por rol y por plan. Sin clave, el harness degrada a reglas y lo avisa. Ojo: Damián había dicho "todavía no lo decido"; quedó marcada NVIDIA en la tarjeta del coordinador. Confirmá con él si quiere mantenerla.
+- Proveedor de IA para la v1 de Empresas: OpenRouter (`OPENROUTER_API_KEY`), DeepSeek V4 Flash de principal y modelos `:free` rotando en roles chicos, con `data_collection=deny`. NVIDIA gratis solo para desarrollo (sus términos no permiten producción). Detalle en `CONTEXT.md` §6. Sin clave, el harness degrada a reglas y lo avisa.
 - Modelos sin rechazos (abliterados): idea en estudio, solo local y solo para Seguridad e Investigación de personal. Nunca en Empresas ni en el orquestador. Sin decisión.
 - Meta: la v1 sirve a cuentas que administra Damián. Que cada cliente conecte las suyas exige ser Tech Provider (verificación de empresa y App Review, puede tardar más de 10 días).
 - Hosting: un VPS por cliente en Hetzner (referencia CX33, 4 vCPU, 8 GB, Ubuntu 24.04), dominio con DuckDNS, webhook `/webhook/meta` con HTTPS.
@@ -161,7 +161,7 @@ Si Damián pide otro orden, gana lo que él diga.
 
 ## 7 bis. Decisiones que le tocan a Damián (preguntale, no asumas)
 
-- Confirmar el proveedor de IA (NVIDIA) o cambiarlo.
+- ~~Confirmar el proveedor de IA~~ decidido el 24 nov: OpenRouter. Falta verificar slugs y precios de los modelos.
 - Hosting definitivo y plan del VPS.
 - Qué brigadas opcionales contrata la clienta además de `business`.
 - Orden de las tandas 2 a 4.
@@ -174,7 +174,7 @@ Si Damián pide otro orden, gana lo que él diga.
 2. Crear el VPS en Hetzner y pasar **solo la IP** (nunca la contraseña).
 3. Crear el subdominio en DuckDNS apuntado a esa IP.
 4. En developers.facebook.com: app Business, WhatsApp, número de prueba; cuenta de Instagram de prueba.
-5. Cargar `NVIDIA_API_KEY` en el servidor.
+5. Cargar `OPENROUTER_API_KEY` en el servidor.
 6. Compilar el APK con `-Pservidor=https://<dominio>` y probarlo en un teléfono.
 7. Respaldar la clave de firma de Android (`raphael-android/claves`) **fuera de git**. Perderla impide actualizar la app ya instalada.
 8. Borrar a mano la basura de `_archivo` (`_para_borrar`, `Claude outputs`, `obra\tmp-*`).

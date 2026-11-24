@@ -85,7 +85,7 @@ Además hay chats de vida (Estudio, Divague, Rutina): sin código ni planes form
 | Orquestador | Hechas O1 a O5, 266 tests en verde |
 | Empresas (`15-empresas`) | Brigada nativa 2.0.0, 124 tests; API y canal de Meta (26 tests); app Android 1.1.0 (APK compila, sin probar en teléfono); kit del VPS probado solo en modo "solo archivos" |
 | Servidor, app e instalador | Falta adoptar la API y el kit, montarlos en el VPS, push |
-| Cuentas y APIs | Proveedor de IA: NVIDIA para la v1. Pendiente: VPS en Hetzner, dominio DuckDNS, app de Meta, número de prueba, cuenta de Instagram de prueba |
+| Cuentas y APIs | Proveedor de IA: OpenRouter (DeepSeek V4 Flash; NVIDIA gratis solo desarrollo). Pendiente: VPS en Hetzner, dominio DuckDNS, app de Meta, número de prueba, cuenta de Instagram de prueba |
 | Brigadas 05 a 14 y 16 | Solo spec y cocineros definidos; el código existente de JarvisRemote está de referencia en `3-mando/c-referencia/<brigada>/`; Legales es nueva |
 Los 824 tests (core 408, orquestador 266, Empresas 124, servidor 26) y ruff pasan en la PC de Damián (Windows, Python 3.12) y en la nube. Falta probar contra Meta real, en un VPS real y la app en un teléfono.
 
