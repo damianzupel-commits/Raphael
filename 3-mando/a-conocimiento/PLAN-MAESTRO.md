@@ -44,7 +44,7 @@ Cada pieza tiene su rama, su README y su log (`a-historia/log.md` de cada pieza)
 | Chat | Pieza | Rama | Estado al 24 nov |
 | --- | --- | --- | --- |
 | 0 | Mando | `3-mando/a-conocimiento/` | Decisiones, prioridades y `ESTADO.md`. No escribe código. |
-| 1 | Harness | `1-harness/b-codigo` | Hecho H1 a H8, contrato 2.1, 405 tests en verde en la PC de Damián. Panel nativo abre. Incluye el compat-shim `raphael_harness` (74 tests de Empresas viejo pasan sobre v2). |
+| 1 | Harness | `1-harness/b-codigo` | Hecho H1 a H8, contrato 2.1, 408 tests en verde en la PC de Damián. Panel nativo abre. Incluye el compat-shim `raphael_harness` (74 tests de Empresas viejo pasan sobre v2). |
 | 2 | Orquestador | `1-harness/c-brigadas/00-orquestador` | Hecho O1 a O5, 266 tests en verde. |
 | 3 | Servidor, app e instalador | `2-entrega/b-codigo/`, `2-entrega/c-despliegue/` | API FastAPI y canal Meta existen (26 tests, Meta en modo mock). App Android 1.1.0 (APK compila, **sin probar en teléfono**). Kit del VPS (systemd, Caddy, instalar/actualizar, copia diaria, armado de paquete) probado **solo en modo "solo archivos"**. Falta montarlo en un VPS real. |
 | 4 | Cuentas y APIs | operativo | Proveedor de IA elegido: NVIDIA para la v1. Pendiente: VPS Hetzner, DuckDNS, app de Meta, número de prueba, Instagram de prueba. **Nunca recibe claves en el chat.** |
@@ -94,7 +94,7 @@ El repo sigue el patrón a/b/c de a tres (ver `README.md` de la raíz): `1-harne
 - `2-entrega/c-despliegue/vps`: kit del VPS (pertenece al chat 3).
 - `2-entrega/c-despliegue/instalacion-clienta`: `clienta.installation.yaml` y `requirements-vps.txt` (chats 3 y 15).
 - `3-mando/b-herramientas/pruebas-contrato` y `3-mando/b-herramientas/pruebas-e2e`: suites transversales.
-- `3-mando/b-herramientas/`: scripts y la puerta de calidad `3-mando\b-herramientas\gate.bat` (core 405 + orchestrator 266 + business 124 + server 26 = 821 en verde, ruff limpio).
+- `3-mando/b-herramientas/`: scripts y la puerta de calidad `3-mando\b-herramientas\gate.bat` (core 408 + orchestrator 266 + business 124 + server 26 = 824 en verde, ruff limpio).
 - `3-mando/a-conocimiento/`: SPEC-FAMILIA, ESTADO, PIEZAS, BRIGADAS, PLAN-MAESTRO y el log del mando y del revisor. Los diseños y logs de cada pieza están en su rama.
 - `3-mando/c-referencia/`: código viejo de solo lectura. No se edita.
 - Chats de vida (Estudio, Divague, Rutina): no son del producto; sin código ni planes salvo que Damián lo pida.
@@ -121,7 +121,7 @@ Harness (1) + Orquestador (2): hechos; las brigadas 5–14 y 16 dependen de ello
 1. **Empresas (15):** pulir para la clienta; `INTERVIEW.md`; perfil real; revisar Tienda.
 2. **Servidor, app e instalador (3):** adoptar la API y el kit, preparar el montaje en el VPS (bloqueado en la parte real hasta tener IP y dominio).
 3. **Cuentas y APIs (4):** guiar a Damián en Hetzner, DuckDNS, Meta y la carga de claves. Sin claves en el chat.
-4. **Revisor (17):** revisión en blanco del estado actual contra `SPEC.md` y los 821 tests.
+4. **Revisor (17):** revisión en blanco del estado actual contra `SPEC.md` y los 824 tests.
 
 ### Tandas siguientes (una por vez, cuando la anterior cierre)
 - **Tanda 2 (base que usan las demás):** Memoria·Cerebro (9), Ingesta (10), Operaciones (12), Autorreparación (13).

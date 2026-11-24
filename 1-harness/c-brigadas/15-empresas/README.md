@@ -32,7 +32,7 @@ Nube (VPS) para clientes; adentro de Raphael personal es la brigada 11.
 
 ## Estado
 Construido en Empresas 0.4: 5 módulos con tests en verde (atención 5, agenda 5, cobros 4, encargos 9, avisos 2; orquestador 28). Primera clienta: vendedora de ropa a medida.
-22 nov 2026: brigada nativa del harness v2 en `codigo/raphael-empresas` (7 cocineros, 116 tests: los 74 de 0.4 portados), instalación de la clienta (`codigo/instalacion`), API (`codigo/raphael-empresas-api`) y app Android nativa (`codigo/android`). Ver DISENO.md §7-9.
+22 nov 2026: brigada nativa del harness v2 (7 cocineros, los 74 tests de 0.4 portados). Hoy son 124 tests en verde (24 nov), en `b-codigo/` y `c-salud/pruebas/` de esta carpeta. Las demás piezas viven en el árbol a/b/c: la API en `2-entrega/b-codigo/servidor/api/`, la app en `2-entrega/b-codigo/android/` y la instalación de la clienta en `2-entrega/c-despliegue/instalacion-clienta/`. El diseño del harness está en `1-harness/a-conocimiento/diseno-harness-v2.md`.
 
 ## Criterios de aceptación (mínimos)
 - Pasa la suite de contrato del harness v2 (manifiesto válido, healthcheck, montar y desmontar).
