@@ -63,7 +63,7 @@ Además hay chats de vida (Estudio, Divague, Rutina): sin código ni planes form
 - **Secretaria:** rol genérico del orquestador. En la instalación de la clienta habla con la dueña; en personal es jefa de la brigada Empresas y reporta al maestro.
 - **Trading:** toda ejecución, demo o real, requiere aprobación de Damián.
 - **Seguridad en la nube:** solo defensiva y pasiva; el pentest activo corre solo en la PC de Damián y nunca en el VPS.
-- **Proveedor de IA:** sin decidir; el harness lo deja configurable por rol y por plan. Hoy el harness lee `NVIDIA_API_KEY` en pruebas y sin clave degrada a reglas y lo avisa.
+- **Proveedor de IA (24 nov):** NVIDIA para la v1 de Raphael Empresas, vía `NVIDIA_API_KEY`, que el harness ya lee. Sigue configurable por rol y por plan; sin clave el harness degrada a reglas y lo avisa.
 - **Modelos sin rechazos (abliterados):** idea en estudio, solo local y solo para Seguridad e Investigación de Raphael personal; nunca en Empresas ni en el orquestador. Sin decisión tomada.
 - **Meta:** la v1 sirve a cuentas que administra Damián (acceso estándar). Que cada cliente conecte las suyas exige ser Tech Provider (verificación de empresa y App Review, puede tardar más de 10 días).
 - **Hosting:** un VPS en Hetzner (referencia CX33), una instalación por cliente.
