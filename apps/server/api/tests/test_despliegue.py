@@ -3,6 +3,7 @@
 import importlib.util
 import shutil
 import subprocess
+import sys
 import tarfile
 from pathlib import Path
 
@@ -45,9 +46,24 @@ def test_los_scripts_son_de_unix_y_pasan_bash_n(names, tmp_path):
     base = tmp_path / "raphael-v2-nube"
     for s in ("instalar-v2.sh", "actualizar-v2.sh", "copia.sh", "raphael-empresas.service", "Caddyfile.plantilla"):
         assert b"\r\n" not in (base / s).read_bytes(), s
-    if shutil.which("bash"):
+    bash = _bash()
+    if bash:
         for s in ("instalar-v2.sh", "actualizar-v2.sh", "copia.sh"):
-            assert subprocess.run(["bash", "-n", str(base / s)]).returncode == 0, s
+            assert subprocess.run([bash, "-n", str(base / s)]).returncode == 0, s
+
+
+def _bash():
+    """El bash que entiende rutas de Windows: en Windows el de Git, no el lanzador de WSL de WindowsApps."""
+    found = shutil.which("bash")
+    if sys.platform != "win32":
+        return found
+    git = shutil.which("git")
+    if git:
+        git_root = Path(git).resolve().parents[1]
+        for cand in (git_root / "bin" / "bash.exe", git_root / "usr" / "bin" / "bash.exe"):
+            if cand.is_file():
+                return str(cand)
+    return found if found and "windowsapps" not in found.lower() else None
 
 
 def test_plantillas_sin_valores():
