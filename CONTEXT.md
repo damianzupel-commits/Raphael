@@ -22,7 +22,7 @@ raphael/
   README.md                  el árbol explicado
   1-harness/                 la base: sin harness no corre nada
     a-conocimiento/          spec, diseño, qué se portó y log del harness
-    b-codigo/                raphael-core (405 tests) y el panel de escritorio (panel/)
+    b-codigo/                raphael-core (408 tests) y el panel de escritorio (panel/)
     c-brigadas/              todo lo que se monta sobre el harness
       00-orquestador/        el que habla con la persona y reparte (266 tests)
       05-seguridad/ ... 14-contenido/, 15-empresas/, 16-legales/
@@ -36,7 +36,7 @@ raphael/
     c-despliegue/            vps/, instalacion-clienta/, cuentas-y-apis/
   3-mando/                   cómo se dirige el proyecto
     a-conocimiento/          ESTADO, PLAN-MAESTRO, PIEZAS, BRIGADAS, SPEC-FAMILIA, log/
-    b-herramientas/          gate.bat (puerta de 821 tests + ruff), pruebas-contrato/, pruebas-e2e/
+    b-herramientas/          gate.bat (puerta de 824 tests + ruff), pruebas-contrato/, pruebas-e2e/
     c-referencia/            código viejo de JarvisRemote y Empresas, solo lectura
   .venv/, .data/             entorno y datos locales, fuera de git
 ```
@@ -81,13 +81,13 @@ Además hay chats de vida (Estudio, Divague, Rutina): sin código ni planes form
 ## 7. Estado al 24 nov 2026
 | Pieza | Estado |
 | --- | --- |
-| Harness (`1-harness/b-codigo`) | Hecho H1 a H8, contrato 2.1, 405 tests en verde y panel nativo |
+| Harness (`1-harness/b-codigo`) | Hecho H1 a H8, contrato 2.1, 408 tests en verde y panel nativo |
 | Orquestador | Hechas O1 a O5, 266 tests en verde |
 | Empresas (`15-empresas`) | Brigada nativa 2.0.0, 124 tests; API y canal de Meta (26 tests); app Android 1.1.0 (APK compila, sin probar en teléfono); kit del VPS probado solo en modo "solo archivos" |
 | Servidor, app e instalador | Falta adoptar la API y el kit, montarlos en el VPS, push |
 | Cuentas y APIs | Proveedor de IA: NVIDIA para la v1. Pendiente: VPS en Hetzner, dominio DuckDNS, app de Meta, número de prueba, cuenta de Instagram de prueba |
 | Brigadas 05 a 14 y 16 | Solo spec y cocineros definidos; el código existente de JarvisRemote está de referencia en `3-mando/c-referencia/<brigada>/`; Legales es nueva |
-Los 821 tests (core 405, orquestador 266, Empresas 124, servidor 26) y ruff pasan en la PC de Damián (Windows, Python 3.12) y en la nube. Falta probar contra Meta real, en un VPS real y la app en un teléfono.
+Los 824 tests (core 408, orquestador 266, Empresas 124, servidor 26) y ruff pasan en la PC de Damián (Windows, Python 3.12) y en la nube. Falta probar contra Meta real, en un VPS real y la app en un teléfono.
 
 ## 8. Cliente de prueba y siguiente paso
 Damián le muestra a la clienta la demo de Mi Tienda IA (proyecto aparte, solo demo) para hacerle preguntas; con las respuestas se ajusta Raphael Empresas antes de entregárselo funcionando. Las respuestas van a `1-harness/c-brigadas/15-empresas/INTERVIEW.md` (si no existe, crearlo).

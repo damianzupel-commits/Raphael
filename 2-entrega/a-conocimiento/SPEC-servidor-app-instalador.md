@@ -20,7 +20,7 @@ VPS Hetzner (referencia CX33: 4 vCPU, 8 GB, Ubuntu 24.04) y celular.
 - Cada acción declara su nivel de autonomía (automatico, aprobacion, humano) en el manifiesto.
 
 ## Estado
-Servidor 0.4.0 (28 tests), relay, central y android (sin tests). VPS aún sin crear.
+API del servidor (`raphael_empresas_api`, 26 tests en verde) con el canal de Meta en modo mock, kit del VPS probado solo en modo "solo archivos" (24 nov) y app Android 1.1.0 (APK compila, sin probar en teléfono). El VPS real aún no se montó (sin VPS por ahora: el servidor de Empresas corre en la PC de Damián con un túnel). Los 28 tests y el servidor 0.4.0 eran del servidor viejo, congelado como referencia.
 
 ## Criterios de aceptación (mínimos)
 - Pasa la suite de contrato del harness v2 (manifiesto válido, healthcheck, montar y desmontar).
