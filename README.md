@@ -1,15 +1,41 @@
-# raphael/
+# Raphael
 
-Monorepo de Raphael personal y Raphael Empresas. **Este es el único lugar de trabajo.** Empezá por `CONTEXT.md`.
+Repo único de Raphael personal y Raphael Empresas. Empezá por `CONTEXT.md`.
 
-## Qué hay acá
-- `CONTEXT.md`: mapa, reglas, decisiones y estado de todo el proyecto.
-- `apps/`, `packages/`, `brigades/`, `infra/`, `tests/`, `tools/`, `docs/`: la estructura de trabajo. Cada rama tiene su README.
-- `_reference/`: código existente de JarvisRemote y de los repos viejos de Empresas, de solo lectura, de donde se portan las brigadas.
-- `.data/` y `packages/core/.datos/`: datos locales (bases, chats, claves). Fuera de git; no se leen ni se suben.
+## El árbol (patrón a/b/c, de a tres)
+Cada nivel tiene tres partes: **a** para saber, **b** para hacer y **c** para lo que cuelga de él.
+
+```
+raphael/
+├─ 1-harness/                 la base: sin harness no corre nada
+│  ├─ a-conocimiento/         todo para entender el harness a fondo
+│  ├─ b-codigo/               el harness funcionando (+ panel de escritorio)
+│  └─ c-brigadas/             todas las brigadas, montadas sobre el harness
+│     ├─ 00-orquestador/      el que habla con la persona y reparte
+│     ├─ 05-seguridad/ … 16-legales/
+│     │  ├─ a-historia/       qué es, cocineros, decisiones, log
+│     │  ├─ b-codigo/         manifest.yaml, src/
+│     │  └─ c-salud/          pruebas/  monitoreo/  mantenimiento/
+├─ 2-entrega/                 lo que llega a la gente
+│  ├─ a-conocimiento/         spec y log del servidor, la app y el instalador
+│  ├─ b-codigo/               servidor/  android/  panel-escritorio/
+│  └─ c-despliegue/           vps/  instalacion-clienta/  cuentas-y-apis/
+└─ 3-mando/                   cómo se dirige el proyecto
+   ├─ a-conocimiento/         ESTADO, PLAN-MAESTRO, PIEZAS, log del mando
+   ├─ b-herramientas/         la puerta (gate.bat) y pruebas que cruzan piezas
+   └─ c-referencia/           código viejo de JarvisRemote y Empresas, solo lectura
+```
+Cada carpeta tiene su README: qué es y cómo debe funcionar.
+
+## Puerta
+`3-mando\b-herramientas\gate.bat` corre los 821 tests y ruff. Sale con 0 si todo pasa y con 2 si algo falla.
+
+## Datos locales (fuera de git)
+`.venv/` y `.data/` en la raíz; `1-harness/b-codigo/.venv` y `.datos` son el entorno y los datos del panel. No se leen ni se suben.
 
 ## Historia
-El 24 nov 2026 se pasó todo a esta estructura. Lo anterior (carpetas por pieza `nucleo\` y `brigadas\`, registros y trabajo en curso) quedó archivado en `D:\Raphael Ultimate\_archivo\` y no se usa más. Si algo falta, se busca ahí.
+- 24 nov 2026, madrugada: todo pasó a un monorepo (`apps`, `packages`, `brigades`, ...). Lo anterior quedó en `D:\Raphael Ultimate\_archivo\`.
+- 24 nov 2026, tarde: el monorepo pasó a este árbol a/b/c para el repo único `damianzupel-commits/Raphael`. Los archivos se movieron con `git mv` (conservan su historial).
 
 ## Panel
-Acceso directo "Raphael Harness v2" del escritorio: abre `packages/core/panel/abrir-panel.bat`. El entorno (`.venv`) y los datos (`.datos`) viven en `packages/core/`.
+Acceso directo "Raphael Harness v2" del escritorio: abre `1-harness/b-codigo/panel/abrir-panel.bat`.

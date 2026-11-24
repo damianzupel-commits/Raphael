@@ -1,0 +1,8 @@
+# Memoria · Cerebro · b-codigo
+El código de la brigada para el harness v2. Todavía vacío: se porta desde `3-mando/c-referencia/memory/`.
+
+Cuando exista lleva:
+- `manifest.yaml`: id, cocineros, acciones con su nivel de autonomía (`automatico`, `aprobacion`, `humano`), eventos, `setup` y `health`.
+- `pyproject.toml`: el paquete instalable (nombre en inglés).
+- `src/<paquete>/`: un módulo por cocinero, más `health.py` (lo que usa `c-salud/monitoreo`).
+Modelo a seguir: `15-empresas/b-codigo/`.
