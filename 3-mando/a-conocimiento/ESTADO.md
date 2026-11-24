@@ -11,7 +11,7 @@ Todo el trabajo está en `D:\Raphael Ultimate\raphael\`, repo único `damianzupe
 | Harness (`1-harness/b-codigo`) | H1 a H8 hechas, contrato 2.1, 405 tests en verde en la nube y en Windows (24 nov); panel nativo (abre) |
 | Orquestador (`1-harness/c-brigadas/00-orquestador`) | O1 a O5 hechas, 266 tests en verde en la nube y en Windows (24 nov) |
 | Empresas (`1-harness/c-brigadas/15-empresas`) | Brigada nativa 2.0.0, 124 tests en verde en Windows (24 nov); API y canal de Meta (26 tests en verde); app Android 1.1.0 (APK compila, sin probar en teléfono); kit del VPS probado solo en modo "solo archivos" |
-| Servidor, app e instalador | Falta adoptar la API y el kit, montarlos en el VPS |
+| Servidor, app e instalador | API y kit del VPS adoptados (24 nov): paquete, instalación "solo archivos", arranque, health y webhook probados en la nube con el árbol a/b/c; docs y rutas corregidas, checklist de montaje en `2-entrega/c-despliegue/vps/LEEME.md`. Falta montarlo en un VPS real (necesita VPS, DuckDNS y claves cargadas por Damián) |
 | Cuentas y APIs | Proveedor de IA elegido: NVIDIA para la v1 (24 nov, `NVIDIA_API_KEY`; falta cargar la clave en el VPS). Pendiente: VPS Hetzner, DuckDNS, app de Meta, número de prueba, Instagram de prueba |
 | Brigadas 05 a 14 y 16 | Solo spec y cocineros; código de referencia en `3-mando/c-referencia/<brigada>/` |
 
