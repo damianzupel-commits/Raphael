@@ -6,15 +6,16 @@
 # NVIDIA (build.nvidia.com) queda solo para desarrollo y pruebas: sus términos oficiales
 # (docs.api.nvidia.com/nim/docs/product, revisado 24 nov 2026) dicen que el acceso de developer es "solo para
 # prototipos, investigación, desarrollo y pruebas" y que servir a usuarios finales reales es producción, que exige
-# licencia NVIDIA AI Enterprise. Por eso NINGÚN rol cae a NVIDIA por defecto; para probar sin gastar, poné
-# "gratis" en la cadena del rol a mano (y sin mensajes reales de clientes).
+# licencia NVIDIA AI Enterprise. Por eso NINGÚN escalón ni rol usa NVIDIA por defecto; para probar con ella,
+# agregala a mano a "gratis" (y sin mensajes reales de clientes).
+# Principal: DeepSeek V4 Flash por OpenRouter. Alternativa: modelos ":free" de OpenRouter rotando.
 #
 # OpenRouter (revisado 24 nov 2026 en openrouter.ai/docs y /privacy):
 #  - no guarda prompts ni respuestas salvo que se active el logging, y no los usa para entrenar;
 #  - pero algunos proveedores de modelos SÍ pueden entrenar o retener: por eso cada pedido manda
 #    provider.data_collection=deny (el valor por defecto de OpenRouter es "allow");
 #  - se paga con tarjeta (Stripe) o cripto (Coinbase), compra mínima USD 5, comisión 5,5 %.
-#  SUPUESTO sin verificar: el modelo y los precios de abajo. Confirmar el slug y el precio en openrouter.ai/models.
+#  SUPUESTO sin verificar: los slugs de modelo y los precios de abajo. Confirmarlos en openrouter.ai/models.
 #  Los datos de clientes siguen saliendo a un tercero: decirlo en Legales (Ley 25.326, verificar fuente vigente).
 #
 # Roles: mando (el orquestador), voz (lo que te habla), ruteo (decisiones chicas), jefe (planifica y
@@ -22,15 +23,29 @@
 # ayudante) se traducen solos. Cálculos, estados, avisos y permisos NUNCA pasan por la IA.
 
 providers:
-  openrouter:
+  deepseek-flash:                 # principal (pago), elegido por Damián el 24 nov 2026
     base_url: https://openrouter.ai/api/v1
-    model: mistralai/mistral-small-3.2-24b-instruct   # SUPUESTO: modelo chico y barato; verificar slug y precio
+    model: deepseek/deepseek-v4-flash         # SUPUESTO: slug a verificar en openrouter.ai/models
     api_key_env: OPENROUTER_API_KEY
-    usd_per_million_in: 0.15     # SUPUESTO (precio de Mistral Small según un blog de terceros); verificar
-    usd_per_million_out: 0.60    # SUPUESTO; verificar. Más 5,5 % de comisión de OpenRouter al comprar créditos
+    usd_per_million_in: 0.30     # SUPUESTO (blog de terceros, oct 2026); verificar. Más 5,5 % de comisión al comprar créditos
+    usd_per_million_out: 1.20    # SUPUESTO; verificar
     rpm: 60                      # SUPUESTO conservador; los modelos de pago no tienen tope de pedidos de la plataforma
     extra:
       provider: {data_collection: deny}   # no rutear a proveedores que puedan guardar o entrenar con los datos
+  gratis-a:                       # modelos ":free" de OpenRouter, rotan entre sí
+    base_url: https://openrouter.ai/api/v1
+    model: meta-llama/llama-3.3-70b-instruct:free      # SUPUESTO: los slugs ":free" cambian; verificar cuáles hay
+    api_key_env: OPENROUTER_API_KEY
+    rpm: 10                      # los ":free" comparten 20 pedidos/min por cuenta; 1.000/día con 10+ créditos comprados
+    extra:
+      provider: {data_collection: deny}   # los gratis que entrenan quedan excluidos: si no queda ninguno, da error y pasa al siguiente
+  gratis-b:
+    base_url: https://openrouter.ai/api/v1
+    model: mistralai/mistral-small-3.2-24b-instruct:free   # SUPUESTO; verificar
+    api_key_env: OPENROUTER_API_KEY
+    rpm: 10
+    extra:
+      provider: {data_collection: deny}
   nvidia:
     base_url: https://integrate.api.nvidia.com/v1
     model: nvidia/nemotron-3.5-super-vl-120b-a12b    # el de JarvisRemote (verificado allá el 11 nov 2026)
@@ -42,18 +57,21 @@ providers:
       chat_template_kwargs: {enable_thinking: false}  # sin razonar responde en ~1 s (medido en JarvisRemote)
 
 tiers:
-  pago:   [openrouter]  # producción: tráfico real, con tope mensual en dólares (paid_cap_usd_month)
-  gratis: [nvidia]      # SOLO desarrollo y pruebas, sin mensajes reales de clientes; ningún rol lo usa por defecto
-  local:  []            # cuando haya modelo local (Ollama o LM Studio en localhost), ponerlo acá.
-                        # Lo privado solo usa locales: sin ninguno cae a reglas (se mira la dirección, no el nombre)
+  pago:   [deepseek-flash]        # producción: tráfico real, con tope mensual en dólares (paid_cap_usd_month)
+  gratis: [gratis-a, gratis-b]    # alternativa rotativa de OpenRouter, siempre con data_collection=deny
+  local:  []                      # cuando haya modelo local (Ollama o LM Studio en localhost), ponerlo acá.
+                                  # Lo privado solo usa locales: sin ninguno cae a reglas (se mira la dirección, no el nombre)
+  # nvidia NO está en ningún escalón: es solo para desarrollo (ver arriba); para probar, agregarlo a mano a "gratis".
 
+# Los gratis entran solo donde el trabajo es chico y se tolera una respuesta peor (cocinero, efimero, ruteo).
+# mando, voz y jefe (lo que le habla a la persona o planifica) usan solo el pago: si se agota el tope, caen a reglas.
 roles:
   mando:    [pago]
   voz:      [pago]
   jefe:     [pago]
-  cocinero: [pago]
-  efimero:  [pago]
-  ruteo:    [pago]
+  cocinero: [pago, gratis]
+  efimero:  [pago, gratis]
+  ruteo:    [pago, gratis]
 
 # Por brigada o ayudante: "rol.id" -> escalones. Ej.: efimero.investigacion-scout: [gratis]
 overrides: {}

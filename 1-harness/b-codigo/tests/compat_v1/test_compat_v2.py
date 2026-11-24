@@ -30,7 +30,7 @@ class Eco(Brigada):
         return Respuesta("eco: " + msg.texto)
 
 
-def test_sin_config_usa_openrouter_con_data_collection_deny():
+def test_sin_config_usa_deepseek_por_openrouter_con_data_collection_deny():
     llamadas = []
 
     def transporte(url, cuerpo, headers):
