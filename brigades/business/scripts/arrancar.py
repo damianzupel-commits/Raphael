@@ -1,7 +1,7 @@
 """Arranca la instalación de la clienta (harness v2 + orquestador `secretary` + brigada Empresas) y la prueba.
 
 Uso:
-    python scripts/arrancar.py --instalacion ..\\instalacion\\clienta.installation.yaml --datos datos --estado
+    python scripts/arrancar.py --instalacion ..\\..\\infra\\client-install\\clienta.installation.yaml --datos datos --estado
     python scripts/arrancar.py --instalacion ... --datos ... --probar     # recorrido de humo sin red, en una base aparte
 En el VPS lo llama el servidor (pieza 03) con `raphael_empresas.boot.start`; este script es para revisar a mano.
 """

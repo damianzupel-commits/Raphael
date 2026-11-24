@@ -6,7 +6,7 @@ en el entorno; sin eso todo sigue por reglas) y deja montado lo que dice la inst
 eso es del servidor.
 
     from raphael_empresas.boot import start
-    rt, report = start("instalacion/clienta.installation.yaml", "datos/")
+    rt, report = start("infra/client-install/clienta.installation.yaml", "datos/")
     await rt.receive("whatsapp", "549341...", "hola")         # mensaje de un cliente
     await rt.talk_to_owner("¿qué tareas hay hoy?")            # la dueña
 

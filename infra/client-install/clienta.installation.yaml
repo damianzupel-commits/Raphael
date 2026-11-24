@@ -2,7 +2,7 @@
 # harness (raphael-core) + orquestador en modo `secretary` (raphael-orchestrator) + brigada `empresas`.
 #
 # OJO: los datos del negocio son los del EJEMPLO piloto (Taller Ejemplo / Ana). Para la clienta real:
-#   python ..\raphael-empresas\scripts\perfil_a_instalacion.py <su perfil.yaml> clienta-real.installation.yaml
+#   python ..\..\brigades\business\scripts\perfil_a_instalacion.py <su perfil.yaml> clienta-real.installation.yaml
 # o editá `brigades.empresas.config` a mano. Los niveles de cada acción salen del manifiesto de la brigada;
 # `autonomy` solo hace falta para cambiarlos (bajar a automático algo irreversible exige confirmed_by).
 # Catálogo de la tienda: completar `store.source.url` con el feed JSON o CSV y `store.public_url` con la tienda web.

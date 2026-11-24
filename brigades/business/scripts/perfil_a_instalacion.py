@@ -1,7 +1,7 @@
 """Convierte el `perfil.yaml` de Raphael Empresas 0.4 en la instalación v2 de la clienta.
 
-Uso (desde raphael-empresas, con raphael-core instalado o en el PYTHONPATH):
-    python scripts/perfil_a_instalacion.py ruta\\perfil.yaml ..\\instalacion\\clienta.installation.yaml
+Uso (desde brigades/business, con raphael-core instalado o en el PYTHONPATH):
+    python scripts/perfil_a_instalacion.py ruta\\perfil.yaml ..\\..\\infra\\client-install\\clienta.installation.yaml
     python scripts/perfil_a_instalacion.py perfil.yaml salida.yaml --id clienta-ropa --catalogo https://.../productos.json
 No toca el perfil ni ninguna base: solo escribe la salida. Lo valida contra los esquemas del harness y de la brigada.
 """
