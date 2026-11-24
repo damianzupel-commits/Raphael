@@ -19,7 +19,7 @@ Operativo, con Damián.
 - Cada acción declara su nivel de autonomía (automatico, aprobacion, humano) en el manifiesto.
 
 ## Estado
-Pendiente: crear la app de Meta, el número de prueba, la cuenta de Instagram de prueba y elegir proveedor de IA.
+Pendiente: crear la app de Meta, el número de prueba, la cuenta de Instagram de prueba y cargar la clave del proveedor de IA. El proveedor ya está elegido: NVIDIA para la v1 (24 nov, `NVIDIA_API_KEY`).
 
 ## Criterios de aceptación (mínimos)
 - Pasa la suite de contrato del harness v2 (manifiesto válido, healthcheck, montar y desmontar).

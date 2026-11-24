@@ -8,14 +8,17 @@ Todo el trabajo está en `D:\Raphael Ultimate\raphael\`, repo único `damianzupe
 ## Estado por pieza
 | Pieza | Estado |
 | --- | --- |
-| Harness (`1-harness/b-codigo`) | H1 a H8 hechas, contrato 2.1, 405 tests en verde en la nube y en Windows (24 nov); panel nativo (abre) |
+| Harness (`1-harness/b-codigo`) | H1 a H8 hechas, contrato 2.1, 408 tests en verde en la nube (24 nov; Windows no se volvió a correr desde que se sumó el test de imports reales); panel nativo (abre) |
 | Orquestador (`1-harness/c-brigadas/00-orquestador`) | O1 a O5 hechas, 266 tests en verde en la nube y en Windows (24 nov) |
 | Empresas (`1-harness/c-brigadas/15-empresas`) | Brigada nativa 2.0.0, 124 tests en verde en Windows (24 nov); API y canal de Meta (26 tests en verde); app Android 1.1.0 (APK compila, sin probar en teléfono); kit del VPS probado solo en modo "solo archivos" |
 | Servidor, app e instalador | API y kit del VPS adoptados (24 nov): paquete, instalación "solo archivos", arranque, health y webhook probados en la nube con el árbol a/b/c; docs y rutas corregidas, checklist de montaje en `2-entrega/c-despliegue/vps/LEEME.md`. Falta montarlo en un VPS real (necesita VPS, DuckDNS y claves cargadas por Damián) |
 | Cuentas y APIs | Proveedor de IA elegido: NVIDIA para la v1 (24 nov, `NVIDIA_API_KEY`; falta cargar la clave en el VPS). Pendiente: VPS Hetzner, DuckDNS, app de Meta, número de prueba, Instagram de prueba |
 | Brigadas 05 a 14 y 16 | Solo spec y cocineros; código de referencia en `3-mando/c-referencia/<brigada>/` |
 
-Tests en la PC de Damián (Windows, Python 3.12) después de la mudanza, 24 nov: core 405, orchestrator 266, business 124, server 26, ruff limpio (821 en verde). Puerta: `3-mando\b-herramientas\gate.bat`.
+Tests en la PC de Damián (Windows, Python 3.12) después de la mudanza, 24 nov: core 408, orchestrator 266, business 124, server 26, ruff limpio (824 en verde). Puerta: `3-mando\b-herramientas\gate.bat`.
+
+## Cambios recientes
+- 24 nov, hilo "Corregir docs y fijar test de imports": se corrigieron los SPEC del harness, del servidor y de cuentas y el README de Empresas (desvíos 1 a 5 del informe `log/17-revisor.md`). Nuevo `1-harness/b-codigo/tests/test_imports_codigo_real.py`: verifica que el orquestador, Empresas y el servidor no se importen entre sí (core pasa de 405 a 408 tests, puerta de 821 a 824, ruff limpio, corrida en la nube). Quedan fuera a propósito: `INTERVIEW.md` (PR #3) y la decisión sobre NVIDIA (otro hilo). El servidor de Empresas corre en la PC de Damián con un túnel hasta que haya VPS.
 
 ## Pendiente (en orden)
 1. ~~Versionar `raphael\` con git~~ hecho (24 nov, repo local). Falta: el repo privado y el push los hace Damián.
