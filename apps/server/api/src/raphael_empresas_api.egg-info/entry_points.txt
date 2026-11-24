@@ -1,0 +1,2 @@
+[console_scripts]
+raphael-empresas-api = raphael_empresas_api.__main__:main

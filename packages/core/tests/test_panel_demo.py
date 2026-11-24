@@ -58,10 +58,12 @@ def test_lee_las_brigadas_de_la_carpeta_del_proyecto(tmp_path):
     _brigada(tmp_path, "05-seguridad", "05-seguridad · Seguridad", "Auditar código.", ["auditor", "pentest"])
     _brigada(tmp_path, "15-saludo", "15-saludo · Saludo", "Saluda.", ["saludador"], EXAMPLE_MANIFEST)
     _brigada(tmp_path, "16-rota", "16-rota · Rota", "No valida.", [], "id: Mal\n")
-    (tmp_path / "brigadas" / "sin-numero").mkdir()
+    (tmp_path / "brigadas" / "sin-numero").mkdir()     # la estructura nueva (`brigades/business/`) no lleva número
+    (tmp_path / "brigadas" / "Con Espacios").mkdir()   # un nombre que no es id se sigue ignorando
     bs = discover_brigades(tmp_path, mounted={"saludo"})
-    assert [b.id for b in bs] == ["seguridad", "saludo", "rota"]
-    seg, sal, rota = bs
+    assert [b.id for b in bs] == ["seguridad", "saludo", "rota", "sin-numero"]
+    seg, sal, rota, sin = bs
+    assert sin.number == "" and sin.state == "sin manifiesto"
     assert seg.name == "Seguridad" and seg.description == "Auditar código." and seg.cooks == ["auditor", "pentest"]
     assert seg.state == "sin manifiesto"
     assert sal.manifest_ok and sal.contract_ok and sal.mounted and sal.state == "montada"

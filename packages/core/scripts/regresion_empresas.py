@@ -43,7 +43,7 @@ def contar(salida: str) -> dict[str, int]:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--proyecto", type=Path, default=None, help="carpeta del proyecto (la carpeta raphael, la que tiene _reference/ y packages/)")
+    ap.add_argument("--proyecto", type=Path, default=None, help="carpeta del proyecto (raphael/, con _reference/ y packages/)")
     ap.add_argument("--python", default=sys.executable, help="intérprete con pytest, pydantic, pyyaml y httpx")
     args = ap.parse_args()
     raiz = args.proyecto or proyecto_por_defecto()

@@ -1,0 +1,2 @@
+[raphael.orchestrators]
+raphael = raphael_orchestrator.orchestrator:RaphaelOrchestrator

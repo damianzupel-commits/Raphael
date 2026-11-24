@@ -10,7 +10,7 @@ from raphael_empresas.boot import start
 from raphael_empresas.migrate import installation_from_profile
 
 ROOT = BRIGADE_DIR.parents[1]
-INSTALL = BRIGADE_DIR.parent / "instalacion" / "clienta.installation.yaml"
+INSTALL = ROOT / "infra/client-install/clienta.installation.yaml"
 PROFILE = ROOT / "_reference/core/raphael-empresas/raphael-harness/ejemplos/perfil-ropa-medida.yaml"
 W = "whatsapp:5493415550000"
 
