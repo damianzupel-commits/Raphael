@@ -7,7 +7,7 @@ Seguridad:
 - Cuenta demo (`practice`): puerto 4002 (Gateway) o 7497 (TWS), por defecto 4002. Exige que TODAS las cuentas de la sesión
   sean paper (empiezan con `DU`): si no, se niega. La cuenta real (`live`) exige además `TRADING_ALLOW_LIVE=1`.
 - Las órdenes solo salen desde `IbkrBroker.place` / `close`, que el cocinero llama ya aprobadas por Damián.
-Variables de entorno (ver `.env.plantilla`): IBKR_HOST, IBKR_PORT, IBKR_CLIENT_ID, IBKR_ACCOUNT. No hay claves: el login
+Variables de entorno (ver `trading.env.plantilla`): IBKR_HOST, IBKR_PORT, IBKR_CLIENT_ID, IBKR_ACCOUNT. No hay claves: el login
 lo hace Damián en TWS/Gateway.
 
 NO probado contra un IB real (sin cuenta todavía): los tests usan un `ib_async` falso que replica las llamadas. Primera

@@ -1,6 +1,6 @@
 """Config de la brigada (lo que va en `installation.yaml` bajo `brigades.trading.config`).
 
-Las CLAVES no van acá: se leen de variables de entorno (ver `.env.plantilla`). Sin clave, cada adaptador real cae al
+Las CLAVES no van acá: se leen de variables de entorno (ver `trading.env.plantilla`). Sin clave, cada adaptador real cae al
 simulado y lo avisa: nunca inventa datos de mercado ni opera.
 """
 

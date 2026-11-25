@@ -100,8 +100,8 @@ Trading funciona contra un simulado. Para pasarlo a IBKR (cuenta **paper**, demo
 | **IB Gateway** (o TWS) abierto con el usuario paper. En Configuración > API: activar "Enable ActiveX and Socket Clients", **desactivar** "Read-Only API" (si no, no entran órdenes), puerto 4002 (Gateway) o 7497 (TWS), permitir 127.0.0.1 | Descarga de IB | — | Se desconecta solo una vez al día: Raphael reconecta en el próximo pedido |
 | `pip install ib_async` | pip, en el `.venv` | — | Importar `ib_async` |
 | Config de la brigada `data.adapter: ibkr` y `broker.adapter: ibkr` | — | `brigades.trading.config` | `estado` debe decir broker ibkr (no simulado) |
-| `IBKR_HOST` (127.0.0.1), `IBKR_PORT`, `IBKR_CLIENT_ID`, `IBKR_ACCOUNT` (la `DU…` paper). **No hay claves**: el login lo hace IB Gateway | Tu cuenta paper | `.env.plantilla` de Trading y `raphael.env` | En paper se rechaza una cuenta que no empiece con `DU` |
-| `TRADING_ALLOW_LIVE=1` | — | **No lo pongas** hasta decidir pasar a real | Candado extra: sin esto no se opera en real |
+| `IBKR_HOST` (127.0.0.1), `IBKR_PORT`, `IBKR_CLIENT_ID`, `IBKR_ACCOUNT` (la `DU…` paper). **No hay claves**: el login lo hace IB Gateway | Tu cuenta paper | `1-harness/c-brigadas/11-trading/b-codigo/trading.env.plantilla` y `raphael.env` | En paper se rechaza una cuenta que no empiece con `DU` |
+| `TRADING_ALLOW_LIVE=0` | — | **No lo toques** hasta decidir pasar a real | Candado extra: en 0 no se opera en real (en 1 sí, y aun así cada orden pide tu aprobación) |
 
 Probar en este orden: `estado` > `analizar` (fuente ibkr) > `escanear` > `proponer` > aprobar UNA orden chica (**siempre queda pendiente de tu aprobación**, también en paper) > mirar en TWS que el stop y el objetivo quedaron colgados > `cerrar`.
 
