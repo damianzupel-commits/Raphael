@@ -47,3 +47,53 @@ El código cumple lo que ESTADO dice de él. Lo que está desactualizado es la d
 - Se revisó el repo en blanco contra SPEC, ESTADO y tests; puerta EN VERDE con 821 tests, igual a lo declarado.
 - Se encontraron 6 desvíos de documentación, 1 hueco de test (imports cruzados sobre código real) y 4 riesgos de decisión (el principal, NVIDIA gratis en producción).
 - No se tocó código ni otros documentos. Queda a Damián decidir qué se corrige y en qué hilo.
+
+---
+
+## 25 nov 2026 · Segunda revisión: estado de `main` antes de la tanda de brigadas en paralelo
+Revisor sin contexto previo sobre la conversación; leí `CONTEXT.md`, `ESTADO.md`, `PLAN-MAESTRO.md`, `PIEZAS.md`, el informe anterior y el código que cambió desde entonces (servidor, `entorno.py`, `configuracion.py`, `is_same_pc`). Corrí la puerta sobre `main` (`e616333`) en la nube, Python 3.13, venv aparte con `pip install -e` de las cuatro piezas. No se construyó nada ni se tocó código; solo se agregó este informe.
+
+### Veredicto
+`main` está sano y los desvíos 1 a 6 del informe del 24 nov quedaron cerrados. Hay dos cosas que conviene resolver **antes de que entren los pull requests de las brigadas nuevas**, porque si no la puerta en verde no las va a cubrir (§3), y una decisión de seguridad que Damián debería conocer (§4).
+
+### 1. Verificado
+- Puerta EN VERDE: core 409, orchestrator 266, business 124, server **51** = **850 passed, 0 failed**, ruff limpio. ESTADO dice 841 (server 42): el server tiene 9 tests más que lo escrito (los de configuración web). Corregir el número en ESTADO.
+- Desvíos del informe anterior: SPEC del harness, SPEC de entrega, SPEC de cuentas y README de Empresas ya dicen lo mismo que el código; `INTERVIEW.md` existe; el test de imports cruzados sobre código real existe (`test_imports_codigo_real.py`).
+- Sin secretos versionados: búsqueda de patrones de claves (OpenRouter, NVIDIA, AWS, Meta, GitHub) solo encuentra datos falsos en un test y texto en `INVENTARIO-FASE0.md`; los únicos `.env*` versionados son tres `*.plantilla`.
+- Acceso sin clave desde la PC (`RAPHAEL_LOCAL_SIN_CLAVE=1`): `is_same_pc` exige cliente 127.0.0.1/::1, ningún encabezado de reenvío o de Tailscale, `Host` local y `Origin`/`Sec-Fetch-Site` coherentes. Con Funnel, el `Host` llega como el nombre `ts.net`, así que falla la comprobación fuerte y se pide clave. Lo leí; no lo probé contra un Funnel real.
+
+### 2. Reglas que no se tocan: qué hay que mirar en cada PR de la tanda
+Hoy solo Empresas tiene código, así que estas reglas todavía no se pueden verificar en las otras brigadas. Lista para revisar cada PR (marcar cada punto con evidencia, no con "parece que sí"):
+1. **Manifiesto**: cada acción con efecto tiene su nivel; las que gastan plata, publican, mandan mensajes o borran no son `automatico`. Hay un test que cruza las `Action(...)` del código con el manifiesto (modelo: `15-empresas/c-salud/pruebas/test_gate.py`).
+2. **Trading**: ninguna ruta llega a ejecutar una orden, ni en demo ni contra el simulado, sin pasar por aprobación de Damián. Buscar un test que intente ejecutar y verifique que queda pendiente.
+3. **Pentest activo** (Seguridad): solo con modo `personal`; la brigada no debe montarse con `cloud` ni en `secretary`. Buscar el test que lo prueba.
+4. **Ninguna brigada importa a otra** y el test corre sobre el código real de esa brigada.
+5. **Enchufable**: adaptador real y simulado; los tests corren con el simulado y no tocan red ni claves; sin clave cae a reglas y lo avisa (no falla en silencio).
+6. **Claves**: solo variables de entorno; `.env.plantilla` con nombres y sin valores; ningún `.env*` ni clave versionada.
+7. **Lo sensible no sale a la nube** (decisión del 25 nov): Seguridad, Investigación, Memoria y Operaciones usan modelo local; si el local no está prendido, avisan y no mandan nada a la nube. Buscar el test de ese caso.
+8. **Datos que faltan** de la pieza están en su `.env.plantilla` y pasados al coordinador para `LIENZO-DAMIAN.md`.
+9. **Salud**: `health` real (no un `return True`), montar/desmontar, suite de contrato en verde, "Resumen de cierre" en el log.
+
+### 3. Huecos (resolver antes de mergear las brigadas)
+1. **La puerta no cubre brigadas nuevas.** `gate.py` tiene `SUITES` fijas (core, orchestrator, business, server). Una brigada con tests rojos o sin tests no cambia el resultado de la puerta. Cada brigada que se sume necesita su entrada en `SUITES` y en `RUFF_PATHS`. `gate.py` es del coordinador: se lo paso.
+2. **El test de imports cruzados también es una lista fija** (`PAQUETES` y `PROHIBIDOS` en `test_imports_codigo_real.py`): una brigada nueva no queda vigilada hasta que alguien la agregue. Mejor que descubra los paquetes por `manifest.yaml` y prohíba cualquier `raphael_*` que no sea el harness (o el propio). Es del harness; queda como pendiente para esa pieza o para el coordinador.
+3. **Dos `manifest.yaml` en Empresas** (`b-codigo/manifest.yaml` y `b-codigo/src/raphael_empresas/manifest.yaml`). Hay que confirmar cuál lee el harness y si el segundo es copia del paquete; si divergen, uno miente. Pendiente para Empresas.
+4. Sin cambios desde el informe anterior: `pruebas-contrato/` y `pruebas-e2e/` solo tienen README. Con 13 brigadas nuevas, la prueba e2e (mensaje, encargo, aprobación) sigue sin existir como test automático.
+
+### 4. Riesgos de decisión
+1. **El acceso sin clave desde la PC aprueba lo irreversible.** Cualquier proceso de esa PC que hable con `127.0.0.1` con un `Host` local puede aprobar acciones pendientes de la dueña sin clave (el código frena a páginas web ajenas, no a otros programas). Es una decisión consciente y la defensa está bien armada; solo hay que saber que "aprobación humana" depende ahí de la seguridad de la PC. Conviene que las acciones nivel `humano` sigan pidiendo la clave aunque `local_open` esté activo (no verifiqué si ya lo hacen).
+2. **`/config` visible por el túnel**: ya está en ESTADO. Pide clave y limita intentos; con clave inicial en `.data/empresas/clave-inicial.txt` hasta que se cambie, conviene que el chequeo de arranque avise si sigue sin cambiarse.
+3. `LOOPBACK` en `models/config.py` sigue incluyendo `0.0.0.0` (informe anterior, riesgo 3): un endpoint configurado así se trataría como privado. Pendiente para el harness.
+4. Supuestos sin verificar de OpenRouter (slugs, precios, tope de USD 5, retención por proveedor): están marcados en CONTEXT §6; ninguno está probado con clave real.
+5. **Meta real, VPS real, app en teléfono, Windows**: sin probar. Sigue siendo lo que separa "850 verdes" de "funciona para la clienta". Además ESTADO anota un test de permisos 600 de `raphael.env` que falla en Windows (la puerta de Windows no se corrió con el cambio más nuevo).
+
+### Pendiente para el coordinador (archivos compartidos)
+- `ESTADO.md`: server 51 tests y puerta 850 (hoy 42 y 841); anotar este informe en "Cambios recientes".
+- `gate.py`: sumar cada brigada nueva a `SUITES` y `RUFF_PATHS` a medida que entra.
+- Nota para el harness/coordinador: volver dinámico el test de imports cruzados (§3.2).
+
+### Resumen de cierre
+- Revisé `main` (`e616333`) en blanco: puerta EN VERDE con 850 tests, ruff limpio, sin secretos versionados, y los 6 desvíos del 24 nov cerrados.
+- Encontré 4 huecos (la puerta y el test de imports no cubren brigadas nuevas, dos manifiestos en Empresas, e2e sin automatizar) y 5 riesgos de decisión; el que más importa es que el acceso sin clave desde la PC permite aprobar lo irreversible.
+- Dejé la lista de 9 puntos para revisar cada PR de la tanda (§2). No construí nada ni toqué archivos compartidos.
+- Cuando entren los PR de las brigadas, los reviso contra esa lista y agrego un informe por tanda en este mismo log.
