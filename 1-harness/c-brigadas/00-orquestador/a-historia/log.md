@@ -72,3 +72,9 @@ Revisado leyendo `contract.py`, `context.py`, `runtime.py`, `approvals.py`, `ins
 - Decisión de diseño: el orquestador no es brigada, no lleva manifest ni cocineros; se monta por la instalación.
 - Pendientes para otras piezas: harness (`modelos.yaml` real de la edición personal: usar el ejemplo y alinear `private` con los ids de los manifests de 05, 07, 09 y 12; el harness no sondea si Ollama está prendido: lo nota cuando falla el pedido y pausa al proveedor); 03 (endpoints HTTP de voz `/api/voz*`, que usan `speech_from`); coordinador (ESTADO, LIENZO-DAMIAN).
 - No probado: voz real (sin faster-whisper, Piper ni modelos en la nube de pruebas), Ollama/LM Studio ni NVIDIA reales, Windows.
+
+## 25 nov 2026 (2) · Resumen de cierre · pedidos de las piezas 05 y 13
+- `seguridad.alerta` ahora es un aviso a Damián (regla, gravedad, arreglo sugerido; una vez por regla y día). También avisan `arreglo.aplicado`, `arreglo.revertido` y `autodiagnostico.hallazgo` (pedido de la 13).
+- Nuevo `toolcalls.py`: convierte las entradas de auditoría `tool` y `tool_fallida` al JSONL de `analyzer.py` de la 13 (`export_jsonl(entries, path)`). Límite: la auditoría del harness no guarda argumentos ni id de conversación, así que `conversation_id` es brigada:día y `arguments` va vacío; solo sirve para `error_repetido`.
+- Pendiente para harness: (a) que la auditoría de `tool` guarde los argumentos (redactados) y un id de conversación; (b) `OrchestratorContext.audit_entries()` para que el orquestador pueda leer y exportar solo (hoy `export_jsonl` recibe las entradas de quien lo llame); (c) `seguridad` (id real de la 05) en `private` del `modelos.yaml` real: ya está en `modelos.personal.ejemplo.yaml`.
+- Tests del orquestador: 285.

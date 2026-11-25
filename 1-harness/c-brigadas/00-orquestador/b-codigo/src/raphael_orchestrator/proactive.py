@@ -7,6 +7,8 @@ brigadas 07 y 09). Acá corre en los ganchos del harness (`on_event` y `tick`), 
   - pendiente nuevo que resuelve una persona (o todos, según config) -> aviso;
   - el jefe de una brigada quedó caído, o su chequeo de salud la dejó sin atender -> aviso;
   - el harness propone dejar algo en automático (confianza progresiva) -> aviso;
+  - la brigada de Seguridad publica `seguridad.alerta` (vigilancia defensiva) -> aviso a Damián con regla, gravedad y arreglo;
+  - la brigada de Autorreparación publica `arreglo.aplicado`, `arreglo.revertido` o `autodiagnostico.hallazgo` -> aviso;
   - falta el modelo de IA de un rol (sin clave, tope agotado) o el modelo LOCAL que necesitan las brigadas privadas
     (apagado): se avisa y se sigue por reglas; lo privado nunca se manda a la nube para compensar;
   - un pendiente que lleva más de `remind_after_hours` sin resolverse -> un recordatorio (una sola vez por pendiente).
@@ -21,7 +23,10 @@ from typing import Any
 from .config import OrchestratorConfig
 
 COLLECTION = "proactive"
-EVENTS = ("pendiente.creado", "brigada.jefe_caido", "brigada.salud", "confianza.propuesta")
+EVENTS = ("pendiente.creado", "brigada.jefe_caido", "brigada.salud", "confianza.propuesta", "seguridad.alerta",
+          "arreglo.aplicado", "arreglo.revertido", "autodiagnostico.hallazgo")
+SEVERITY = {"critical": "CRÍTICA", "critica": "CRÍTICA", "high": "alta", "alta": "alta", "medium": "media", "media": "media",
+            "low": "baja", "baja": "baja"}
 
 
 def _once(ctx: Any, key: str) -> bool:
@@ -64,6 +69,22 @@ def on_event(ctx: Any, cfg: OrchestratorConfig, event: str, data: dict) -> dict 
             return None
         return ctx.notify(f"{_name(ctx, b)} dejó de atender: su chequeo de salud dio mal. Vuelve sola cuando dé bien.",
                           kind="health", brigade=b)
+    if event == "seguridad.alerta":
+        rule = str(data.get("rule") or data.get("message") or "alerta")[:80]
+        if not _once(ctx, f"sec-{rule}-{ctx.now().date()}"):
+            return None
+        sev = SEVERITY.get(str(data.get("severity", "")).lower(), str(data.get("severity") or "sin gravedad"))
+        fix = f" Arreglo sugerido: {data['fix']}" if data.get("fix") else ""
+        return ctx.notify(f"Alerta de seguridad ({sev}): {data.get('message') or rule}.{fix}", kind="security", rule=rule,
+                          severity=data.get("severity"))
+    if event in ("arreglo.aplicado", "arreglo.revertido", "autodiagnostico.hallazgo"):
+        ident = str(data.get("id") or data.get("finding") or data.get("pattern") or data.get("summary") or "")[:80]
+        if not _once(ctx, f"self-{event}-{ident}-{ctx.now().date()}"):
+            return None
+        what = {"arreglo.aplicado": "Se aplicó un arreglo", "arreglo.revertido": "Se revirtió un arreglo",
+                "autodiagnostico.hallazgo": "Autodiagnóstico: hallazgo nuevo"}[event]
+        detail = str(data.get("summary") or data.get("message") or ident)[:200]
+        return ctx.notify(f"{what}{': ' + detail if detail else ''}.", kind="selfrepair", event=event)
     if event == "confianza.propuesta":
         pid = data.get("id")
         if not _once(ctx, f"trust-{pid}"):

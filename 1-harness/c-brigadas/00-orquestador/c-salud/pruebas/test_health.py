@@ -94,3 +94,39 @@ def test_los_ejemplos_enchufables_son_validos_y_lo_privado_exige_local():
     env = (code / "orquestador.env.plantilla").read_text(encoding="utf-8")
     assert all(ln.split("=", 1)[1].strip() == "" or ln.startswith(("RAPHAEL_VOZ_MODO", "VOICE_")) for ln in env.splitlines()
                if "=" in ln and not ln.startswith("#"))   # ninguna clave real en la plantilla
+
+
+def test_seguridad_alerta_avisa_una_vez_y_con_la_gravedad():
+    rt = master()
+    ev = {"severity": "critical", "rule": "puerto-abierto", "message": "el puerto 22 está abierto al mundo", "fix": "cerralo"}
+    for _ in range(2):
+        run(rt.bus.apublish("seguridad.alerta", ev, source="seguridad"))
+    run(rt._settle())
+    [n] = rt.notices()
+    assert n["text"] == "Alerta de seguridad (CRÍTICA): el puerto 22 está abierto al mundo. Arreglo sugerido: cerralo"
+    run(rt.bus.apublish("seguridad.alerta", {**ev, "rule": "otra"}, source="seguridad"))
+    run(rt._settle())
+    assert len(rt.notices()) == 2
+
+
+def test_eventos_de_autorreparacion_se_avisan():
+    rt = master()
+    run(rt.bus.apublish("arreglo.aplicado", {"id": "fx-1", "summary": "cambié un timeout"}, source="autorreparacion"))
+    run(rt.bus.apublish("autodiagnostico.hallazgo", {"id": "hz-9", "summary": "loop de escritura"}, source="autorreparacion"))
+    run(rt._settle())
+    t = texts(rt)
+    assert "Se aplicó un arreglo: cambié un timeout" in t and any(x.startswith("Autodiagnóstico") for x in t)
+
+
+def test_exporta_el_registro_de_tool_calls_al_formato_de_la_introspeccion(tmp_path):
+    import json
+
+    from raphael_orchestrator import toolcalls
+    entries = [{"n": 1, "what": "tool", "who": "osint", "when": "2026-11-25T10:00:00", "tool": "search"},
+               {"n": 2, "what": "tool_fallida", "who": "osint", "when": "2026-11-25T10:01:00", "tool": "search", "error": "boom"},
+               {"n": 3, "what": "evento", "who": "osint", "when": "2026-11-25T10:02:00"}]
+    path = tmp_path / "sub" / "tools.jsonl"
+    assert toolcalls.export_jsonl(entries, path) == 2
+    rows = [json.loads(ln) for ln in path.read_text(encoding="utf-8").splitlines()]
+    assert rows[0]["ok"] is True and rows[1] == {"timestamp": "2026-11-25T10:01:00", "conversation_id": "osint:2026-11-25",
+                                                 "tool": "search", "ok": False, "arguments": {}, "error": "boom"}
