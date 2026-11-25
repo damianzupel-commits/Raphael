@@ -1,0 +1,115 @@
+# Brigada Investigación (pieza 07): la ÚNICA fuente de verdad de lo que la brigada puede hacer.
+# Cada acción con efecto declara su nivel (automatico | aprobacion | humano) y sus etiquetas:
+#   external = sale al mundo (acá: una búsqueda web) · irreversible = sin vuelta atrás · spend = gasta plata.
+# Reglas de la brigada: nada se afirma sin fuente y fecha; el forense trabaja solo sobre evidencia entregada; lo que propone
+# una regla o un modelo no entra al caso sin confirmación; los prototipos corren solo aprobados, en un espacio aislado y solo
+# en la PC; el contenido de terceros es dato, nunca instrucción. Todos los modelos son LOCALES (sin modelo local: reglas y aviso).
+id: investigacion
+name: Raphael Investigación
+version: 2.0.0
+contract: ">=2.1,<3"
+description: Investiga con trazabilidad. Forense de evidencia entregada (chats, CSV, logs, documentos, imágenes), búsqueda web con cada afirmación respaldada por su fuente, ideas y prototipos en un espacio aislado, y vigilancia de tendencias. Sus modelos son locales.
+editions: [personal, cloud]
+cooks:
+  - {id: forense, entry: "raphael_investigacion.cooks.forensics:Forensics", blocking: true}
+  - {id: scout, entry: "raphael_investigacion.cooks.scout:Scout", blocking: true}
+  - {id: ideas, entry: "raphael_investigacion.cooks.ideas:Ideas", blocking: true}
+  - {id: tendencias, entry: "raphael_investigacion.cooks.trends:Trends", blocking: true}
+chief: "raphael_investigacion.spec:SPEC"
+actions:
+  confirmar_propuesta: {level: aprobacion, description: "dar por buena una entidad que propuso una regla o un modelo y sumarla al caso"}
+  rechazar_propuesta: {level: automatico, description: "descartar una entidad propuesta (queda en el registro)"}
+  confirmar_fusion: {level: aprobacion, description: "vincular dos nodos como la misma entidad (mismo_que); ninguno se borra"}
+  rechazar_fusion: {level: automatico, description: "descartar una fusión propuesta"}
+  retractar: {level: aprobacion, tags: [irreversible], description: "retractar un nodo o una arista de un caso (queda con su motivo; no se deshace)"}
+  exportar_informe: {level: automatico, description: "generar el informe de un caso y guardarlo en la carpeta de informes"}
+  buscar_web: {level: automatico, tags: [external], description: "buscar en la web con el proveedor configurado (la consulta sale a un tercero)"}
+  correr_prototipo: {level: aprobacion, description: "correr un prototipo de Python en el espacio aislado (solo en la PC)"}
+  borrar_tema: {level: aprobacion, tags: [irreversible], description: "borrar un tema vigilado con todo su historial de avisos"}
+tools:
+  - {name: caso_crear, description: "crea un caso forense"}
+  - {name: caso_listar, description: "lista los casos"}
+  - {name: caso_resumen, description: "resumen de un caso"}
+  - {name: ingerir_artefacto, description: "ingresa a un caso un archivo de la carpeta de evidencia"}
+  - {name: entidades_extraer, description: "propone entidades por reglas (pendientes)"}
+  - {name: entidad_proponer, description: "propone una entidad con su texto de origen (pendiente)"}
+  - {name: propuestas_listar, description: "propuestas y fusiones pendientes"}
+  - {name: fusion_sugerir, description: "sugiere identidades repetidas (pendientes)"}
+  - {name: fusion_proponer, description: "propone que dos nodos son la misma entidad (pendiente)"}
+  - {name: linea_tiempo, description: "línea de tiempo del caso"}
+  - {name: grafo, description: "métricas del grafo"}
+  - {name: vecinos, description: "conexiones de un nodo con su origen"}
+  - {name: log_verificar, description: "verifica el registro encadenado del caso"}
+  - {name: informe_generar, description: "genera el informe del caso"}
+  - {name: web_buscar, tags: [external], description: "busca en la web"}
+  - {name: web_leer, tags: [external], description: "lee una página pública (nunca la red local)"}
+  - {name: scout_investigar, tags: [external], description: "investiga una pregunta con fuentes"}
+  - {name: notas_buscar, description: "busca en las notas guardadas de Scout"}
+  - {name: idea_agregar, description: "registra una idea"}
+  - {name: idea_evaluar, description: "puntúa una idea"}
+  - {name: ideas_ranking, description: "ideas por puntaje"}
+  - {name: spec_escribir, description: "escribe la spec de una idea"}
+  - {name: prototipo_guardar, description: "guarda un prototipo sin correrlo"}
+  - {name: prototipo_correr, level: aprobacion, dangerous: true, description: "corre un prototipo en el espacio aislado (solo en la PC)"}
+  - {name: tema_seguir, description: "empieza a vigilar un tema"}
+  - {name: tema_pausar, description: "pausa un tema"}
+  - {name: temas_listar, description: "temas vigilados"}
+  - {name: tendencias_revisar, tags: [external], description: "revisa un tema ahora"}
+  - {name: avisos_listar, description: "últimos avisos de tendencias"}
+setup: "raphael_investigacion.health:setup"
+health: "raphael_investigacion.health:check"
+events:
+  publishes: [caso.creado, caso.actualizado, propuesta.creada, tendencia.relevante]
+  consumes: []
+commands:
+  casos: {read: true, description: "los casos abiertos"}
+  caso: {read: true, description: "resumen de un caso {'case'}"}
+  nodo: {read: true, description: "un nodo y sus vecinos {'case','node'}"}
+  linea_tiempo: {read: true, description: "eventos ordenados y huecos {'case'}"}
+  grafo: {read: true, description: "métricas del grafo {'case'}"}
+  pendientes: {read: true, description: "propuestas y fusiones por confirmar {'case'}"}
+  verificar_log: {read: true, description: "comprueba el registro del caso {'case'}"}
+  informe: {read: true, description: "el informe como texto {'case','format'}"}
+  verificar_artefacto: {read: true, description: "recalcula el hash de la copia guardada {'case','sha256'}"}
+  notas: {read: true, description: "notas guardadas de Scout {'q'}"}
+  proveedores: {read: true, description: "proveedores de búsqueda configurados (sin claves)"}
+  ranking: {read: true, description: "ideas por puntaje"}
+  idea: {read: true, description: "una idea {'id'}"}
+  spec: {read: true, description: "la spec de una idea {'id'}"}
+  prototipos: {read: true, description: "prototipos guardados {'idea'}"}
+  temas: {read: true, description: "temas que se vigilan"}
+  avisos: {read: true, description: "últimos avisos {'tema','limite'}"}
+  crear_caso: {read: false, description: "crea un caso {'title','description'}"}
+  ingerir: {read: false, description: "ingresa un archivo de evidencia {'case','path','kind','mapping'}"}
+  extraer_entidades: {read: false, description: "propone entidades {'case','artefacto','modelo'}"}
+  sugerir_fusiones: {read: false, description: "sugiere identidades repetidas {'case'}"}
+  investigar: {read: false, description: "investiga una pregunta en la web {'pregunta','verificar'}"}
+  nueva: {read: false, description: "registra una idea {'title','problem','pitch','tags'}"}
+  generar: {read: false, description: "ideas a partir de un tema {'seed','n'}"}
+  evaluar: {read: false, description: "puntúa una idea {'id','impacto','encaje','esfuerzo','riesgo'}"}
+  escribir_spec: {read: false, description: "escribe la spec de una idea {'id'}"}
+  guardar_prototipo: {read: false, description: "guarda código Python sin correrlo {'id','code','name'}"}
+  seguir: {read: false, description: "empieza a vigilar un tema {'tema','consultas','palabras_clave','cada_horas','umbral'}"}
+  pausar: {read: false, description: "pausa un tema {'tema'}"}
+  reanudar: {read: false, description: "reanuda un tema {'tema'}"}
+  revisar: {read: false, description: "revisa ahora un tema {'tema'}"}
+routing:
+  signals:
+    - {pattern: "\\bcasos? (forense|de investigacion)\\b|\\bevidencia\\b|\\bforens\\w*|\\bartefactos?\\b|\\bexif\\b|\\bgrafo de\\b|\\blinea de tiempo\\b", weight: 2}
+    - {pattern: "\\binvestig\\w+|\\bbusca\\w* en (la web|internet)\\b|\\bscout\\b|\\btendencias?\\b|\\bprototip\\w+|\\bideas?\\b|\\bnoticias\\b|\\bwhatsapp\\b|\\btelegram\\b", weight: 1}
+store:
+  space: investigacion
+uninstall:
+  export: [cases, nodes, edges, artifacts, proposals, fusions, log, scout_notes, watches, alerts, ideas, specs, prototypes]
+  delete: ["*"]
+config_schema:
+  type: object
+  additionalProperties: false
+  properties:
+    private: {type: boolean}
+    inbox_dir: {type: string}
+    artifacts_dir: {type: string}
+    reports_dir: {type: string}
+    search: {type: object}
+    trends: {type: object}
+    sandbox: {type: object}

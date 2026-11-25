@@ -1,3 +1,7 @@
 # Investigación · pruebas
-Los tests de la brigada. Vacío hasta que se porte el código.
-Al empezar: copiá `15-empresas/c-salud/pruebas/pyproject.toml` y `conftest.py` como modelo, sumá la suite de contrato (`run_contract_suite`) y agregá esta carpeta a `3-mando/b-herramientas/gate.py`.
+68 tests con la brigada montada de verdad (cargador, manifiesto, runtime del harness), sin red ni claves. Correr: `python -m pytest -q` desde acá.
+- `test_contrato.py`: suite de contrato (personal y nube) y manifiestos iguales.
+- `test_forense.py`: casos, ingesta (WhatsApp, Telegram, CSV, logs, texto), entidades, fusiones, retractar, registro, informe.
+- `test_busqueda.py`: Brave y SearXNG con transporte simulado, cadena, citas, verificación, lectura segura de páginas.
+- `test_tendencias.py`, `test_ideas.py`: vigilancia, puntaje, spec, sandbox.
+- `test_brigada.py`: comandos, acciones con su nivel, aprobación, tick, nube, modelo local y jefe.
