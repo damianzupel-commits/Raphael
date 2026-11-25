@@ -2,13 +2,13 @@
 #   - Lo sensible corre en LOCAL (Ollama o LM Studio en tu PC): Seguridad, Investigación, Memoria y Operaciones
 #     (lista `private`). Un pedido privado NUNCA sale a un proveedor que no corra en localhost: si el modelo local no
 #     está prendido, esa brigada sigue por reglas, el servidor te avisa y no manda nada a la nube.
-#   - El resto va a la nube con NVIDIA (build.nvidia.com): para uso personal tuyo alcanza el acceso gratis. Si Raphael
-#     llegara a servir a terceros, sus términos lo consideran producción (ver CONTEXT §6).
+#   - El resto va a la nube con OpenRouter (openrouter.ai, OPENROUTER_API_KEY) con tope mensual en USD y respaldo local.
+#     NVIDIA quedó afuera por decisión tuya (25 nov 2026); se puede volver a sumar desde Configuración como proveedor propio.
 #   - Cualquier rol se cambia SIN tocar este archivo, con variables en raphael.env (o la pantalla de Configuración):
-#       RAPHAEL_ROL_MANDO=local,gratis      (escalones en orden: local, gratis, pago)
+#       RAPHAEL_ROL_MANDO=pago,local        (escalones en orden: local, gratis, pago; la nube de Personal es «pago» = OpenRouter)
 #       OLLAMA_MODEL=llama3.1:8b            LMSTUDIO_MODEL=...      OLLAMA_URL / LMSTUDIO_URL (solo esta PC)
 #       RAPHAEL_PRIVADAS=trading,legales    (brigadas extra que quedan solo en local)
-# Las claves NUNCA van acá: NVIDIA_API_KEY y OPENROUTER_API_KEY se leen del entorno (raphael.env).
+# Las claves NUNCA van acá: OPENROUTER_API_KEY se lee del entorno (raphael.env).
 
 providers:
   ollama:                       # 127.0.0.1 y no "localhost": en Windows localhost puede resolver a ::1 y Ollama escucha en IPv4
@@ -19,14 +19,7 @@ providers:
     base_url: http://127.0.0.1:1234/v1
     model: local-model          # SUPUESTO: el identificador que muestra LM Studio, en LMSTUDIO_MODEL
     rpm: 30
-  nvidia:
-    base_url: https://integrate.api.nvidia.com/v1
-    model: nvidia/nemotron-3.5-super-vl-120b-a12b    # el de JarvisRemote (verificado allá el 11 nov 2026)
-    api_key_env: NVIDIA_API_KEY
-    rpm: 40
-    extra:
-      chat_template_kwargs: {enable_thinking: false}
-  deepseek-flash:                # opcional y apagado: paid_cap_usd_month 0 = el escalón pago no se usa nunca
+  deepseek-flash:                # la nube de Raphael personal: OpenRouter (decisión de Damián, 25 nov 2026)
     base_url: https://openrouter.ai/api/v1
     model: deepseek/deepseek-v4-flash         # SUPUESTO: verificar en openrouter.ai/models
     api_key_env: OPENROUTER_API_KEY
@@ -38,20 +31,20 @@ providers:
 
 tiers:
   local:  [ollama, lmstudio]     # el que esté prendido; si ninguno responde, se saltea
-  gratis: [nvidia]
+  gratis: []                     # sin proveedores gratis: queda para que RAPHAEL_ROL_*=local,gratis de configuraciones viejas siga valiendo
   pago:   [deepseek-flash]
 
-paid_cap_usd_month: 0            # subilo (ej. 5) solo si querés que algún rol use el escalón pago
+paid_cap_usd_month: 5            # tope de gasto en OpenRouter por mes, en USD (SUPUESTO: lo cambiás en Configuración o con RAPHAEL_TOPE_PAGO_USD; 0 = no gasta nada)
 
 # Quién usa qué. Lo que le habla a Damián y planifica va a la nube; lo que decide qué hacer con TU pedido (ruteo)
 # y el trabajo de las brigadas va primero a local. Para lo privado el filtro de abajo manda igual.
 roles:
-  mando:    [gratis, local]
-  voz:      [gratis, local]
-  jefe:     [gratis, local]
-  ruteo:    [local, gratis]
-  cocinero: [local, gratis]
-  efimero:  [local, gratis]
+  mando:    [pago, local]
+  voz:      [pago, local]
+  jefe:     [pago, local]
+  ruteo:    [local, pago]
+  cocinero: [local, pago]
+  efimero:  [local, pago]
 
 # Cada brigada o ayudante con su cadena de escalones: "rol.id" (id del manifiesto de la brigada o del ayudante).
 # Operaciones (la que maneja tu pantalla, tus archivos y tu celular) y Memoria usan SOLO el escalón local; ya son privadas
@@ -68,5 +61,5 @@ overrides:
 # Solo modelos locales. Ids de brigada (o ayudante): los de los `manifest.yaml` de Seguridad (`seguridad`), Investigación
 # (`investigacion`), Memoria (`memoria`) y Operaciones (`operaciones`), más los nombres que tenían en JarvisRemote y los
 # ayudantes de Investigación. El test de la pieza 3 avisa si el manifiesto de una de esas brigadas trae otro id y no está acá.
-# Si el modelo local no está prendido: esa brigada sigue por reglas y avisa; NUNCA se manda a NVIDIA.
+# Si el modelo local no está prendido: esa brigada sigue por reglas y avisa; NUNCA se manda a la nube.
 private: [seguridad, investigacion, memoria, operaciones, memoria-cerebro, investigacion-forense, scout, forense]

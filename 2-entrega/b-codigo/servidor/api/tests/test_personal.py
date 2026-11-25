@@ -12,7 +12,7 @@ from raphael_personal_api.app import create_app
 ROOT = Path(__file__).resolve().parents[5]
 INSTALACION = ROOT / "2-entrega/c-despliegue/personal/personal.installation.yaml"
 CLAVE = "clave-segura-1"
-NVIDIA = "nvapi-secreta-de-prueba-9876"
+NUBE = "sk-or-secreta-de-prueba-9876"
 
 
 def local_arriba(url: str) -> dict:
@@ -26,15 +26,16 @@ def local_caido(url: str) -> dict:
 # --- cerebro ----------------------------------------------------------------------------------------------------------
 def test_modelos_por_defecto_son_mixtos():
     cfg = cerebro.load(environ={})
-    assert cfg.tiers["local"] == ["ollama", "lmstudio"] and cfg.tiers["gratis"] == ["nvidia"]
+    assert cfg.tiers["local"] == ["ollama", "lmstudio"] and cfg.tiers["pago"] == ["deepseek-flash"]
     assert {"seguridad", "investigacion", "memoria", "operaciones"} <= set(cfg.private)
-    assert cfg.paid_cap_usd_month == 0          # el escalón pago no se usa salvo que Damián lo suba
+    assert cfg.paid_cap_usd_month == 5          # OpenRouter con tope mensual (supuesto): se cambia en Configuración
+    assert cfg.roles["mando"] == ["pago", "local"] and cfg.roles["ruteo"] == ["local", "pago"]
 
 
 def test_cualquier_rol_se_cambia_por_configuracion():
-    cfg = cerebro.load(environ={"RAPHAEL_ROL_MANDO": "local,gratis", "RAPHAEL_PRIVADAS": "trading, legales",
+    cfg = cerebro.load(environ={"RAPHAEL_ROL_MANDO": "local,pago", "RAPHAEL_PRIVADAS": "trading, legales",
                                 "OLLAMA_MODEL": "qwen3:8b"})
-    assert cfg.roles["mando"] == ["local", "gratis"] and cfg.providers["ollama"].model == "qwen3:8b"
+    assert cfg.roles["mando"] == ["local", "pago"] and cfg.providers["ollama"].model == "qwen3:8b"
     assert {"trading", "legales"} <= set(cfg.private)
 
 
@@ -51,7 +52,7 @@ def test_configuracion_que_abriria_lo_privado_a_la_nube_se_rechaza(env):
 
 
 def test_lo_privado_nunca_sale_a_la_nube_aunque_el_local_este_apagado(tmp_path):
-    rt, _ = boot.start(INSTALACION, tmp_path, dev_dirs=[], environ={"NVIDIA_API_KEY": NVIDIA}, installed=False)
+    rt, _ = boot.start(INSTALACION, tmp_path, dev_dirs=[], environ={"OPENROUTER_API_KEY": NUBE}, installed=False)
     llamadas = []
 
     def transporte(url, body, headers):
@@ -62,10 +63,10 @@ def test_lo_privado_nunca_sale_a_la_nube_aunque_el_local_este_apagado(tmp_path):
 
     rt.models._transport = transporte
     assert rt.models.complete("cocinero", [{"role": "user", "content": "x"}], target="seguridad") is None
-    assert llamadas and all("127.0.0.1" in u for u in llamadas)          # ni un pedido salió a NVIDIA
+    assert llamadas and all("127.0.0.1" in u for u in llamadas)          # ni un pedido salió a NUBE
     llamadas.clear()
     assert rt.models.complete("voz", [{"role": "user", "content": "hola"}]) == "respuesta de la nube"   # lo no privado sí
-    assert any("nvidia" in u for u in llamadas)
+    assert any("openrouter" in u for u in llamadas)
 
 
 def test_los_ids_privados_cubren_las_brigadas_sensibles_del_repo():
@@ -190,12 +191,12 @@ def test_nada_se_aprueba_solo_y_lo_humano_solo_se_resuelve(api):
 
 def test_poner_una_clave_la_aplica_en_caliente_y_no_vuelve_completa(api):
     c, rt, env_file, environ, *_ = api
-    r = c.put("/api/v1/config", json={"set": {"NVIDIA_API_KEY": NVIDIA}, "clear": []})
-    assert r.status_code == 200 and NVIDIA not in r.text and NVIDIA not in c.get("/api/v1/config").text
-    row = next(f for f in r.json()["fields"] if f["name"] == "NVIDIA_API_KEY")
+    r = c.put("/api/v1/config", json={"set": {"OPENROUTER_API_KEY": NUBE}, "clear": []})
+    assert r.status_code == 200 and NUBE not in r.text and NUBE not in c.get("/api/v1/config").text
+    row = next(f for f in r.json()["fields"] if f["name"] == "OPENROUTER_API_KEY")
     assert row["set"] and row["hint"] == "…9876"
-    assert f"NVIDIA_API_KEY={NVIDIA}" in env_file.read_text(encoding="utf-8")
-    assert rt.models.label("voz").startswith("nvidia")
+    assert f"OPENROUTER_API_KEY={NUBE}" in env_file.read_text(encoding="utf-8")
+    assert rt.models.label("voz").startswith("deepseek-flash")
 
 
 def test_un_cambio_de_rol_se_aplica_y_uno_invalido_no_guarda_nada(api):
@@ -237,11 +238,11 @@ def test_sin_voz_instalada_lo_dice_en_vez_de_romper(tmp_path):
 
 def test_el_chequeo_dice_que_falta_sin_mostrar_valores(api):
     c, *_ = api
-    c.put("/api/v1/config", json={"set": {"NVIDIA_API_KEY": NVIDIA}})
+    c.put("/api/v1/config", json={"set": {"OPENROUTER_API_KEY": NUBE}})
     checks = c.get("/api/v1/config").json()["checks"]
     assert any(i["area"] == "IA local" and i["status"] == "aviso" for i in checks)
     assert any(i["area"] == "IA nube" and i["status"] == "ok" for i in checks)
-    assert NVIDIA not in str(checks)
+    assert NUBE not in str(checks)
 
 
 def test_los_campos_de_cuentas_y_apis_estan_en_la_pantalla():
@@ -374,7 +375,7 @@ def test_ws_phone_sin_operaciones_instalada_cierra_con_motivo(tmp_path, monkeypa
 
 
 def test_los_roles_no_muestran_un_modelo_local_que_no_esta_prendido():
-    cfg = cerebro.load(environ={"NVIDIA_API_KEY": NVIDIA})
+    cfg = cerebro.load(environ={"OPENROUTER_API_KEY": NUBE})
     from raphael_core.models import ModelGateway, Usage
 
     class Espacio:
@@ -385,10 +386,10 @@ def test_los_roles_no_muestran_un_modelo_local_que_no_esta_prendido():
             pass
 
     ahora = lambda: __import__("datetime").datetime(2026, 11, 25)  # noqa: E731
-    gw = ModelGateway(cfg, Usage(Espacio(), 10**6, ahora), env={"NVIDIA_API_KEY": NVIDIA})
+    gw = ModelGateway(cfg, Usage(Espacio(), 10**6, ahora), env={"OPENROUTER_API_KEY": NUBE})
     caido = cerebro.probe_local(cfg, local_caido)
     st = cerebro.status(cfg, caido, gw)
-    assert st["roles"]["ruteo"]["now"].startswith("nvidia")          # local primero, pero apagado: no se muestra
+    assert st["roles"]["ruteo"]["now"].startswith("deepseek-flash")          # local primero, pero apagado: no se muestra
     assert "ollama" not in str(st["roles"]) and "lmstudio" not in str(st["roles"])
     st = cerebro.status(cfg, cerebro.probe_local(cfg, local_arriba), gw)
     assert st["roles"]["ruteo"]["now"].startswith("ollama")
@@ -405,11 +406,11 @@ def test_el_codigo_trae_un_qr_si_esta_segno_y_la_pagina_deja_cargar_imagenes_dat
     assert "img-src data:" in c.get("/").headers["content-security-policy"]
 
 
-def test_el_tope_de_gasto_es_cero_salvo_que_se_pida():
+def test_el_tope_de_gasto_es_el_del_yaml_y_se_cambia_con_el_entorno():
     from raphael_personal_api import cerebro
 
-    assert cerebro.load(environ={}).paid_cap_usd_month == 0
-    assert cerebro.load(environ={"RAPHAEL_TOPE_PAGO_USD": "5"}).paid_cap_usd_month == 5
+    assert cerebro.load(environ={}).paid_cap_usd_month == 5
+    assert cerebro.load(environ={"RAPHAEL_TOPE_PAGO_USD": "0"}).paid_cap_usd_month == 0     # 0 = la nube no gasta nada
     assert cerebro.check_field("RAPHAEL_TOPE_PAGO_USD", "2,5") == "2.5"
     for mal in ("-1", "mucho", "5000"):
         try:

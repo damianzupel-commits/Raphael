@@ -2,8 +2,8 @@
 
 | Cuenta | Qué hace falta | Dónde se saca | Dónde se pega | Qué se prueba después |
 | --- | --- | --- | --- | --- |
-| OpenRouter (IA en la nube de Empresas) | `OPENROUTER_API_KEY` | openrouter.ai → Keys → Create key (empieza con sk-or-). El saldo ya lo cargaste. | `raphael.env` (pantalla Configuración, `/config`) | `cuentas probar openrouter` (consulta la clave y el saldo restante). |
-| NVIDIA build.nvidia.com (IA en la nube de Raphael personal) | `NVIDIA_API_KEY` | build.nvidia.com → iniciar sesión → cualquier modelo → Get API Key (empieza con nvapi-). | `raphael.env` (pantalla Configuración, `/config`) | `cuentas probar nvidia` (lista los modelos con la clave). |
+| OpenRouter (IA en la nube) | `OPENROUTER_API_KEY` | openrouter.ai → Keys → Create key (empieza con sk-or-). El saldo ya lo cargaste. | `raphael.env` (pantalla Configuración, `/config`) | `cuentas probar openrouter` (consulta la clave y el saldo restante). |
+| NVIDIA build.nvidia.com (opcional, sin usar) | `NVIDIA_API_KEY` (opc.) | build.nvidia.com → iniciar sesión → cualquier modelo → Get API Key (empieza con nvapi-). | `raphael.env` (pantalla Configuración, `/config`) | `cuentas probar nvidia` (lista los modelos con la clave). |
 | Modelo local (Ollama o LM Studio en tu PC) | `LOCAL_LLM_URL` (opc.), `LOCAL_LLM_KIND` (opc.) | Instalá Ollama (ollama.com) o LM Studio (lmstudio.ai) y bajá un modelo. No lleva clave. | `raphael.env` (pantalla Configuración, `/config`) (solo la dirección, que ya viene con el valor por defecto) | `cuentas probar local_llm` (con el programa prendido y un modelo bajado). |
 | Meta · app y webhook | `META_VERIFY_TOKEN`, `META_APP_SECRET`, `META_MODE` (opc.) | developers.facebook.com → crear app (tipo Business) → Configuración → Básica (clave secreta). El token de verificación lo inventás vos. | `raphael.env` (pantalla Configuración, `/config`); el mismo token de verificación va en la app de Meta. | `cuentas chequear --real` y que Meta acepte el webhook con la URL pública + /webhook/meta. |
 | WhatsApp Cloud API (número de prueba) | `META_WA_TOKEN`, `META_WA_PHONE_ID`, `META_GRAPH_VERSION` (opc.) | Meta Business → Usuarios del sistema → generar token permanente; WhatsApp → Configuración de la API → Phone number ID del número de prueba. | `raphael.env` (pantalla Configuración, `/config`) | `cuentas probar meta_whatsapp` (lee el número; no manda nada). |
@@ -17,8 +17,8 @@
 | Broker para Trading (sin elegir) *(opcional)* | (pendiente) | Pendiente: lo define Damián con la propuesta del hilo de Trading. No se abre ninguna cuenta. | Pendiente (el hilo de Trading deja su plantilla). | Trading corre contra un simulado. |
 
 Supuestos sin verificar (no se probaron con cuentas reales):
-- **OpenRouter (IA en la nube de Empresas)**: Endpoint GET /api/v1/auth/key y su respuesta: confirmar en openrouter.ai/docs.
-- **NVIDIA build.nvidia.com (IA en la nube de Raphael personal)**: Endpoint GET /v1/models con Bearer en integrate.api.nvidia.com.
+- **OpenRouter (IA en la nube)**: Endpoint GET /api/v1/auth/key y su respuesta: confirmar en openrouter.ai/docs.
+- **NVIDIA build.nvidia.com (opcional, sin usar)**: Endpoint GET /v1/models con Bearer en integrate.api.nvidia.com.
 - **WhatsApp Cloud API (número de prueba)**: GET /{version}/{phone_id}?fields=display_phone_number con Bearer: confirmar en la doc de Meta.
 - **Instagram (mensajes directos)**: GET /{version}/me?fields=username con Bearer: confirmar en la doc de Meta.
 - **Mercado Pago (cobros de Empresas)**: GET https://api.mercadopago.com/users/me con Bearer: confirmar en la doc de Mercado Pago.

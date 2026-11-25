@@ -44,8 +44,9 @@ RAPHAEL_ENV = "`raphael.env` (pantalla Configuración, `/config`)"
 
 CUENTAS: tuple[Cuenta, ...] = (
     Cuenta(
-        id="openrouter", nombre="OpenRouter (IA en la nube de Empresas)", edicion="empresas",
-        para_que="La voz de la Secretaria con la dueña, el ruteo y los cocineros de Empresas. Principal DeepSeek V4 Flash, "
+        id="openrouter", nombre="OpenRouter (IA en la nube)", edicion="ambas",
+        para_que="La nube de las dos ediciones. Empresas: la voz de la Secretaria con la dueña, el ruteo y los cocineros. "
+                 "Personal (decisión del 25 nov): todo lo no sensible, con respaldo local. Principal DeepSeek V4 Flash, "
                  "con data_collection=deny.",
         donde_se_saca="openrouter.ai → Keys → Create key (empieza con sk-or-). El saldo ya lo cargaste.",
         donde_se_pega=RAPHAEL_ENV, que_se_prueba="`cuentas probar openrouter` (consulta la clave y el saldo restante).",
@@ -55,13 +56,13 @@ CUENTAS: tuple[Cuenta, ...] = (
         supuestos=("Endpoint GET /api/v1/auth/key y su respuesta: confirmar en openrouter.ai/docs.",),
     ),
     Cuenta(
-        id="nvidia", nombre="NVIDIA build.nvidia.com (IA en la nube de Raphael personal)", edicion="personal",
-        para_que="El resto de las brigadas de Raphael personal (todo lo que no es sensible), según tu decisión del 25 nov. "
-                 "Sus términos no permiten clientes reales: no se usa en Empresas.",
+        id="nvidia", nombre="NVIDIA build.nvidia.com (opcional, sin usar)", edicion="personal",
+        para_que="Descartada el 25 nov: la nube de Raphael personal es OpenRouter. Queda por si la sumás como proveedor propio "
+                 "desde Configuración. Sus términos no permiten clientes reales: no se usa en Empresas.",
         donde_se_saca="build.nvidia.com → iniciar sesión → cualquier modelo → Get API Key (empieza con nvapi-).",
         donde_se_pega=RAPHAEL_ENV, que_se_prueba="`cuentas probar nvidia` (lista los modelos con la clave).",
-        vars=(Var("NVIDIA_API_KEY", ayuda="Empieza con nvapi-"),),
-        sin_clave="Las brigadas no sensibles caen a reglas y lo avisan.", verificacion="nvidia", costo="Gratis (con topes).",
+        vars=(Var("NVIDIA_API_KEY", obligatoria=False, ayuda="Empieza con nvapi-"),),
+        sin_clave="No pasa nada: ningún rol la usa por defecto.", verificacion="nvidia", costo="Gratis (con topes).",
         supuestos=("Endpoint GET /v1/models con Bearer en integrate.api.nvidia.com.",),
     ),
     Cuenta(

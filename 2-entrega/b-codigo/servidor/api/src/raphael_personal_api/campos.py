@@ -15,8 +15,7 @@ from raphael_empresas_api.entorno import Item
 from . import cerebro
 
 FIELDS: tuple[Field, ...] = (
-    Field("NVIDIA_API_KEY", "ia", "Clave de NVIDIA (la nube)", help="build.nvidia.com → Get API Key (empieza con nvapi-)"),
-    Field("OPENROUTER_API_KEY", "ia", "Clave de OpenRouter (opcional)", help="Solo si activás el escalón pago (tope en USD)"),
+    Field("OPENROUTER_API_KEY", "ia", "Clave de OpenRouter (la nube)", help="openrouter.ai → Keys (sk-or-…). El gasto tiene tope mensual en USD"),
     Field("RAPHAEL_TOPE_PAGO_USD", "ia", "Tope de gasto en IA paga (USD por mes)", secret=False,
           help="0 o vacío = OpenRouter no se usa. Además el rol tiene que incluir el escalón pago"),
     Field("LOCAL_LLM_URL", "local", "Modelo local: dirección", secret=False, help="Ollama http://127.0.0.1:11434 · LM Studio :1234"),
@@ -53,9 +52,9 @@ def check(env: Mapping[str, str], *, app_key_set: bool, probe: list[dict], pendi
              "clave de la app puesta" if app_key_set else "todavía no hay clave de la app", "`arrancar-personal.bat clave`"),
         Item("Orquestador", "ok" if orchestrator_ok else "falta",
              "montado (modo maestro)" if orchestrator_ok else "no se pudo montar el orquestador", "mirá el log del servidor"),
-        Item("IA nube", "ok" if env.get("NVIDIA_API_KEY") else "aviso",
-             "NVIDIA cargada" if env.get("NVIDIA_API_KEY") else "sin clave de NVIDIA: lo que no es privado cae a reglas",
-             "build.nvidia.com → clave, y pegala en Configuración"),
+        Item("IA nube", "ok" if env.get("OPENROUTER_API_KEY") else "aviso",
+             "OpenRouter cargada" if env.get("OPENROUTER_API_KEY") else "sin clave de OpenRouter: lo que no es privado cae al modelo local o a reglas",
+             "openrouter.ai → Keys, y pegala en Configuración"),
     ]
     ready = cerebro.local_ready(probe)
     items.append(Item("IA local", "ok" if ready else "aviso",

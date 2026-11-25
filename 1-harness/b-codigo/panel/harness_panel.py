@@ -85,13 +85,20 @@ class RaphaelApp(tk.Tk):
         self._jobs: queue.Queue = queue.Queue()
         self._busy = False   # True mientras el chat espera a un modelo (el tick no se cruza)
         self.scope = ORCHESTRATOR
+        self._view_now = "main"
         self.title("Raphael — Harness v2")
         self.configure(bg=BG)
         self.geometry("1280x860")
         self.minsize(1100, 700)
         self._style()
 
-        root = tk.Frame(self, bg=BG)
+        self._build_ui()
+        self.select(ORCHESTRATOR)
+        self.after(150, self._poll_jobs)
+        self.after(60_000, self._tick)
+
+    def _build_ui(self) -> None:
+        root = self._root = tk.Frame(self, bg=BG)
         root.pack(fill="both", expand=True, padx=24, pady=(18, 16))
         self._header(root)
         self._top_band(root)
@@ -106,9 +113,26 @@ class RaphaelApp(tk.Tk):
             f.place(relx=0, rely=0, relwidth=1, relheight=1)
             builder(f)
             self.views[key] = f
-        self.select(ORCHESTRATOR)
-        self.after(150, self._poll_jobs)
-        self.after(60_000, self._tick)
+
+    def reload_ui(self) -> None:
+        """Recarga la interfaz sin cerrar la app: vuelve a leer raphael.env y los modelos, re-descubre las brigadas y
+        vuelve a armar todas las vistas. Se queda en la misma brigada y en la misma sección."""
+        if self._busy:
+            return
+        scope, view = self.scope, self._view_now
+        try:
+            aviso = self.app.reload()
+        except Exception as e:  # noqa: BLE001 - un error al recargar no tumba la ventana
+            aviso = f"No se pudo recargar: {e}"
+        self._root.destroy()
+        self._build_ui()
+        if scope != ORCHESTRATOR and self.app.brigade(scope) is None:
+            scope = ORCHESTRATOR
+        self.select(scope)
+        if view in ("nucleo", "brigadas", "config"):
+            self.show_view(view)
+        if aviso:
+            self.pill_sample.set([aviso[:18], "…"], variant="warn")
 
     def _tick(self) -> None:
         """Cada minuto: tareas programadas de las brigadas y su healthcheck (que el runtime corre cada 5 min)."""
@@ -164,14 +188,15 @@ class RaphaelApp(tk.Tk):
         tk.Label(info, text=spaced("Contrato del núcleo"), bg=BG, fg=MUTED, font=(SANS, 7)).pack(anchor="e")
         tk.Label(info, text=f"{st['contract']} · {st['installation']} ({st['edition']})", bg=BG, fg=CYAN,
                  font=(SANS, 9, "bold")).pack(anchor="e")
-        self.pill_sample = Pill(right, ["Muestra:", "OFF"], command=self._toggle_sample, variant="info", width=130)
+        self.pill_sample = Pill(right, ["Muestra:", "OFF"], command=self._toggle_sample, variant="info", width=110)
         self.pill_sample.pack(side="left", padx=4)
-        self.pill_down = Pill(right, ["⚡ 0 piezas", "caídas"], variant="info", width=130, bold=False)
+        self.pill_down = Pill(right, ["⚡ 0 piezas", "caídas"], variant="info", width=110, bold=False)
         self.pill_down.pack(side="left", padx=4)
         Pill(right, ["⚙ Núcleo"], command=lambda: self.show_view("nucleo"), variant="ghost", height=44,
              width=120).pack(side="left", padx=(4, 0))
         Pill(right, ["☰ Configuración"], command=lambda: self.show_view("config"), variant="ghost", height=44,
              width=160).pack(side="left", padx=(6, 0))
+        Pill(right, ["↻"], command=self.reload_ui, variant="ghost", height=44, width=48).pack(side="left", padx=(6, 0))
 
     def _toggle_sample(self) -> None:
         self.app.sample = not self.app.sample
@@ -273,6 +298,7 @@ class RaphaelApp(tk.Tk):
     def select(self, scope: str) -> None:
         """Orquestador (todas las brigadas) o una brigada montada: la vista principal de la app."""
         self.scope = scope
+        self._view_now = "main"
         for k, card in self.tab_cards.items():
             card.set_active(k == scope)
         self._scope_header()
@@ -309,6 +335,7 @@ class RaphaelApp(tk.Tk):
             card.set_active(False)
         self.tab_cards["_add"].set_active(key == "brigadas")
         icon, color, title, sub = SECTIONS[key]
+        self._view_now = key
         self._set_section(icon, color, title, sub)
         self.views[key].tkraise()
         self.refresh()

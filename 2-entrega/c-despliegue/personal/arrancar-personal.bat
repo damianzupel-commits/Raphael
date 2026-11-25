@@ -1,7 +1,7 @@
 @echo off
 rem Arranca Raphael PERSONAL en esta PC: harness + orquestador maestro + brigadas instaladas + servidor (API y pagina web).
 rem   arrancar-personal.bat                 levanta el servidor en 127.0.0.1:8788 y muestra el chequeo de claves
-rem   arrancar-personal.bat chequear        solo dice que falta (modelo local, clave de NVIDIA, brigadas)
+rem   arrancar-personal.bat chequear        solo dice que falta (modelo local, clave de OpenRouter, brigadas)
 rem   arrancar-personal.bat clave           pone o cambia la clave de la app
 rem Las claves van en .data\personal\raphael.env (se crea la primera vez; se editan desde la pantalla de Configuracion).
 rem Lo instala instalar-personal.bat. Mas en LEEME.md (esta misma carpeta).

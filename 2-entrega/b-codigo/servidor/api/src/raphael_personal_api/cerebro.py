@@ -1,7 +1,7 @@
 """Cerebro mixto: modelos por rol configurables, estado del modelo local y avisos si se apaga.
 
-Regla de Damián (25 nov 2026): lo sensible corre en local (Ollama o LM Studio en la PC); el resto, en la nube (NVIDIA). Si
-el modelo local no está prendido, se avisa y lo sensible NO se manda a la nube. Esa garantía la da la pasarela del harness
+Regla de Damián (25 nov 2026): lo sensible corre en local (Ollama o LM Studio en la PC); el resto, en la nube (OpenRouter).
+Si el modelo local no está prendido, se avisa y lo sensible NO se manda a la nube. Esa garantía la da la pasarela del harness
 (`ModelGateway`: un pedido privado solo admite proveedores de localhost); acá se arma la config, se mira si el local
 responde y se avisa cuando cambia. Los avisos nunca llevan texto de pedidos, solo nombres de brigadas.
 """

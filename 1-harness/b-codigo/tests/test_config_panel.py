@@ -123,3 +123,16 @@ def test_agregar_clave_arranca_vacio_y_lista_lo_cargado(cfg):
         cfg.agregar_clave("con espacios adentro", "Otro")
     cfg.aplicar(None, ["NVIDIA_API_KEY"])
     assert "NVIDIA" not in {c["servicio"] for c in cfg.claves()}
+
+
+def test_el_boton_recargar_relee_el_env_y_aplica_los_modelos(tmp_path, monkeypatch):
+    from demo import PanelState
+
+    monkeypatch.setattr("raphael_core.loader._from_entry_points", lambda: ([], []))
+    monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
+    monkeypatch.setenv("RAPHAEL_ENV_FILE", str(tmp_path / "raphael.env"))
+    st = PanelState(project_root=tmp_path, data_dir=tmp_path / "datos")
+    # editado a mano, afuera del panel
+    (tmp_path / "raphael.env").write_text("OPENROUTER_API_KEY=sk-or-nueva-1234\n", encoding="utf-8")
+    assert st.reload() == ""
+    assert __import__("os").environ["OPENROUTER_API_KEY"] == "sk-or-nueva-1234"
