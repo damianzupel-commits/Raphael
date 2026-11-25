@@ -6,7 +6,7 @@ la app del celular hablan la misma API, con los mismos datos y la misma charla.
 
 ## Instalar (una vez)
 1. `2-entrega\c-despliegue\personal\instalar-personal.bat` (doble clic). Crea `.venv`, instala todo, deja el servidor como tarea
-   programada de Windows ("Raphael Personal", al iniciar sesión, sin ventana) y crea `Raphael.url` en el escritorio.
+   programada de Windows ("Raphael Personal", al iniciar sesión, sin ventana; sin administrador, usa la carpeta Inicio) y crea `Raphael.url` en el escritorio.
 2. Abrí `http://127.0.0.1:8788/`. Desde esta PC se entra sin clave; la clave de la app está en `.data\personal\clave-inicial.txt`.
 3. Pestaña **Configuración**: pegá lo que tengas (NVIDIA, modelo local, etc.). Se aplica en caliente. Lo que falta no rompe nada.
 4. Celular: `celular-tailscale.bat` (usa `tailscale serve`, solo tu red privada, **no** Funnel, sin abrir puertos). Abrí esa

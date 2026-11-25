@@ -378,3 +378,17 @@ def test_el_codigo_trae_un_qr_si_esta_segno_y_la_pagina_deja_cargar_imagenes_dat
     d = c.post("/api/v1/phone/pair").json()
     assert "<svg" in d["qr_svg"]
     assert "img-src data:" in c.get("/").headers["content-security-policy"]
+
+
+def test_el_tope_de_gasto_es_cero_salvo_que_se_pida():
+    from raphael_personal_api import cerebro
+
+    assert cerebro.load(environ={}).paid_cap_usd_month == 0
+    assert cerebro.load(environ={"RAPHAEL_TOPE_PAGO_USD": "5"}).paid_cap_usd_month == 5
+    assert cerebro.check_field("RAPHAEL_TOPE_PAGO_USD", "2,5") == "2.5"
+    for mal in ("-1", "mucho", "5000"):
+        try:
+            cerebro.check_field("RAPHAEL_TOPE_PAGO_USD", mal)
+        except ValueError:
+            continue
+        raise AssertionError(mal)

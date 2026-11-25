@@ -55,7 +55,10 @@ def test_una_ruta_con_punto_punto_que_apunta_a_un_protegido_se_rechaza(tmp_path)
 
 def test_un_symlink_que_apunta_a_un_protegido_se_rechaza(tmp_path):
     root = make_project(tmp_path)
-    (root / "app" / "inocente.py").symlink_to(root / "app" / "auth.py")
+    try:
+        (root / "app" / "inocente.py").symlink_to(root / "app" / "auth.py")
+    except OSError:
+        pytest.skip("este Windows no deja crear symlinks sin permisos extra")
     s = System(root)
     with pytest.raises(ActionError, match="LÍNEA ROJA"):
         s.cmd("proponer", "proponer", {**FIX, "file": "app/inocente.py", "old_snippet": "True", "new_snippet": "False"})
