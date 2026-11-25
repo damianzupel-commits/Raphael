@@ -9,6 +9,7 @@ from __future__ import annotations
 from raphael_core import Health
 
 from . import fuentes
+from .tools import make_tools
 
 MODOS = ("real", "simulado")
 
@@ -39,3 +40,5 @@ def validate(ctx) -> None:
     p = problema(ctx.config)
     if p:
         raise ValueError(f"config de geolocalización inválida: {p}")
+    for name, fn in make_tools(ctx).items():
+        ctx.register_tool(name, fn)

@@ -10,6 +10,7 @@ from raphael_core import Health
 
 from . import ibkr
 from .config import trading_config
+from .tools import make_tools
 
 
 def _modes(cfg) -> str:
@@ -39,3 +40,5 @@ def validate(ctx) -> None:
     except ValidationError as exc:
         first = exc.errors()[0]
         raise ValueError(f"config de trading inválida: {'.'.join(map(str, first['loc']))}: {first['msg']}") from None
+    for name, fn in make_tools(ctx).items():
+        ctx.register_tool(name, fn)

@@ -8,6 +8,7 @@ from pydantic import ValidationError
 from raphael_core import Health
 
 from .config import legales_config, missing_business
+from .tools import make_tools
 
 
 def _first(exc: ValidationError) -> str:
@@ -33,3 +34,5 @@ def validate(ctx) -> None:
         legales_config(ctx.config)
     except ValidationError as exc:
         raise ValueError(f"config de legales inválida: {_first(exc)}") from None
+    for name, fn in make_tools(ctx).items():
+        ctx.register_tool(name, fn)
