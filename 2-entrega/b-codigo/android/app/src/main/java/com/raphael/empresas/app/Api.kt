@@ -74,6 +74,12 @@ class Api(private val baseUrl: String, private val token: String? = null) {
         return Session(r.getString("token"), r.optString("user"), r.optString("business"))
     }
 
+    /** Emparejar con el código del QR (sin clave): el servidor lo da por un solo uso y por 5 minutos. */
+    suspend fun redeem(code: String, device: String): Session {
+        val r = call("POST", "/api/v1/phone/redeem", JSONObject().put("code", code).put("device", device))
+        return Session(r.getString("token"), r.optString("user"), "")
+    }
+
     // --- con sesión
     suspend fun logout() { call("POST", "/api/v1/logout") }
     suspend fun summary(): Summary = Summary.from(call("GET", "/api/v1/summary"))
@@ -95,6 +101,16 @@ class Api(private val baseUrl: String, private val token: String? = null) {
 
     suspend fun secretary(text: String, session: String = "app"): SecretaryReply =
         SecretaryReply.from(call("POST", "/api/v1/secretary", JSONObject().put("text", text).put("session", session)))
+
+    /** Raphael personal: hablarle al orquestador maestro (misma forma de respuesta que la Secretaria). */
+    suspend fun chat(text: String, session: String = "app"): SecretaryReply =
+        SecretaryReply.from(call("POST", "/api/v1/chat", JSONObject().put("text", text).put("session", session)))
+
+    suspend fun brain(refresh: Boolean = false): Brain = Brain.from(call("GET", "/api/v1/brain?refresh=$refresh"))
+    suspend fun config(): ConfigView = ConfigView.from(call("GET", "/api/v1/config"))
+
+    suspend fun saveConfig(set: Map<String, String>, clear: List<String> = emptyList()): ConfigView =
+        ConfigView.from(call("PUT", "/api/v1/config", JSONObject().put("set", JSONObject(set)).put("clear", JSONArray(clear))))
 
     suspend fun orders(all: Boolean = false): List<Order> = list(call("GET", "/api/v1/orders?all=$all"), "items", Order::from)
     suspend fun setOrderStatus(number: Int, status: String): Order =

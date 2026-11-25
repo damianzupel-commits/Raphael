@@ -13,6 +13,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Notifications
@@ -59,13 +61,14 @@ fun RaphaelApp(vm: AppViewModel) {
 
 @Composable
 fun LoginScreen(vm: AppViewModel) {
-    var server by rememberSaveable { mutableStateOf(vm.prefs.server) }
+    var server by rememberSaveable(vm.pairHost) { mutableStateOf(vm.pairHost.ifBlank { vm.prefs.server }) }
     var key by remember { mutableStateOf("") }
+    var code by remember(vm.pairCode) { mutableStateOf(vm.pairCode) }
     Column(
         Modifier.fillMaxSize().padding(24.dp),
         verticalArrangement = Arrangement.Center,
     ) {
-        Text("Raphael Empresas", style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.primary)
+        Text("Raphael", style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.primary)
         Spacer(Modifier.height(8.dp))
         Text("Entrá con la dirección de tu Raphael y tu clave.", color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.height(24.dp))
@@ -85,6 +88,16 @@ fun LoginScreen(vm: AppViewModel) {
             Spacer(Modifier.height(16.dp))
             Text(it, color = MaterialTheme.colorScheme.error)
         }
+        Spacer(Modifier.height(20.dp))
+        Text("Emparejar con un código", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
+        Text("En la pantalla de Raphael (Configuración → Celular) sale un código y un QR. Escaneá el QR con la cámara y esta app se abre " +
+            "con el código cargado, o escribilo acá. Vale 5 minutos y una sola vez.",
+            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Spacer(Modifier.height(8.dp))
+        OutlinedTextField(code, { code = it.uppercase() }, label = { Text("Código") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+        Spacer(Modifier.height(8.dp))
+        Button(onClick = { vm.pair(server, code); code = "" }, enabled = !vm.busy && server.isNotBlank() && code.length >= 4,
+            modifier = Modifier.fillMaxWidth()) { Text("Emparejar") }
         Spacer(Modifier.height(24.dp))
         Text("La clave se pone en el servidor. La app guarda solo la sesión, nunca la clave.",
             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -92,6 +105,13 @@ fun LoginScreen(vm: AppViewModel) {
 }
 
 private data class TabSpec(val tab: Tab, val label: String, val icon: ImageVector)
+
+private val PERSONAL_TABS = listOf(
+    TabSpec(Tab.HOY, "Hablar", Icons.Filled.Home),
+    TabSpec(Tab.PENDIENTES, "Decidir", Icons.Filled.Notifications),
+    TabSpec(Tab.CEREBRO, "Cerebro", Icons.Filled.Info),
+    TabSpec(Tab.AJUSTES, "Ajustes", Icons.Filled.Settings),
+)
 
 private val TABS = listOf(
     TabSpec(Tab.HOY, "Hoy", Icons.Filled.Home),
@@ -123,13 +143,15 @@ fun MainScreen(vm: AppViewModel) {
             Tab.ENCARGOS -> vm.loadOrders()
             Tab.AGENDA -> vm.loadAgenda()
             Tab.MAS -> vm.loadMore()
+            Tab.CEREBRO -> vm.loadBrain()
+            Tab.AJUSTES -> vm.loadConfig()
             Tab.HOY -> Unit
         }
     }
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(vm.prefs.business.ifBlank { "Raphael Empresas" }) },
+                title = { Text(if (vm.personal) "Raphael" else vm.prefs.business.ifBlank { "Raphael Empresas" }) },
                 actions = {
                     IconButton(onClick = {
                         when (vm.tab) {
@@ -138,6 +160,8 @@ fun MainScreen(vm: AppViewModel) {
                             Tab.ENCARGOS -> vm.loadOrders()
                             Tab.AGENDA -> vm.loadAgenda()
                             Tab.MAS -> vm.loadMore()
+                            Tab.CEREBRO -> vm.loadBrain()
+                            Tab.AJUSTES -> vm.loadConfig()
                         }
                     }) { Icon(Icons.Filled.Refresh, contentDescription = "Actualizar") }
                 },
@@ -146,7 +170,7 @@ fun MainScreen(vm: AppViewModel) {
         },
         bottomBar = {
             NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
-                TABS.forEach { t ->
+                (if (vm.personal) PERSONAL_TABS else TABS).forEach { t ->
                     NavigationBarItem(
                         selected = vm.tab == t.tab,
                         onClick = { vm.tab = t.tab },
@@ -172,6 +196,8 @@ fun MainScreen(vm: AppViewModel) {
                 Tab.ENCARGOS -> OrdersScreen(vm)
                 Tab.AGENDA -> AgendaScreen(vm)
                 Tab.MAS -> MoreScreen(vm)
+                Tab.CEREBRO -> BrainScreen(vm)
+                Tab.AJUSTES -> SettingsScreen(vm)
             }
             if (vm.busy) LinearProgressIndicator(Modifier.fillMaxWidth().align(Alignment.TopCenter))
             vm.conversation?.let { (contact, lines) -> ConversationDialog(contact, lines) { vm.conversation = null } }

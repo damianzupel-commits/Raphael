@@ -16,9 +16,16 @@ class MainActivity : ComponentActivity() {
     private val vm: AppViewModel by viewModels()
     private val askNotifications = registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
 
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        vm.onPairLink(intent.dataString)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         PendingWorker.ensureChannel(this)
+        vm.onPairLink(intent?.dataString)
         when (intent?.getStringExtra("tab")) {
             "pending" -> vm.tab = Tab.PENDIENTES
             "more" -> vm.tab = Tab.MAS

@@ -17,6 +17,7 @@ set "PY=%ROOT%\.venv\Scripts\python.exe"
 "%PY%" -m pip install -q --upgrade pip
 echo Instalando el nucleo, el orquestador y el servidor...
 "%PY%" -m pip install -q -e "%ROOT%\1-harness\b-codigo" -e "%ROOT%\1-harness\c-brigadas\00-orquestador\b-codigo" -e "%ROOT%\2-entrega\b-codigo\servidor\api" || goto falla
+"%PY%" -m pip install -q segno || echo AVISO: sin segno no se dibuja el QR de emparejamiento; el codigo se escribe a mano.
 echo Instalando las brigadas que haya en el repo...
 for /d %%D in ("%ROOT%\1-harness\c-brigadas\*") do (
     if /i not "%%~nxD"=="00-orquestador" if exist "%%D\b-codigo\pyproject.toml" (
