@@ -202,3 +202,18 @@ def test_el_panel_muestra_jefe_caido_y_salud_y_deja_revivir(tmp_path):
     m.health_last = None
     p.tick()
     assert ("salud", "Brigada de saludo", "mala (1/3)") in p.cooks("saludo")
+
+
+def test_con_orquestador_el_chat_es_de_la_persona_duena_y_no_de_un_cliente():
+    from raphael_core.contract import OwnerReply
+
+    class Orq:
+        def talk_to_owner(self, text, ctx):
+            return OwnerReply(text=f"te escucho: {text}")
+
+    p = PanelState(project_root=None, data_dir=":memory:", models=None)
+    p.runtime.orchestrator = Orq()
+    p.send(ORCHESTRATOR, "hola raphael")
+    assert p.chat(ORCHESTRATOR)[-1]["text"] == "te escucho: hola raphael"
+    assert p.runtime.approvals.list() == []
+    assert "mensaje" not in [e["what"] for e in p.audit.entries()]      # no entró como mensaje de un cliente
