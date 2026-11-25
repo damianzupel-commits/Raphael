@@ -80,7 +80,7 @@ def test_lo_que_actua_queda_pendiente_y_se_ejecuta_solo_al_aprobar(tmp_path):
 
 
 def test_las_tools_de_lectura_corren_solas(tmp_path):
-    (tmp_path / "nota.txt").write_text("hola Damián")
+    (tmp_path / "nota.txt").write_text("hola Damián", encoding="utf-8")
     t = Script(helper=[msg(calls=[call("fs_read_file", {"path": "nota.txt"})]), msg("Dice: hola Damián.")],
                chief=[{"summary": "La nota dice hola.", "confidence": "high"}])
     x = System(transport=t, sandbox=tmp_path)

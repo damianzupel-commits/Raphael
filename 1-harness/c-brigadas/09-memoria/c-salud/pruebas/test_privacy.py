@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from kit import System, answers
 
 
@@ -32,8 +34,8 @@ def test_captura_de_otra_brigada_nunca_escribe_como_human(tmp_path):
 
 def test_el_vault_de_ingesta_es_el_de_memoria_por_defecto(tmp_path, monkeypatch):
     from raphael_memoria.config import memoria_config, vault_path
-    assert str(vault_path(memoria_config({}), {"RAPHAEL_VAULT_DIR": "/v/ing"})) == "/v/ing"
-    assert str(vault_path(memoria_config({}), {"RAPHAEL_VAULT_DIR": "/v/ing", "MEMORIA_VAULT_PATH": "/v/mem"})) == "/v/mem"
+    assert vault_path(memoria_config({}), {"RAPHAEL_VAULT_DIR": "/v/ing"}) == Path("/v/ing")
+    assert vault_path(memoria_config({}), {"RAPHAEL_VAULT_DIR": "/v/ing", "MEMORIA_VAULT_PATH": "/v/mem"}) == Path("/v/mem")
 
 
 def test_sin_modelo_en_la_pc_no_sale_nada_a_la_nube(tmp_path):
