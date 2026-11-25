@@ -12,7 +12,7 @@ Brigada Trading para el harness v2 (paquete `raphael_trading`, `src/`). `manifes
 ## Reglas de código
 - `ejecutar_orden` y `cerrar_posicion` son `aprobacion` + `spend` + `irreversible`. El broker solo se toca desde `execute`, que además revalida señal vigente, tope de riesgo (aunque Damián edite el tamaño al aprobar), tope diario, pausa y que el nivel no esté en automático.
 - Sin clave cada adaptador real cae al simulado y lo dice (`estado`, salud, y marca `simulated` en señales y órdenes). Nunca inventa datos de mercado.
-- Las claves salen de variables de entorno (`.env.plantilla`); nunca van al repo ni a un log.
+- Las claves salen de variables de entorno (`trading.env.plantilla`); nunca van al repo ni a un log.
 - Solo edición personal (corre en la PC de Damián). En la nube no monta.
 
 ## Probar

@@ -28,10 +28,13 @@ def with_quote(**kw):
     return x
 
 
-def test_responde_y_ejecuta_lo_automatico():
+def test_lo_automatico_responde_y_lo_que_sale_al_mundo_espera_la_aprobacion():
     x = with_quote()
     x.approve(x.pending()[0]["id"])
-    x.cmd("encargos", "estado", {"number": 1, "status": "en_confeccion"})       # -> avisar_estado (automático)
+    x.cmd("encargos", "estado", {"number": 1, "status": "en_confeccion"})  # -> avisar_estado (sale al mundo)
+    assert not any("Ya estamos trabajando" in t for t in x.out(C))              # todavía no salió
+    [p] = x.pending("avisar_estado")
+    assert x.approve(p["id"])["state"] == "executed"
     assert "Ya estamos trabajando" in x.out(C)[-1] and x.pending() == []
 
 

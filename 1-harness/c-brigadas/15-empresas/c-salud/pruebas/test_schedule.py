@@ -44,7 +44,11 @@ def test_recordatorio_n_dias_antes_una_sola_vez():
     x.clock.now += timedelta(days=9)                  # 27/11: faltan 3 días
     x.tick()
     x.tick()
-    assert sum("Te recordamos" in t for t in x.out("whatsapp:1")) == 1
+    assert sum("Te recordamos" in t for t in x.out("whatsapp:1")) == 0   # pide aprobación: todavía no salió
+    [p] = x.pending("enviar_recordatorio")                              # una sola vez, aunque corran dos ticks
+    x.approve(p["id"])
+    x.tick()
+    assert sum("Te recordamos" in t for t in x.out("whatsapp:1")) == 1 and x.pending("enviar_recordatorio") == []
 
 
 def test_turno_pedido_por_encargos():

@@ -5,7 +5,7 @@ formato de mensajes de chat (`role` y `content`), `conv_id` = la sesión y `domi
 Solo se publica el turno que cerró bien (el que la voz le entregó a la persona); los comandos y la Secretaria no.
 
 El orquestador NO conoce a Memoria: publica al bus y quien quiera escucha. Si el harness no le da cómo publicar
-(`ctx.publish`, pendiente H-16), no se rompe nada: lo deja anotado en la auditoría una vez por día y sigue. Nunca lanza.
+(`ctx.publish`, que el harness ya ofrece), no se rompe nada: lo deja anotado en la auditoría una vez por día y sigue. Nunca lanza.
 Por defecto solo en la edición personal (`memory.publish_turns: null`); en la nube no hay Memoria.
 """
 
@@ -39,7 +39,7 @@ def publish_turn(ctx: Any, cfg: OrchestratorConfig, session: str, request: str, 
             key = f"nopub-{ctx.now().date()}"
             if not ctx.data.get(COLLECTION, key):
                 ctx.data.put(COLLECTION, key, {"at": ctx.now().isoformat(timespec="seconds")})
-                ctx.record("memoria_turno_no_publicado", motivo="el harness no deja publicar al orquestador (pendiente H-16)")
+                ctx.record("memoria_turno_no_publicado", motivo="el harness no ofrece publish (versión vieja)")
             return False
         publish(EVENT, turn_payload(session, request, brigade, message))
         return True

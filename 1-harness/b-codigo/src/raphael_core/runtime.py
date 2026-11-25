@@ -58,6 +58,8 @@ _capture: contextvars.ContextVar[tuple[str, list[str]] | None] = contextvars.Con
                                                                                          default=None)
 #: pendientes que abre la compuerta de tools durante un `ask` (para atar las propuestas del reporte a ids reales, H-4)
 _asked: contextvars.ContextVar[list[dict] | None] = contextvars.ContextVar("raphael_asked", default=None)
+#: la charla en curso (sesión de quien le habla al orquestador): la auditoría de tools la guarda como `conv_id`
+_conversation: contextvars.ContextVar[str | None] = contextvars.ContextVar("raphael_conversation", default=None)
 ORCH = "orquestador"
 
 
@@ -518,11 +520,11 @@ class Runtime:
                 self.policy.declare(brigade, key, ActionSpec(level=tool.spec.level, tags=tool.spec.tags))
             decision = self.policy.decide(brigade, key)
             if decision.level is Level.AUTO:
-                self.audit.record("tool", who=brigade, tool=tool.name)
+                self.audit.record("tool", who=brigade, tool=tool.name, arguments=dict(args), conv_id=_conversation.get())
                 return None
             action = Action(type=key, data=dict(args), summary=f"Usar la tool {tool.name}")
             p = self._new_pending(brigade, self.CHIEF_COOK, decision.level, action.summary, action, decision.explain(),
-                                  kind="tool", data={"tool": tool.name})
+                                  kind="tool", data={"tool": tool.name, "conv_id": _conversation.get()})
             asked = _asked.get()
             if asked is not None:
                 asked.append(p)
@@ -536,11 +538,14 @@ class Runtime:
         tool = self.tools.get(name)
         if tool is None:
             return {"state": "error", "error": f"la tool {name} ya no está cargada"}
+        conv = p["data"].get("conv_id")
         try:
             result = await tool.run(dict(action.data))
         except Exception as exc:  # noqa: BLE001 - la falla vuelve como resultado; el pendiente sigue abierto
-            self.audit.record("tool_fallida", who=p["brigade"], tool=name, error=repr(exc)[:200])
+            self.audit.record("tool_fallida", who=p["brigade"], tool=name, error=repr(exc)[:200],
+                              arguments=dict(action.data), conv_id=conv)
             return {"state": "error", "error": str(exc) or type(exc).__name__}
+        self.audit.record("tool", who=p["brigade"], tool=name, arguments=dict(action.data), conv_id=conv)
         await self.bus.apublish("tool.ejecutada", {"id": p["id"], "tool": name, "brigade": p["brigade"]}, source="harness")
         return {"state": "executed", "result": result}
 
@@ -871,6 +876,7 @@ class Runtime:
         self.audit.record("duena", who=who, texto=clean(text, 200), sesion=session, canal=channel)
         fn = getattr(self.orchestrator, "talk_to_owner", None)
         if fn is not None:
+            token = _conversation.set(session or "default")
             try:
                 r = fn(text, OwnerContext(self, who, session=session, channel=channel, on_event=on_event))
                 if inspect.isawaitable(r):
@@ -880,6 +886,8 @@ class Runtime:
                     return r
             except Exception as exc:  # noqa: BLE001
                 self.audit.record("orquestador_fallido", who="orquestador", error=repr(exc)[:200])
+            finally:
+                _conversation.reset(token)
         return OwnerReply("Todavía no tengo un orquestador que sepa atenderte: cuando esté, te ayudo con el día.")
 
     async def tick(self, now: datetime | None = None) -> None:

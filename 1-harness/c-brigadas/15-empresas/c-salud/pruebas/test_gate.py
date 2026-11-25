@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import ast
 import sys
+from datetime import timedelta
 
 import pytest
 from kit import BRIGADE_DIR, System
@@ -104,6 +105,14 @@ def _trigger(kind: str) -> System:
         x = System({**SHORT, "payments": {"deposit_pct": 50, "mercadopago": {"mode": "mock"}}})
         x.publish("encargo.presupuesto_enviado", {"number": 1, "contact": "whatsapp:549341", "client": "Lu",
                                                   "price": 1000, "deposit": 500})
+    elif kind == "avisar_estado":
+        x.chat("quiero un vestido a medida", "Lu")
+        x.cmd("encargos", "estado", {"number": 1, "status": "listo"})
+    elif kind == "enviar_recordatorio":
+        x.receive("turno para probarme el 30/11 a las 10", sender="1")
+        x.approve(x.pending()[0]["id"])
+        x.clock.now += timedelta(days=9)
+        x.tick()
     elif kind == "cancelar_pedido":
         x.chat("quiero un vestido a medida", "Lu")
         x.ctx("encargos").request(Action("cancelar_pedido", {"number": 1}, "Cancelar el encargo #1", "whatsapp:549341"))
@@ -125,7 +134,7 @@ def test_ninguna_accion_no_automatica_se_ejecuta_sin_ok(kind):
 
 def test_cubre_todas_las_no_automaticas():
     assert set(NOT_AUTO) == {"responder_duda", "derivar_humano", "confirmar_turno", "enviar_presupuesto", "confirmar_pago",
-                             "cancelar_pedido", "enviar_link_pago"}
+                             "cancelar_pedido", "enviar_link_pago", "enviar_recordatorio", "avisar_estado"}
 
 
 # --- (c) comandos de escritura -----------------------------------------------------------------------------------------

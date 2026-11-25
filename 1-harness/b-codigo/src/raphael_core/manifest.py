@@ -47,8 +47,8 @@ ENTRY = re.compile(r"^[A-Za-z_][\w.]*:[A-Za-z_]\w*$")
 Tag = Literal["spend", "irreversible", "external"]
 Edition = Literal["personal", "cloud"]
 
-#: etiquetas que obligan a confirmar a mano antes de dejar una acción en automático
-RISKY_TAGS: frozenset[str] = frozenset({"spend", "irreversible"})
+#: etiquetas que obligan a confirmar a mano antes de dejar una acción en automático (gasta, no tiene vuelta o sale al mundo)
+RISKY_TAGS: frozenset[str] = frozenset({"spend", "irreversible", "external"})
 
 
 class _Base(BaseModel):

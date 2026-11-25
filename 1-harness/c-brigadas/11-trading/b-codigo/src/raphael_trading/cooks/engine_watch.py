@@ -157,11 +157,8 @@ class EngineWatch(Cook):
     @staticmethod
     def _guard_never_automatic(action: Action, ctx) -> None:
         """Regla de Damián (21 nov): sin su aprobación no se ejecuta nada, ni en demo. El harness deja fijar el nivel
-        por instalación (sin pisos), así que acá se corta si alguien dejó una acción con efecto en `automatico`.
-        PENDIENTE para el harness: exponer el nivel vigente en `Context` (hoy se lee de `ctx._rt.policy`)."""
-        rt = getattr(ctx, "_rt", None)
-        policy = getattr(rt, "policy", None)
-        if policy is not None and policy.level(ctx.brigade, action.type) is Level.AUTO:
+        por instalación (sin pisos), así que acá se corta si alguien dejó una acción con efecto en `automatico`."""
+        if ctx.action_level(action.type) is Level.AUTO:
             raise ActionError("Trading no ejecuta en automático: dejá esa acción en 'aprobacion' (regla de Damián)")
 
     def execute(self, action: Action, ctx) -> str | None:

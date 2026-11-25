@@ -5,9 +5,17 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "panel"))
 
+import pytest  # noqa: E402
 from demo import EXAMPLE_MANIFEST, ORCHESTRATOR, PanelState, discover_brigades  # noqa: E402
 
 from raphael_core import CONTRACT_VERSION  # noqa: E402
+
+
+@pytest.fixture(autouse=True)
+def _sin_brigadas_instaladas(monkeypatch):
+    """El panel descubre también las brigadas instaladas con pip (las 05 a 16 en la PC de Damián): estos tests parten de
+    un proyecto con solo lo que arma cada uno."""
+    monkeypatch.setattr("raphael_core.loader._from_entry_points", lambda: ([], []))
 
 
 def test_harness_vacio_sin_brigadas(tmp_path):

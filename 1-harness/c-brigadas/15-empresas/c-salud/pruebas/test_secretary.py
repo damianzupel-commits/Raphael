@@ -173,7 +173,9 @@ def test_cambiar_estado_de_un_encargo_es_un_comando_declarado_con_confirmacion()
     r = x.say("marcá el encargo 4 como listo que ya lo terminé")
     assert "¿Confirmo?" in r.text and x.cmd("encargos", "ver", {"number": 4})["status"] == "en_confeccion"   # todavía no
     assert "Hecho" in x.say("sí").text and x.cmd("encargos", "ver", {"number": 4})["status"] == "listo"
-    assert any("está listo" in t for t in x.out("whatsapp:4"))                       # Avisos le escribió solo
+    assert not any("está listo" in t for t in x.out("whatsapp:4"))                   # el aviso espera la OK de la dueña
+    x.approve(x.pending("avisar_estado")[0]["id"])
+    assert any("está listo" in t for t in x.out("whatsapp:4"))
     x.say("pasá el encargo 99 a entregado que ya lo retiraron")
     assert "no existe el encargo #99" in x.say("sí").text
 

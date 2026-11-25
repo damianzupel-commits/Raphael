@@ -56,13 +56,13 @@ def test_lo_privado_nunca_sale_a_la_nube_aunque_el_local_este_apagado(tmp_path):
 
     def transporte(url, body, headers):
         llamadas.append(url)
-        if "localhost" in url:
+        if "127.0.0.1" in url:
             raise ConnectionError("apagado")
         return {"choices": [{"message": {"content": "respuesta de la nube"}}]}
 
     rt.models._transport = transporte
     assert rt.models.complete("cocinero", [{"role": "user", "content": "x"}], target="seguridad") is None
-    assert llamadas and all("localhost" in u for u in llamadas)          # ni un pedido salió a NVIDIA
+    assert llamadas and all("127.0.0.1" in u for u in llamadas)          # ni un pedido salió a NVIDIA
     llamadas.clear()
     assert rt.models.complete("voz", [{"role": "user", "content": "hola"}]) == "respuesta de la nube"   # lo no privado sí
     assert any("nvidia" in u for u in llamadas)
@@ -359,8 +359,10 @@ def test_ws_phone_sin_sesion_se_cierra_sin_tocar_el_enlace_y_avisa(api):
     assert any(e == "acceso.fallido" and d.get("via") == "ws/phone" for e, d in rt.bus.history)
 
 
-def test_ws_phone_sin_operaciones_instalada_cierra_con_motivo(tmp_path):
+def test_ws_phone_sin_operaciones_instalada_cierra_con_motivo(tmp_path, monkeypatch):
     from starlette.websockets import WebSocketDisconnect
+
+    monkeypatch.setattr("raphael_personal_api.app.phone_link_default", lambda: None)   # aunque la brigada esté instalada con pip
 
     rt, report = boot.start(INSTALACION, tmp_path, dev_dirs=[], environ={}, installed=False)
     app = create_app(rt, report=report, tick=False, environ={})

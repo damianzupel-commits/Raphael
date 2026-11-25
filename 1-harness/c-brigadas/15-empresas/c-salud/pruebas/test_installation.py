@@ -54,17 +54,21 @@ def test_recorrido_completo_de_una_clienta():
     x.approve(kinds["enviar_presupuesto"]["id"])
     assert "$ 90.000" in x.out(W)[-1]                       # seña 50%
 
-    # pago: la clienta avisa, la dueña confirma, Avisos le escribe solo
+    # pago: la clienta avisa, la dueña confirma, Avisos le escribe con la OK de la dueña
     assert "confirme la transferencia" in x.receive("listo, ya te transferí", *s)[0]
     [pay] = x.pending()
     x.approve(pay["id"])
+    x.approve(x.pending("avisar_estado")[0]["id"])           # Avisos le escribe a la clienta, pero con la OK de la dueña
     assert "Recibimos tu seña" in x.out(W)[-1]
     assert x.cmd("encargos", "ver", {"number": 1})["status"] == "confirmado"
 
     # recordatorio del turno y aviso de "listo"
     x.tick()
+    assert not any("Te recordamos" in t for t in x.out(W))      # el recordatorio espera la aprobación
+    x.approve(x.pending("enviar_recordatorio")[0]["id"])
     assert any("Te recordamos" in t for t in x.out(W))
     x.cmd("encargos", "estado", {"number": 1, "status": "listo"})
+    x.approve(x.pending("avisar_estado")[0]["id"])
     assert "está listo" in x.out(W)[-1]
 
     # reclamo: se deriva a una persona y nadie más responde

@@ -117,7 +117,11 @@ def test_encargos_y_cambio_de_estado(api):
     assert o["number"] == 1 and o["status"] == "presupuesto"
     assert c.post("/api/v1/orders/1/status", json={"status": "borrado"}).status_code == 422
     assert c.post("/api/v1/orders/1/status", json={"status": "listo"}).json()["status"] == "listo"
-    assert "está listo" in rt.outgoing("whatsapp:549341")[-1]["text"]           # Avisos, automático
+    assert not any("está listo" in m["text"] for m in rt.outgoing("whatsapp:549341"))   # Avisos espera la OK de la dueña
+    [aviso] = c.get("/api/v1/pending").json()["items"]                          # lo único abierto es ese aviso
+    assert "listo" in aviso["summary"].lower() or "aviso" in aviso["summary"].lower(), aviso
+    c.post(f"/api/v1/pending/{aviso['id']}/approve", json={})
+    assert "está listo" in rt.outgoing("whatsapp:549341")[-1]["text"]
     assert c.get("/api/v1/orders/99").status_code == 400
 
 

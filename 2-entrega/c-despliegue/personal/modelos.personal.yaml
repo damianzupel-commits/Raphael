@@ -6,17 +6,17 @@
 #     llegara a servir a terceros, sus términos lo consideran producción (ver CONTEXT §6).
 #   - Cualquier rol se cambia SIN tocar este archivo, con variables en raphael.env (o la pantalla de Configuración):
 #       RAPHAEL_ROL_MANDO=local,gratis      (escalones en orden: local, gratis, pago)
-#       OLLAMA_MODEL=llama3.1:8b            LMSTUDIO_MODEL=...      OLLAMA_URL / LMSTUDIO_URL (solo localhost)
+#       OLLAMA_MODEL=llama3.1:8b            LMSTUDIO_MODEL=...      OLLAMA_URL / LMSTUDIO_URL (solo esta PC)
 #       RAPHAEL_PRIVADAS=trading,legales    (brigadas extra que quedan solo en local)
 # Las claves NUNCA van acá: NVIDIA_API_KEY y OPENROUTER_API_KEY se leen del entorno (raphael.env).
 
 providers:
-  ollama:
-    base_url: http://localhost:11434/v1
+  ollama:                       # 127.0.0.1 y no "localhost": en Windows localhost puede resolver a ::1 y Ollama escucha en IPv4
+    base_url: http://127.0.0.1:11434/v1
     model: llama3.1:8b          # SUPUESTO: poné el que tengas bajado (`ollama list`) en OLLAMA_MODEL
     rpm: 30
   lmstudio:
-    base_url: http://localhost:1234/v1
+    base_url: http://127.0.0.1:1234/v1
     model: local-model          # SUPUESTO: el identificador que muestra LM Studio, en LMSTUDIO_MODEL
     rpm: 30
   nvidia:
@@ -53,7 +53,20 @@ roles:
   cocinero: [local, gratis]
   efimero:  [local, gratis]
 
-# Solo modelos locales. Ids de brigada (o ayudante). Seguridad, Investigación, Memoria y Operaciones, con los ids
-# probables de cada una y los de JarvisRemote; el test de la pieza 3 avisa si el manifiesto de una de esas brigadas
-# trae otro id y no está acá.
+# Cada brigada o ayudante con su cadena de escalones: "rol.id" (id del manifiesto de la brigada o del ayudante).
+# Operaciones (la que maneja tu pantalla, tus archivos y tu celular) y Memoria usan SOLO el escalón local; ya son privadas
+# (abajo), esto además les pone el local primero y sin pasar por la nube. Si querés que un rol de otra brigada vaya a local,
+# sumalo acá (ej. "cocinero.investigacion": [local]).
+overrides:
+  jefe.operaciones: [local]
+  efimero.operaciones-pc: [local]
+  efimero.operaciones-celular: [local]
+  efimero.operaciones-navegador: [local]
+  cocinero.operaciones: [local]       # el supervisor de Operaciones (revisa cada acción con el modelo local)
+  cocinero.memoria: [local]           # los cocineros de Memoria (la nube nunca ve tus notas)
+
+# Solo modelos locales. Ids de brigada (o ayudante): los de los `manifest.yaml` de Seguridad (`seguridad`), Investigación
+# (`investigacion`), Memoria (`memoria`) y Operaciones (`operaciones`), más los nombres que tenían en JarvisRemote y los
+# ayudantes de Investigación. El test de la pieza 3 avisa si el manifiesto de una de esas brigadas trae otro id y no está acá.
+# Si el modelo local no está prendido: esa brigada sigue por reglas y avisa; NUNCA se manda a NVIDIA.
 private: [seguridad, investigacion, memoria, operaciones, memoria-cerebro, investigacion-forense, scout, forense]

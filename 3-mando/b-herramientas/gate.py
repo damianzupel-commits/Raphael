@@ -1,4 +1,4 @@
-"""Puerta del monorepo: corre las cuatro suites (core, orchestrator, business, server) y ruff, y resume.
+"""Puerta del monorepo: corre todas las suites (core, orchestrator, business, server, cada brigada y cuentas) y ruff, y resume.
 
 Cada suite corre con pytest en su propia carpeta (cada una tiene su conftest y sus rutas). No saltea nada.
 
@@ -12,6 +12,7 @@ Sale con 0 si todo pasa y con 2 si algo falla.
 from __future__ import annotations
 
 import argparse
+import os
 import re
 import subprocess
 import sys
@@ -19,13 +20,36 @@ import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]   # raphael/
+BRIGADAS = ROOT / "1-harness" / "c-brigadas"
+#: brigadas con código propio: carpeta -> nombre de la suite. Cada una trae su `c-salud/pruebas` (pytest arranca desde ahí).
+BRIGADAS_SUITES = {
+    "05-seguridad": "seguridad",
+    "06-antimalware": "antimalware",
+    "07-investigacion": "investigacion",
+    "08-geolocalizacion": "geolocalizacion",
+    "09-memoria": "memoria",
+    "10-ingesta": "ingesta",
+    "11-trading": "trading",
+    "12-operaciones": "operaciones",
+    "13-autorreparacion": "autorreparacion",
+    "14-contenido": "contenido",
+    "16-legales": "legales",
+}
 SUITES = {
     "core": ROOT / "1-harness" / "b-codigo",
-    "orchestrator": ROOT / "1-harness" / "c-brigadas" / "00-orquestador" / "c-salud" / "pruebas",
-    "business": ROOT / "1-harness" / "c-brigadas" / "15-empresas" / "c-salud" / "pruebas",
+    "orchestrator": BRIGADAS / "00-orquestador" / "c-salud" / "pruebas",
+    "business": BRIGADAS / "15-empresas" / "c-salud" / "pruebas",
     "server": ROOT / "2-entrega" / "b-codigo" / "servidor" / "api",
+    **{name: BRIGADAS / carpeta / "c-salud" / "pruebas" for carpeta, name in BRIGADAS_SUITES.items()},
+    "cuentas": ROOT / "2-entrega" / "c-despliegue" / "cuentas-y-apis" / "tests",
 }
-RUFF_PATHS = ["1-harness", "2-entrega/b-codigo/servidor"]
+#: carpeta que se suma al PYTHONPATH de una suite (la de cuentas no es un paquete instalado)
+SUITE_PYTHONPATH = {"cuentas": ROOT / "2-entrega" / "c-despliegue" / "cuentas-y-apis" / "codigo" / "src"}
+RUFF_PATHS = [
+    "1-harness",
+    "2-entrega/b-codigo/servidor",
+    "2-entrega/c-despliegue/cuentas-y-apis",
+]
 
 
 def default_python() -> str:
@@ -35,8 +59,11 @@ def default_python() -> str:
     return sys.executable
 
 
-def run(cmd: list[str], cwd: Path) -> tuple[int, str]:
-    r = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, encoding="utf-8", errors="replace")
+def run(cmd: list[str], cwd: Path, pythonpath: Path | None = None) -> tuple[int, str]:
+    env = None
+    if pythonpath is not None:
+        env = {**os.environ, "PYTHONPATH": os.pathsep.join(filter(None, [str(pythonpath), os.environ.get("PYTHONPATH", "")]))}
+    r = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, encoding="utf-8", errors="replace", env=env)
     return r.returncode, (r.stdout + r.stderr).strip()
 
 
@@ -47,7 +74,7 @@ def counts(out: str) -> dict[str, int]:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--python", default=None, help="intérprete con las cuatro piezas instaladas, pytest y ruff")
+    ap.add_argument("--python", default=None, help="intérprete con las piezas instaladas, pytest y ruff")
     ap.add_argument("--solo", nargs="+", choices=sorted(SUITES), help="correr solo estas suites")
     args = ap.parse_args()
     py = args.python or default_python()
@@ -58,7 +85,7 @@ def main() -> int:
         if args.solo and name not in args.solo:
             continue
         t0 = time.monotonic()
-        code, out = run([py, "-m", "pytest", "-q", "-p", "no:cacheprovider"], folder)
+        code, out = run([py, "-m", "pytest", "-q", "-p", "no:cacheprovider"], folder, SUITE_PYTHONPATH.get(name))
         c = counts(out)
         bad = c.get("failed", 0) + c.get("error", 0) + c.get("errors", 0)
         total["passed"] += c.get("passed", 0)
