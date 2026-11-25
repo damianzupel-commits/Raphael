@@ -63,3 +63,20 @@ Revisado leyendo `contract.py`, `context.py`, `runtime.py`, `approvals.py`, `ins
 - **Puerta de O5 en verde:** 266 tests (matriz de 28 casos: master y secretary, con y sin modelo; montado de verdad por la instalación; config inválida falla al montar), 8 de 8 corridas en 3.12 y 3.13, ruff limpio. En el núcleo (H-15): `OwnerContext.drafts`. 405 tests, Empresas 74. 32 archivos verificados por md5 en la PC; en la PC no se corrió pytest (la VM tiene Python 3.10).
 - No portado (anotado): el diseñador de brigadas por descripción (JR `brigades/designer.py`, no estaba en la copia de esta pieza): hoy `/crear-brigada` pide el JSON. Activar un borrador no lo monta: eso queda para la app (03).
 - Pendientes de otras piezas en DISENO.md §6 (03, 07, 09, 15, 00, 04).
+
+## 25 nov 2026 · Resumen de cierre · lienzo en blanco
+- Arreglado `c-salud/pruebas/conftest.py`: tras la mudanza al árbol a/b/c buscaba `raphael-core` una carpeta de más y los 266 tests no corrían sin instalarlo. Ahora corren desde el repo limpio.
+- Nuevo: `speech.py` + `speech_worker.py` (voz hablada local enchufable, con simulada y apagada), `health.py` (chequeo de salud), aviso proactivo cuando falta el modelo de un rol o el modelo LOCAL que exigen las brigadas privadas (lo sensible no se manda a la nube), `speech` y `warn_no_ai` en la config.
+- Plantillas: `orquestador.env.plantilla`, `orquestador.config.ejemplo.yaml`, `modelos.personal.ejemplo.yaml` (decisión de Damián: sensible local, resto NVIDIA, cualquier rol cambiable). Un test las valida.
+- **Puerta en verde:** 282 tests del orquestador (16 nuevos), core 409, Empresas 124, ruff limpio. Sin red ni claves.
+- Decisión de diseño: el orquestador no es brigada, no lleva manifest ni cocineros; se monta por la instalación.
+- Pendientes para otras piezas: harness (`modelos.yaml` real de la edición personal: usar el ejemplo y alinear `private` con los ids de los manifests de 05, 07, 09 y 12; el harness no sondea si Ollama está prendido: lo nota cuando falla el pedido y pausa al proveedor); 03 (endpoints HTTP de voz `/api/voz*`, que usan `speech_from`); coordinador (ESTADO, LIENZO-DAMIAN).
+- No probado: voz real (sin faster-whisper, Piper ni modelos en la nube de pruebas), Ollama/LM Studio ni NVIDIA reales, Windows.
+
+## 25 nov 2026 (2) · Resumen de cierre · pedidos de las piezas 05 y 13
+- `seguridad.alerta` ahora es un aviso a Damián (regla, gravedad, arreglo sugerido; una vez por regla y día). También avisan `arreglo.aplicado`, `arreglo.revertido` y `autodiagnostico.hallazgo` (pedido de la 13).
+- Nuevo `toolcalls.py`: convierte las entradas de auditoría `tool` y `tool_fallida` al JSONL de `analyzer.py` de la 13 (`export_jsonl(entries, path)`). Límite: la auditoría del harness no guarda argumentos ni id de conversación, así que `conversation_id` es brigada:día y `arguments` va vacío; solo sirve para `error_repetido`.
+- Pendiente para harness: (a) que la auditoría de `tool` guarde los argumentos (redactados) y un id de conversación; (b) `OrchestratorContext.audit_entries()` para que el orquestador pueda leer y exportar solo (hoy `export_jsonl` recibe las entradas de quien lo llame); (c) `seguridad` (id real de la 05) en `private` del `modelos.yaml` real: ya está en `modelos.personal.ejemplo.yaml`.
+- `ingesta.fallo` (pedido de la 10) también es aviso: qué no se pudo traer, de qué fuente y por qué; una vez por ítem y día.
+- `memoria.turno` (pedido de la 09): `memory_event.py` publica `{conv_id, history, dominio}` al cerrar cada turno entregado (chat, autoconocimiento y brigadas; no comandos ni Secretaria), solo en personal por defecto (`memory.publish_turns`). **Bloqueado por el harness:** `OrchestratorContext` no tiene `publish` (solo `notify`), así que hoy no sale nada y queda una nota en la auditoría una vez por día. Pendiente H-16 para harness: `OrchestratorContext.publish(event, data)` restringido a `memoria.turno` y declarado. Cuando exista, anda sin tocar el orquestador (probado con un `publish` falso).
+- Tests del orquestador: 290.
