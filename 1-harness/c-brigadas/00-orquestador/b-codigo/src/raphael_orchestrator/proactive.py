@@ -9,6 +9,7 @@ brigadas 07 y 09). Acá corre en los ganchos del harness (`on_event` y `tick`), 
   - el harness propone dejar algo en automático (confianza progresiva) -> aviso;
   - la brigada de Seguridad publica `seguridad.alerta` (vigilancia defensiva) -> aviso a Damián con regla, gravedad y arreglo;
   - la brigada de Autorreparación publica `arreglo.aplicado`, `arreglo.revertido` o `autodiagnostico.hallazgo` -> aviso;
+  - la brigada de Ingesta publica `ingesta.fallo` (fuente, ref, título, motivo) -> aviso con qué no se pudo traer y por qué;
   - falta el modelo de IA de un rol (sin clave, tope agotado) o el modelo LOCAL que necesitan las brigadas privadas
     (apagado): se avisa y se sigue por reglas; lo privado nunca se manda a la nube para compensar;
   - un pendiente que lleva más de `remind_after_hours` sin resolverse -> un recordatorio (una sola vez por pendiente).
@@ -24,7 +25,7 @@ from .config import OrchestratorConfig
 
 COLLECTION = "proactive"
 EVENTS = ("pendiente.creado", "brigada.jefe_caido", "brigada.salud", "confianza.propuesta", "seguridad.alerta",
-          "arreglo.aplicado", "arreglo.revertido", "autodiagnostico.hallazgo")
+          "arreglo.aplicado", "arreglo.revertido", "autodiagnostico.hallazgo", "ingesta.fallo")
 SEVERITY = {"critical": "CRÍTICA", "critica": "CRÍTICA", "high": "alta", "alta": "alta", "medium": "media", "media": "media",
             "low": "baja", "baja": "baja"}
 
@@ -85,6 +86,13 @@ def on_event(ctx: Any, cfg: OrchestratorConfig, event: str, data: dict) -> dict 
                 "autodiagnostico.hallazgo": "Autodiagnóstico: hallazgo nuevo"}[event]
         detail = str(data.get("summary") or data.get("message") or ident)[:200]
         return ctx.notify(f"{what}{': ' + detail if detail else ''}.", kind="selfrepair", event=event)
+    if event == "ingesta.fallo":
+        src, ref = str(data.get("fuente") or "una fuente"), str(data.get("ref") or "")
+        if not _once(ctx, f"ing-{src}-{ref}-{ctx.now().date()}"[:200]):
+            return None
+        what = str(data.get("titulo") or ref or "un ítem")[:120]
+        return ctx.notify(f"No se pudo traer «{what}» de {src}: {data.get('motivo') or 'sin motivo'}.", kind="ingest_fail",
+                          source=src, ref=ref)
     if event == "confianza.propuesta":
         pid = data.get("id")
         if not _once(ctx, f"trust-{pid}"):

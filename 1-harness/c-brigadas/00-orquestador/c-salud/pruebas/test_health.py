@@ -130,3 +130,14 @@ def test_exporta_el_registro_de_tool_calls_al_formato_de_la_introspeccion(tmp_pa
     rows = [json.loads(ln) for ln in path.read_text(encoding="utf-8").splitlines()]
     assert rows[0]["ok"] is True and rows[1] == {"timestamp": "2026-11-25T10:01:00", "conversation_id": "osint:2026-11-25",
                                                  "tool": "search", "ok": False, "arguments": {}, "error": "boom"}
+
+
+def test_ingesta_fallo_avisa_una_vez_por_item():
+    rt = master()
+    ev = {"fuente": "youtube", "ref": "abc123", "titulo": "Charla sobre Rust", "motivo": "el video no tiene subtítulos"}
+    for _ in range(2):
+        run(rt.bus.apublish("ingesta.fallo", ev, source="ingesta"))
+    run(rt.bus.apublish("ingesta.fallo", {**ev, "ref": "zzz", "titulo": ""}, source="ingesta"))
+    run(rt._settle())
+    t = texts(rt)
+    assert t[0] == "No se pudo traer «Charla sobre Rust» de youtube: el video no tiene subtítulos" and len(t) == 2
