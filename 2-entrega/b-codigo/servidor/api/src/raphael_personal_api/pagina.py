@@ -23,7 +23,7 @@ nav{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}nav button{flex:1}nav butto
 .hide{display:none}.b{padding:8px 12px;border-radius:10px;margin:6px 0;white-space:pre-wrap;max-width:92%}.me{background:var(--ac);color:var(--bg);margin-left:auto}.ra{background:var(--card);border:1px solid var(--bd)}
 #log{max-height:55vh;overflow:auto}
 </style></head><body><main>
-<h1>Raphael</h1>
+<h1>Raphael <button class="sec mini" onclick="location.reload()" title="Recargar la interfaz" aria-label="Recargar la interfaz">↻</button></h1>
 <div id="msg" role="status"></div>
 <section id="login" class="card"><h2>Entrar</h2>
 <label for="k">Clave de la app</label><input id="k" type="password" autocomplete="current-password">

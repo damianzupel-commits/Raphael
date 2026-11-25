@@ -342,6 +342,15 @@ class PanelState:
                           brigadas_encontradas=len(self.brigades), montadas=self.mount_report["mounted"],
                           errores=self.mount_report["errors"])
 
+    def reload(self) -> str:
+        """Lo que hace el botón ↻: relee raphael.env (lo del archivo pisa al entorno), aplica modelos y claves, y vuelve a
+        juntar las brigadas encontradas. Devuelve un aviso si algo no se pudo."""
+        for k, v in self.config.env().items():
+            os.environ[k] = v
+        aviso = self.reload_models()
+        self._rebuild()
+        return aviso
+
     def reload_models(self) -> str:
         """Aplica en caliente la configuración de modelos y claves (sin reiniciar). Devuelve un aviso si no se pudo."""
         gw = self.runtime.models
