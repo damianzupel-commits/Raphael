@@ -16,3 +16,10 @@ Resumen de cierre:
 - Probado en la nube: `armar_paquete.py` (110 archivos, sin `.env`, bases ni claves), `instalar-v2.sh` en modo "solo archivos", arranque de la API, `/api/v1/health` y verificación del webhook; `bash -n` de los scripts.
 - Se corrigieron rutas viejas (`nucleo\`, `obra\`) en `requirements-vps.txt` y los LEEME, y se agregó el checklist previo al montaje y `NVIDIA_API_KEY` (comentada) a `meta.env.plantilla`.
 - Sin credenciales reales. Falta: VPS real (systemd, Caddy, DuckDNS), Meta real, copia fuera del servidor y alertas.
+
+## 2026-11-25 · Un solo arranque y un solo archivo de claves
+Resumen de cierre:
+- `raphael_empresas_api/entorno.py`: lee `raphael.env` (también `meta.env` y `tienda.env`) sin pisar el entorno del sistema y arma el chequeo de arranque (IA, Meta, tienda, perfil, clave de la app) sin mostrar ningún valor. `python -m raphael_empresas_api chequear [--real]` y `servir` lo imprimen.
+- `c-despliegue/windows/arrancar.bat`, `raphael.env.plantilla` y `QUE-CARGAR.md` (el único documento de claves).
+- 7 tests nuevos (33 en el servidor, puerta 831). Probado en la nube con webhook mock y OpenRouter falso. Sin probar: el .bat en Windows, el túnel, OpenRouter y Meta reales.
+- Pendiente: perfil real de la clienta (entrevista); decidir si las respuestas a clientes pueden usar IA (hoy solo reglas).
