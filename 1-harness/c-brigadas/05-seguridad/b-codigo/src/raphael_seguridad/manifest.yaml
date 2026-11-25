@@ -20,6 +20,7 @@ tools:
   - {name: nmap_scan, level: aprobacion, tags: [external], active_scan: true, description: "escanea puertos con nmap (solo PC, objetivos autorizados)"}
   - {name: zap_scan, level: aprobacion, tags: [external], active_scan: true, description: "escaneo web con ZAP (solo PC, objetivos autorizados)"}
   - {name: sqlmap_scan, level: aprobacion, tags: [external], active_scan: true, description: "detecta inyección SQL sin volcar datos (solo PC, objetivos autorizados)"}
+  - {name: red_local, description: "la IP de esta PC y su red local (CIDR), para usarla de objetivo del escaneo; solo lee"}
   - {name: auditar_proyecto, description: "auditoría estática de un repo de la lista autorizada"}
 events:
   publishes: [seguridad.auditoria_terminada, seguridad.hallazgo_critico, seguridad.alerta, seguridad.pentest_terminado]

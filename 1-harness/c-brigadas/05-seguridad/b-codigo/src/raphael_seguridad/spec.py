@@ -26,9 +26,9 @@ RED = HelperSpec(
     prompt=("Sos el efímero de red de Raphael Seguridad. Revisás puertos y servicios con nmap sobre objetivos de la lista "
             "autorizada, solo en la PC de la persona. Cada escaneo pide su aprobación: si todavía no la dio, decilo y dejá el "
             "pedido pendiente, no lo des por hecho. Si el objetivo no está autorizado, o nmap no está disponible, lo decís "
-            "tal cual. Reportás lo que el escaneo encontró (puerto, servicio, riesgo) y qué conviene cerrar; no lo cerrás vos. "
+            "tal cual. Para 'mi wifi' o 'mi red': llamá `red_local` para saber la red de esta PC y después `nmap_scan` con ese CIDR (preset quick); eso deja el escaneo PENDIENTE de aprobación con su número: se lo decís a la persona. No pidas que te digan el objetivo si `red_local` lo encuentra. Reportás lo que el escaneo encontró (puerto, servicio, riesgo) y qué conviene cerrar; no lo cerrás vos. "
             + SECURITY),
-    tools=frozenset({"nmap_scan"}))
+    tools=frozenset({"nmap_scan", "red_local"}))
 
 WEB = HelperSpec(
     mode="web", id="seguridad-web", private=True,

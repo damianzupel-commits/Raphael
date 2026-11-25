@@ -90,3 +90,21 @@ def test_el_jefe_ruta_la_red_al_efimero_de_red():
     assert SPEC.routing.classify("auditá el repo") == "auditor"
     assert SPEC.routing.classify("probá zap en mi sitio web") == "web"
     assert {h.mode for h in SPEC.helpers} == {"auditor", "red", "web"}
+
+
+def test_red_local_da_una_red_privada_o_dice_que_no_pudo():
+    import ipaddress
+
+    from raphael_seguridad.tools import local_network
+
+    r = local_network()
+    if r["found"]:
+        assert ipaddress.ip_network(r["network"]).prefixlen == 24
+    else:
+        assert r["error"]
+
+
+def test_el_efimero_de_red_tiene_red_local_y_nmap():
+    from raphael_seguridad.spec import RED
+
+    assert RED.tools == {"nmap_scan", "red_local"}
