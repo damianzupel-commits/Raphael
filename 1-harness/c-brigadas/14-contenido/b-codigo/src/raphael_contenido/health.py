@@ -8,6 +8,7 @@ from raphael_core import Health
 
 from .config import contenido_config
 from .entorno import build, missing_for_real
+from .tools import make_tools
 
 
 def _first(exc: ValidationError) -> str:
@@ -33,3 +34,5 @@ def validate(ctx) -> None:
         contenido_config(ctx.config)
     except ValidationError as exc:
         raise ValueError(_first(exc)) from None
+    for name, fn in make_tools(ctx).items():
+        ctx.register_tool(name, fn)
