@@ -24,6 +24,7 @@ from raphael_core import Action, ActionError, Cook, Reply
 from raphael_core.text_es import money, normalize
 
 from .. import config as C
+from .. import legal
 from ..pay import MockProvider, PayError, provider_from
 
 R_PAYMENT = re.compile(r"\b(transferi\w*|ya (te )?pague|pague la sena|deposite|comprobante|te (mande|paso|envie) la sena|abone|"
@@ -100,9 +101,11 @@ class Payments(Cook):
                 amount = float(action.data.get("amount") or 0)
             except (TypeError, ValueError):
                 amount = 0.0
-            return (f"Si preferís pagar con Mercado Pago, acá tenés el link para la seña de tu encargo "
+            text = (f"Si preferís pagar con Mercado Pago, acá tenés el link para la seña de tu encargo "
                     f"#{action.data.get('number')}{' (' + money(amount) + ')' if amount > 0 else ''}: {url}\n"
                     "Cuando se acredite te escribimos por acá 🙌")
+            legal.review(ctx, text, f"link-pago-{action.data.get('number')}")
+            return text
         if action.type != "confirmar_pago":
             raise ActionError(f"cobros no ejecuta '{action.type}'")
         contact = action.target

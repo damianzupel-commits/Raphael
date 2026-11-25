@@ -11,6 +11,8 @@ import re
 
 from raphael_core.text_es import normalize
 
+from .legal import optout
+
 R_COMPLAINT = re.compile(
     r"\b(reclamo|queja|me quejo|estafa|me estafaron|vino roto|llego (mal|roto|danado|fallado)|esta (roto|fallado|mal hecho)|"
     r"no (me )?(llego|respondieron|contestan)|devolucion|devuelvan|reembolso|"
@@ -20,4 +22,5 @@ ATTENTION = "atencion"
 
 
 def complaint(text: str) -> bool:
-    return bool(R_COMPLAINT.search(normalize(text)))
+    """Reclamo o baja: los cocineros con una conversación abierta se la pasan a Atención (una baja se respeta al instante)."""
+    return bool(R_COMPLAINT.search(normalize(text))) or optout(text)

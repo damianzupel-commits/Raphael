@@ -29,3 +29,7 @@ Una entrada por sesión: fecha y "Resumen de cierre" de 3 a 6 líneas (qué se h
 - **Sin verificar contra la documentación (no se pudo leer):** el texto que se firma en el webhook, los campos exactos de la preferencia (`init_point`, `back_urls`, etc.). Están marcados en `pay/mercadopago.py` y hay que probarlos con una cuenta de prueba antes de cobrar.
 - IA de Empresas: sigue por OpenRouter vía el harness (sin cambios); sin clave, reglas.
 - Pendiente para 03: el endpoint `/webhook/mercadopago` en la API y las claves nuevas en el chequeo. Lo que va al lienzo y a ESTADO está en `APORTE-LIENZO.md`.
+
+## 25 nov 2026 · Resumen de cierre · eventos hacia Legales (pedido del coordinador, pieza 16)
+- Nuevo `legal.py` y tres eventos publicados (declarados en el manifiesto, sin importar ninguna brigada): `revision.pedida` {text, ref} antes de mandar presupuesto, cancelación, link de pago, aviso de estado y respuestas de la dueña; `consentimiento.recibido` {contact, purpose, channel, evidence} cuando un cliente acepta recibir avisos; `baja.solicitada` {contact, channel} cuando pide la baja.
+- La baja le gana a cualquier conversación abierta (encargo, turno): los cocineros se la pasan a Atención. La revisión es solo un aviso, no frena el envío. Las frases de alta y baja son reglas simples (`legal.py`): hay que revisarlas con la clienta. Brigada 141 tests, puerta 867 en verde.

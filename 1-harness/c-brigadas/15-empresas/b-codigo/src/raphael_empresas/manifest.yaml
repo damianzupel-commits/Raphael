@@ -28,7 +28,7 @@ actions:
   cancelar_pedido: {level: aprobacion, tags: [external, irreversible], description: "cancelar un encargo y avisarle al cliente"}
   avisar_estado: {level: automatico, tags: [external], description: "avisarle al cliente que su encargo cambió de estado"}
 events:
-  publishes: [conversacion.derivada, encargo.creado, encargo.presupuesto_enviado, encargo.estado_cambiado, turno.pedido,
+  publishes: [revision.pedida, consentimiento.recibido, baja.solicitada, conversacion.derivada, encargo.creado, encargo.presupuesto_enviado, encargo.estado_cambiado, turno.pedido,
               turno.confirmado, pago.confirmado]
   consumes: [conversacion.derivada, encargo.presupuesto_enviado, encargo.estado_cambiado, turno.pedido, pago.confirmado,
              pendiente.rechazado]
