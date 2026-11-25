@@ -1,0 +1,81 @@
+# Brigada Contenido (pieza 14): la ÚNICA fuente de verdad de lo que puede hacer.
+# Niveles: automatico | aprobacion | humano. Etiquetas: external = sale al mundo · irreversible = sin vuelta atrás · spend = gasta plata.
+# Publicar siempre pide aprobación. Lo que gasta o es irreversible no baja solo a automático por confianza progresiva.
+id: contenido
+name: Contenido
+version: 2.0.0
+contract: ">=2.1,<3"
+description: Edita video, genera imágenes, prepara publicaciones de Instagram, redacta copys y calendario, arma borradores de campañas y lee métricas. Nada sale al mundo ni gasta plata sin aprobación.
+editions: [personal, cloud]
+cooks:
+  - {id: video, entry: "raphael_contenido.cooks.video:Video"}
+  - {id: instagram, entry: "raphael_contenido.cooks.instagram:Instagram"}
+  - {id: imagen, entry: "raphael_contenido.cooks.imagen:Imagen"}
+  - {id: contenido, entry: "raphael_contenido.cooks.contenido:Contenido"}
+  - {id: campanas, entry: "raphael_contenido.cooks.campanas:Campanas"}
+  - {id: analitica, entry: "raphael_contenido.cooks.analitica:Analitica"}
+actions:
+  editar_video: {level: automatico, description: "una edición sobre un video o audio (recortar, unir, subtítulos…): deja un archivo nuevo, el original no se toca"}
+  proyecto_crear: {level: automatico, description: "crear un proyecto de edición con línea de tiempo"}
+  proyecto_editar: {level: automatico, description: "cambiar un proyecto de edición (operaciones atómicas, deshacer y rehacer)"}
+  proyecto_renderizar: {level: automatico, description: "renderizar un proyecto a un video nuevo"}
+  grabar_pantalla: {level: aprobacion, description: "grabar la pantalla de la PC (puede mostrar datos privados; solo edición personal)"}
+  generar_imagen: {level: automatico, description: "generar una imagen con ComfyUI en la GPU de la PC"}
+  generar_video: {level: automatico, description: "generar un video corto con ComfyUI en la GPU de la PC"}
+  preparar_publicacion: {level: automatico, description: "dejar un video con su texto como publicación PENDIENTE (no publica nada)"}
+  descartar_publicacion: {level: automatico, description: "descartar una publicación pendiente"}
+  publicar_instagram: {level: aprobacion, tags: [external, irreversible], description: "publicar un Reel en Instagram"}
+  redactar_copy: {level: automatico, description: "redactar un borrador de copy, guion o carrusel con el tono de la marca"}
+  agendar_post: {level: automatico, description: "poner una fecha en el calendario editorial (no publica)"}
+  quitar_del_calendario: {level: automatico, description: "sacar algo del calendario editorial"}
+  crear_borrador_anuncio: {level: automatico, description: "armar un borrador de anuncio con presupuesto y segmentación (no se sube ni se gasta)"}
+  descartar_borrador: {level: automatico, description: "descartar un borrador de anuncio"}
+  subir_campana_pausada: {level: aprobacion, tags: [external], description: "crear la campaña en Meta en pausa (no gasta)"}
+  activar_campana: {level: aprobacion, tags: [spend, external, irreversible], description: "activar una campaña: empieza a gastar plata"}
+  sincronizar_metricas: {level: automatico, description: "leer las métricas de la cuenta de Instagram (solo lectura)"}
+events:
+  publishes: [video.listo, imagen.lista, publicacion.preparada, publicacion.publicada, copy.listo, campana.borrador, campana.activada,
+              metricas.sincronizadas, contenido.trabajo_fallido, revision.pedida]
+  consumes: [pendiente.rechazado]
+commands:
+  trabajos: {read: true, description: "trabajos en segundo plano de un cocinero (en cola, en curso, terminados)"}
+  listar: {read: true, description: "archivos de la carpeta de video"}
+  info: {read: true, description: "datos de un archivo {'archivo'}"}
+  proyectos: {read: true, description: "proyectos de edición"}
+  proyecto: {read: true, description: "un proyecto {'proyecto'}"}
+  operaciones: {read: true, description: "operaciones de edición disponibles"}
+  publicaciones: {read: true, description: "publicaciones {'estado'?}"}
+  publicacion: {read: true, description: "una publicación {'id'}"}
+  estado: {read: true, description: "modo de la conexión (real, simulado o sin clave)"}
+  generados: {read: true, description: "imágenes y videos generados"}
+  copys: {read: true, description: "borradores de copys {'tipo'?}"}
+  copy: {read: true, description: "un borrador {'id'}"}
+  calendario: {read: true, description: "calendario editorial {'desde'?, 'hasta'?}"}
+  proponer_calendario: {read: true, description: "propone fechas libres {'dias', 'por_semana'}; no guarda"}
+  borradores: {read: true, description: "borradores de anuncios {'estado'?}"}
+  borrador: {read: true, description: "un borrador de anuncio {'id'}"}
+  exportar: {read: true, description: "el borrador listo para cargar a mano en el Administrador de anuncios {'id'}"}
+  resumen: {read: true, description: "resumen de la última foto de métricas"}
+  recomendaciones: {read: true, description: "qué repetir, según las métricas"}
+  historial: {read: true, description: "fotos de métricas guardadas"}
+routing:
+  signals:
+    - {pattern: "\\binstagram\\b|\\breels?\\b|\\bvideos?\\b|\\bcopys?\\b|\\bcarrusel\\w*|\\bcalendario editorial\\b|\\bpublicar\\b|\\bpublicaci\\w+", weight: 2}
+    - {pattern: "\\bsubtitul\\w+|\\bmontaje\\b|\\bimagen(es)?\\b|\\banuncios?\\b|\\bcampan\\w+|\\bmetricas?\\b|\\bhashtags?\\b|\\bguion\\b", weight: 1}
+store:
+  space: contenido
+uninstall:
+  export: [publicaciones, copys, calendario, anuncios, fotos, generados, trabajos]
+  delete: ["*"]
+setup: "raphael_contenido.health:validate"
+health: "raphael_contenido.health:check"
+config_schema:
+  type: object
+  additionalProperties: false
+  properties:
+    mode: {type: string, enum: [auto, mock]}
+    brand: {type: object}
+    video: {type: object}
+    instagram: {type: object}
+    campaigns: {type: object}
+    analytics: {type: object}

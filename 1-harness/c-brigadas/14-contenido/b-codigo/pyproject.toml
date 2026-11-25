@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "raphael-contenido"
+dynamic = ["version"]
+description = "Brigada Contenido de Raphael (harness v2): video, imágenes, Instagram, copys, campañas y analítica."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = ["raphael-core>=2.0.0rc3", "pydantic>=2.5", "pyyaml>=6", "httpx>=0.27"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[project.entry-points."raphael.brigades"]
+contenido = "raphael_contenido"
+
+[tool.setuptools.dynamic]
+version = {attr = "raphael_contenido.__version__"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+raphael_contenido = ["manifest.yaml"]
+
+[tool.pytest.ini_options]
+testpaths = ["../c-salud/pruebas"]
+
+[tool.ruff]
+line-length = 170
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "BLE"]
+
+[tool.ruff.lint.per-file-ignores]
+# código portado de JarvisRemote casi tal cual (ya probado allá): no se reescribe por estilo
+"src/raphael_contenido/video/*.py" = ["B905", "UP017", "BLE001", "E702", "E501"]
+"../c-salud/pruebas/test_video_proyecto.py" = ["E702", "E501"]
