@@ -450,15 +450,20 @@ class RaphaelApp(tk.Tk):
         text = self.chat_entry.get()
         if not text.strip() or self.app.sample:
             return
+        if self._busy:          # Enter también pasa por acá: un envío a la vez (una respuesta puede tardar casi un minuto)
+            self.chat_note.configure(text="todavía estoy contestando lo anterior…")
+            return
         self.chat_entry.delete(0, "end")
         scope = self.scope
         self.chat_send.set(enabled=False)
         self._busy = True
-        self.chat_note.configure(text="pensando…")
+        self.chat_note.configure(text="pensando… (puede tardar un rato)")
+        self.app.say_user(scope, text)      # tu mensaje se ve ya, no cuando termina la respuesta
+        self._render_chat()
 
         def work() -> None:
             try:
-                self.app.send(scope, text)
+                self.app.send(scope, text, echoed=True)
                 self._jobs.put(("chat", (True, scope)))
             except Exception as exc:  # noqa: BLE001
                 self._jobs.put(("chat", (False, str(exc))))

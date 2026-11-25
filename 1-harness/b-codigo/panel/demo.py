@@ -610,13 +610,19 @@ class PanelState:
         sp.put(scope, sp.next(scope), {"role": role, "text": text, "who": who,
                                        "when": datetime.now().strftime("%d/%m %H:%M")})
 
-    def send(self, scope: str, text: str) -> list[dict]:
+    def say_user(self, scope: str, text: str) -> None:
+        """Deja el mensaje de la persona en el chat YA, antes de que el núcleo conteste (la respuesta puede tardar)."""
+        self._say(scope, "user", "vos", text.strip())
+
+    def send(self, scope: str, text: str, *, echoed: bool = False) -> list[dict]:
         """Guarda el mensaje y se lo pasa al núcleo. Lo que vuelve es del runtime; si nadie puede responder, lo dice
-        (no inventa). Puede tardar si hay un modelo de por medio: la ventana lo llama desde un hilo."""
+        (no inventa). Puede tardar si hay un modelo de por medio: la ventana lo llama desde un hilo. `echoed`: la
+        ventana ya lo mostró con `say_user`."""
         text = text.strip()
         if not text or self.sample:
             return self.chat(scope)
-        self._say(scope, "user", "vos", text)
+        if not echoed:
+            self._say(scope, "user", "vos", text)
         self.audit.record("chat", who="usuario", alcance=scope)
         try:
             for role, who, reply in self._answer(scope, text):
