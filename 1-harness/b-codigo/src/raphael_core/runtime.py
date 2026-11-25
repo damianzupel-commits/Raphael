@@ -498,7 +498,7 @@ class Runtime:
         async def think(messages: list[dict], phase: str) -> str | None:
             if models is None:
                 return None
-            return await models.acomplete("jefe", messages, target=spec.id, private=spec.private, max_tokens=1500,
+            return await models.acomplete("jefe", messages, target=spec.id, private=spec.private, max_tokens=4000,
                                           temperature=0.1)
 
         def spawn(hs) -> Helper:
