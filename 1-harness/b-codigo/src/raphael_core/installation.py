@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import os
 import re
+from collections.abc import Mapping
 from pathlib import Path
 from typing import Literal
 
@@ -68,6 +69,27 @@ class TrustSpec(_Base):
     third_party_step_up: bool = False                        # ¿lo disparado por contenido de terceros sube un escalón?
 
 
+#: el deslizador global de autonomía (`RAPHAEL_AUTONOMIA`, pantalla de Configuración del panel). Por defecto, equilibrado.
+#:   cauteloso    sin confianza progresiva y lo que el manifiesto deja en automático pasa a pedir aprobación
+#:   equilibrado  lo de siempre (manifiesto + confianza progresiva con `trust.approvals_to_step_down`)
+#:   confiado     la confianza progresiva baja con la mitad de aprobaciones seguidas (mínimo 2)
+#: NO cambia la regla general: lo que sale al mundo, gasta o no tiene vuelta (`external`, `spend`, `irreversible`) pide
+#: aprobación en los tres, y bajarlo a automático sigue exigiendo `confirmed_by` de la persona.
+PROFILES = ("cauteloso", "equilibrado", "confiado")
+DEFAULT_PROFILE = "equilibrado"
+
+
+def profile_from(environ: Mapping[str, str] | None) -> str | None:
+    """El perfil que pide el entorno (`RAPHAEL_AUTONOMIA`), o None si no está. Un valor desconocido es un error: mejor
+    frenar que dejar la autonomía en un nivel que la persona no eligió."""
+    raw = ((environ or {}).get("RAPHAEL_AUTONOMIA") or "").strip().lower()
+    if not raw:
+        return None
+    if raw not in PROFILES:
+        raise ValueError(f"RAPHAEL_AUTONOMIA: '{raw}' no existe (hay: {', '.join(PROFILES)})")
+    return raw
+
+
 class Limits(_Base):
     messages_month: int = Field(3000, gt=0)
 
@@ -88,6 +110,7 @@ class Installation(_Base):
     brigades: dict[str, BrigadeToggle] = Field(default_factory=dict)
     autonomy: dict[str, AutonomyRule] = Field(default_factory=dict)
     trust: TrustSpec = TrustSpec()
+    profile: Literal["cauteloso", "equilibrado", "confiado"] = "equilibrado"   # deslizador global de autonomía
     limits: Limits = Limits()
     timezone: str = "America/Argentina/Buenos_Aires"
     orchestrator: OrchestratorRef | None = None   # None = el orden simple del harness (o el que se pase al Runtime)
@@ -101,6 +124,13 @@ class Installation(_Base):
                 raise ValueError(f"clave de autonomía inválida (se espera 'accion' o 'brigada.accion'): {key!r}")
             out[key] = {"level": rule} if isinstance(rule, (str, Level)) else rule
         return out
+
+    def use_profile_from(self, environ: Mapping[str, str] | None) -> str:
+        """Toma el perfil de `RAPHAEL_AUTONOMIA` si está en el entorno (si no, deja el de la instalación)."""
+        wanted = profile_from(environ)
+        if wanted is not None:
+            self.profile = wanted
+        return self.profile
 
     def active_brigades(self) -> list[str]:
         return [b for b, t in self.brigades.items() if t.active]

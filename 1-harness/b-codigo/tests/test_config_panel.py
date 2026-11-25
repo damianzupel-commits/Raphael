@@ -39,7 +39,7 @@ def test_valida_todo_antes_de_cambiar_algo(cfg):
     assert cfg.env() == {}
     with pytest.raises(ValueError):
         cfg.aplicar({"RAPHAEL_PUBLIC_URL": "http://x"})
-    cfg.aplicar({"MP_ACCESS_TOKEN": "TEST-123"}) == ["MP_ACCESS_TOKEN"]
+    assert cfg.aplicar({"MP_ACCESS_TOKEN": "TEST-123"}) == ["MP_ACCESS_TOKEN"]
 
 
 def test_proveedor_propio_y_destino_por_brigada(cfg):

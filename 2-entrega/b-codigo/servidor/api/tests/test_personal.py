@@ -417,3 +417,12 @@ def test_el_tope_de_gasto_es_cero_salvo_que_se_pida():
         except ValueError:
             continue
         raise AssertionError(mal)
+
+
+def test_el_deslizador_de_autonomia_llega_al_runtime(tmp_path):
+    rt, _ = boot.start(INSTALACION, tmp_path / "a", dev_dirs=[], environ={}, installed=False)
+    assert rt.installation.profile == "equilibrado"                      # sin variable: el de siempre
+    rt, _ = boot.start(INSTALACION, tmp_path / "b", dev_dirs=[], environ={"RAPHAEL_AUTONOMIA": "cauteloso"}, installed=False)
+    assert rt.installation.profile == "cauteloso"
+    with pytest.raises(ValueError, match="no existe"):
+        boot.start(INSTALACION, tmp_path / "c", dev_dirs=[], environ={"RAPHAEL_AUTONOMIA": "temerario"}, installed=False)

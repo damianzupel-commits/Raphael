@@ -3,7 +3,8 @@
 Raphael está construido y probado con adaptadores simulados. Lo que sigue es lo que **solo vos podés poner**: claves, cuentas, carpetas y datos personales. Esta es la única lista (la arma el coordinador con el aporte de cada pieza; 25 nov 2026).
 
 **Cómo se usa**
-- Las claves van en `raphael.env` de la carpeta de datos (Personal: `.data\personal\raphael.env`; Empresas: `.data\empresas\raphael.env`), o mejor desde la pantalla **Configuración** del propio servidor (`/config`), que las aplica en caliente. **Nunca** en el chat ni en el repo.
+- Las claves van en `raphael.env` de la carpeta de datos (Personal: `.data\personal\raphael.env`; Empresas: `.data\empresas\raphael.env`), o mejor desde el panel de escritorio: **☰ Configuración** (9 secciones: claves, modelos por rol, carpetas, voz, autonomía, apariencia y avanzado, con historial para deshacer y perfiles), que las guarda en `raphael.env` y las aplica en caliente. También sirve la pantalla web del servidor (`/config`). **Nunca** en el chat ni en el repo.
+- **Autonomía** (☰ Configuración > Autonomía, variable `RAPHAEL_AUTONOMIA`): `cauteloso` (todo pide aprobación y la confianza progresiva no baja nada), `equilibrado` (el de siempre, **por defecto**) o `confiado` (la confianza baja con la mitad de aprobaciones seguidas). **No cambia la regla general**: publicar, pagar, mandar mensajes, borrar, operar en trading y el pentest activo piden tu aprobación en los tres.
 - Cada pieza tiene su plantilla `*.env.plantilla` con todas las variables (rutas abajo). Todo lo que quede vacío no rompe nada: esa parte cae a reglas o a un simulado y lo avisa.
 - Para chequear lo cargado: `cuentas chequear` (formato, sin mostrar secretos) y `cuentas probar <cuenta>` (una consulta de solo lectura). Lista de cuentas en `2-entrega/c-despliegue/cuentas-y-apis/ENTRADAS-LIENZO.md`.
 - Los nombres correctos son `MP_*` (no `MERCADOPAGO_*`), `NVIDIA_API_KEY` para la IA en la nube de Personal y `OPENROUTER_API_KEY` para Empresas.
@@ -29,8 +30,9 @@ Roles y modelos se cambian **sin tocar código**: `RAPHAEL_ROL_MANDO`, `_VOZ`, `
 
 | Qué hace falta | Dónde se saca | Dónde se pega | Qué se prueba después |
 | --- | --- | --- | --- |
-| Tailscale en PC y celular | tailscale.com (ya lo usás) | — | `2-entrega\c-despliegue\personal\celular-tailscale.bat` (usa `tailscale serve`, **no** Funnel) |
-| `RAPHAEL_PUBLIC_URL` (la dirección `https://….ts.net`) | la muestra `celular-tailscale.bat` | Configuración | `cuentas probar tailscale`; abrir esa dirección en el celular con Tailscale prendido y entrar con la clave de la app |
+| Tailscale en PC y celular | tailscale.com (ya lo usás) | — | `2-entrega\c-despliegue\personal\celular-tailscale.bat` (usa `tailscale serve`, **no** Funnel). **Va por el puerto 8443**, así no pisa el Funnel de Empresas en el 443 (el cambio del script está en la rama `claude/personal-ajustes`; hasta que entre a main el script usa el 443) |
+| **App Android** (la app se llama Raphael) | Compilar el APK (`2-entrega/b-codigo/android`, no está en git) e instalarlo en el celular | — | Abrirla: lee la edición del servidor y, si es personal, muestra Hablar, Decidir y demás. **Se empareja por QR**: el panel o `POST /api/v1/phone/pair` genera el código y la app lo lee (con `segno` el QR sale como imagen). No probada en un teléfono real; `/ws/phone` para las herramientas de Operaciones todavía no está en la app |
+| `RAPHAEL_PUBLIC_URL` (la dirección `https://….ts.net:8443`) | la muestra `celular-tailscale.bat` | ☰ Configuración | `cuentas probar tailscale`; abrir esa dirección en el celular con Tailscale prendido y entrar con la clave de la app |
 | `pip install segno` | — (un comando en el `.venv`) | — | Sin esto el emparejamiento del celular muestra solo el texto del payload; con `segno` sale el QR como imagen |
 | Voz hablada (opcional): `pip install faster-whisper piper-tts`, voz es-AR de Piper (`es_AR-daniela-high.onnx` con su `.onnx.json`) | huggingface.co/rhasspy/piper-voices > es > es_AR > daniela > high; Whisper `small` se baja una vez | `VOICE_PIPER_VOICE`, `VOICE_PYTHON` (si hace falta), `RAPHAEL_VOZ_MODO=auto` (otros: `local`, `mock`, `off`); plantilla del orquestador | Pestaña Cerebro o `GET /api/v1/voz`; hablar y escuchar una respuesta |
 

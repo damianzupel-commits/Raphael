@@ -50,6 +50,7 @@ def start(installation_path: str | Path, data_dir: str | Path, *, dev_dirs: Iter
     que no están en el repo todavía)."""
     environ = os.environ if environ is None else environ
     inst = load_installation(installation_path)
+    inst.use_profile_from(environ)        # deslizador global de autonomía de la Configuración (RAPHAEL_AUTONOMIA)
     data = Path(data_dir)
     data.mkdir(parents=True, exist_ok=True)
     clock = clock or local_clock(inst.timezone)

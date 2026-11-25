@@ -68,3 +68,42 @@ def test_lo_que_sale_al_mundo_nunca_baja_solo_a_automatico():
     assert p.level("b", "publicar") is Level.APPROVAL
     p2 = motor(autonomy={"b.publicar": "automatico"})              # a mano, sin confirmar: se ignora
     assert p2.level("b", "publicar") is not Level.AUTO
+
+
+# --- deslizador global de autonomía (RAPHAEL_AUTONOMIA) ----------------------------------------------------------------
+def test_el_perfil_sale_del_entorno_y_uno_desconocido_frena():
+    import pytest
+
+    from raphael_core.installation import profile_from
+    assert profile_from({}) is None and profile_from({"RAPHAEL_AUTONOMIA": " Confiado "}) == "confiado"
+    with pytest.raises(ValueError, match="no existe"):
+        profile_from({"RAPHAEL_AUTONOMIA": "temerario"})
+    inst = installation_from({"id": "x", "edition": "personal"})
+    assert inst.profile == "equilibrado" and inst.use_profile_from({}) == "equilibrado"
+    assert inst.use_profile_from({"RAPHAEL_AUTONOMIA": "cauteloso"}) == "cauteloso"
+
+
+def test_cauteloso_pide_aprobacion_donde_el_manifiesto_dice_automatico_y_no_baja_solo():
+    p = motor(profile="cauteloso", trust={"approvals_to_step_down": 1})
+    assert p.level("b", "leer") is Level.APPROVAL and "cauteloso" in p.decide("b", "leer").source
+    for _ in range(3):
+        assert p.record_approval("b", "enviar") is None          # la confianza no baja nada
+    assert p.level("b", "enviar") is Level.APPROVAL
+    p.record_correction("b", "enviar")
+    assert p.level("b", "enviar") is Level.HUMAN                 # pero sí puede subir
+
+
+def test_confiado_baja_con_la_mitad_de_aprobaciones_y_lo_externo_sigue_pidiendo():
+    p = motor(profile="confiado", trust={"approvals_to_step_down": 4})
+    assert p.record_approval("b", "enviar") is None
+    assert p.record_approval("b", "enviar") == "lowered" and p.level("b", "enviar") is Level.AUTO     # 2 y no 4
+    for accion in ("publicar", "pagar", "borrar"):               # lo que sale al mundo, gasta o no tiene vuelta
+        for _ in range(5):
+            assert p.record_approval("b", accion) in (None, "propose", "lowered")
+        assert p.level("b", accion) is not Level.AUTO, accion
+
+
+def test_el_perfil_no_deja_en_automatico_lo_externo_sin_confirmar():
+    for perfil in ("cauteloso", "equilibrado", "confiado"):
+        p = motor(profile=perfil, autonomy={"b.publicar": "automatico", "b.pagar": "automatico"})
+        assert p.level("b", "publicar") is not Level.AUTO and p.level("b", "pagar") is not Level.AUTO, perfil

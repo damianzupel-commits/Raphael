@@ -33,3 +33,8 @@ extend-exclude = ["tests/compat_v1/test_harness_v1.py"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP", "BLE"]
+
+[tool.ruff.lint.per-file-ignores]
+# pantallas de Tk: textos largos de interfaz en una sola línea (más legibles así que partidos)
+"panel/config_vista.py" = ["E501"]
+"panel/config_modelo.py" = ["E501"]
