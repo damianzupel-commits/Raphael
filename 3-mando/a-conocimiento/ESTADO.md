@@ -16,19 +16,19 @@ Todo el trabajo está en `D:\Raphael Ultimate\raphael\`, repo único `damianzupe
 | 08 Geolocalización | Portada 1.0.0 (solo personal): IPs, cripto y 13 capas, fuentes reales y simuladas. 88 tests. Sin probar con internet ni claves reales. PR 16 |
 | 09 Memoria · Cerebro | Portada 2.0.0: 4 cocineros, vault, embeddings real y simulado, solo local. 149 tests. Sin probar contra LM Studio/Ollama reales. PR 24 |
 | 10 Ingesta | Portada 2.0.0: YouTube, web y arXiv al vault. 73 tests. Sin probar contra fuentes reales (`probar_real.py` en la PC). PR 20 |
-| 11 Trading | Portada: señales, backtest y motor contra broker simulado; ejecutar y cerrar siempre con aprobación (también en demo). 48 tests. **Broker sin elegir** (IBKR recomendada, `a-historia/brokers.md`); OANDA parece no aceptar Argentina. PR 15 |
+| 11 Trading | Portada: señales, backtest y motor; ejecutar y cerrar siempre con aprobación (también en demo). **Broker elegido: Interactive Brokers** (adaptador `ibkr.py`, cuenta paper; pasos en `a-historia/ibkr-pasos.md`); simulado por defecto. Tests en la puerta (abajo). Sin probar contra IB real. PR 15 |
 | 12 Operaciones | Portada: PC, celular y navegador, 39 tools y 7 acciones, simulada por defecto, solo modelo local. 96 tests. Sin probar: escritorio real en Windows, Playwright, celular real. PR 26 |
 | 13 Autorreparación | Portada 2.0.0 (solo personal): proponer, aplicar y revertir con aprobación atada a la huella. 106 tests. Sin probar en Windows ni con IA real. PR 19 |
 | 14 Contenido | Portada: video, Instagram, imagen, copys, campañas y analítica; real, simulado y sin clave. 54 tests. Sin probar contra Instagram, Meta Ads ni ComfyUI. PR 22 |
 | 15 Empresas | Brigada nativa 2.0.0, **141 tests**. Cobros con Mercado Pago (real + simulado) y transferencia; la dueña confirma siempre (PR 14). API y canal de Meta; app Android 1.1.0 (APK compila, sin probar en teléfono). `INTERVIEW.md` sin respuestas de la clienta todavía |
 | 16 Legales | Nueva, desde cero: documentos, cumplimiento, riesgos y archivo; ninguna acción firma ni envía. 54 tests. Plantillas no validadas por un abogado. PR 18 |
-| 3 Servidor, app e instalador | **90 tests.** Raphael personal cliente-servidor (`raphael_personal_api`), cerebro mixto, instalador de Windows, celular por `tailscale serve`, `/webhook/mercadopago` (PR 23). Sin probar en Windows. App Android y panel todavía no apuntan a la API personal. Falta montar el VPS real |
+| 3 Servidor, app e instalador | **97 tests.** Raphael personal cliente-servidor (`raphael_personal_api`), cerebro mixto, instalador de Windows, celular por `tailscale serve`, `/webhook/mercadopago` (PR 23). Sin probar en Windows. App Android y panel todavía no apuntan a la API personal. Falta montar el VPS real |
 | 4 Cuentas y APIs | Catálogo único de 13 cuentas, `chequear` y `probar` con adaptador real y simulado, 22 tests (PR 13). Endpoints y nombres de variables sin verificar. Pendiente: VPS Hetzner (sin medio de pago), DuckDNS, app de Meta, número de prueba |
 | 17 Revisor | Segunda revisión de `main` y lista de control de 9 puntos (`log/17-revisor.md`, PR 11). Sus huecos de la puerta y de imports cruzados quedaron cerrados en esta integración |
 
 **Lo que falta poner es una sola lista: `LIENZO-DAMIAN.md`.**
 
-**Puerta del 25 nov (nube, Python 3.13, con los PR 11 a 26 mergeados): EN VERDE, 1854 tests**: core 430, orchestrator 290, business 141, server 90, seguridad 62, antimalware 83, investigación 68, geolocalización 88, memoria 149, ingesta 73, trading 48, operaciones 96, autorreparación 106, contenido 54, legales 54, cuentas 22; ruff limpio. `gate.py` ahora corre todas las suites. En la PC de Damián (Windows, 24 nov, antes de la tanda) eran 841; la tanda no se corrió todavía en Windows.
+**Puerta del 25 nov (nube, Python 3.13, con los PR 11 a 26 mergeados): EN VERDE, 1872 tests**: core 430, orchestrator 290, business 141, server 97, seguridad 62, antimalware 83, investigación 68, geolocalización 88, memoria 149, ingesta 73, trading 59, operaciones 96, autorreparación 106, contenido 54, legales 54, cuentas 22; ruff limpio. `gate.py` ahora corre todas las suites. En la PC de Damián (Windows, 24 nov, antes de la tanda) eran 841; la tanda no se corrió todavía en Windows.
 
 Histórico: tests en la PC de Damián (Windows, Python 3.12) después de la mudanza, 24 nov: core 409, orchestrator 266, business 124, server 42, ruff limpio (841 en verde). Puerta: `3-mando\b-herramientas\gate.bat`.
 
@@ -46,7 +46,7 @@ Histórico: tests en la PC de Damián (Windows, Python 3.12) después de la muda
 3. Cuentas y APIs: VPS Hetzner (CX33), DuckDNS, app de Meta con número de prueba (proveedor de IA ya elegido: OpenRouter).
 4. Entrevista a la clienta (demo de Mi Tienda IA): **preguntas listas en `1-harness/c-brigadas/15-empresas/INTERVIEW.md`** (24 nov, con supuestos marcados y revisión de alcance de Tienda). Falta: que Damián las haga, anotar sus respuestas, cargar su perfil (`a-historia/perfil-clienta.borrador.yaml` → `perfil_a_instalacion.py`) y ajustar los módulos (INTERVIEW §10).
 5. Montar Empresas en el VPS y probar la app en un teléfono.
-6. ~~Una brigada por vez~~ hecho el 25 nov: las 05 a 14 y 16 están construidas (PR 11 a 26). Lo que sigue es completar `LIENZO-DAMIAN.md` (claves, cuentas, carpetas, elegir broker) y probar cada pieza contra su servicio real en Windows.
+6. ~~Una brigada por vez~~ hecho el 25 nov: las 05 a 14 y 16 están construidas (PR 11 a 26). Lo que sigue es completar `LIENZO-DAMIAN.md` (claves, cuentas, carpetas) y probar cada pieza contra su servicio real en Windows.
 
 ## Decisiones vigentes
 Ver `CONTEXT.md` sección 6. El plan P0 a P6 y el brief de Fable 5.2 (de JarvisRemote) son planes viejos: no se usan salvo que Damián lo pida.

@@ -90,12 +90,22 @@ La IA que resume en Ingesta sale del rol `cocinero` (NVIDIA en Personal): sin cl
 | Login en sitios (opc.): `OPERACIONES_WEB_LOGIN_PERMITIDOS` y `OPERACIONES_CRED_<DOMINIO>_USUARIO` / `_CLAVE` (**nunca por el chat**) | Tus cuentas | ídem | `web_login` con vista previa; confirmar solo si lo aprobás |
 | Celular: la app de Raphael con la API personal | — | — | Pendiente: la app Android y el panel todavía no apuntan a la API personal |
 
-## 7. Trading (11)
+## 7. Trading (11): broker elegido, Interactive Brokers (IBKR)
+
+Trading funciona contra un simulado. Para pasarlo a IBKR (cuenta **paper**, demo) seguí `1-harness/c-brigadas/11-trading/a-historia/ibkr-pasos.md`. Resumen:
 
 | Qué hace falta | Dónde se saca | Dónde se pega | Qué se prueba después |
 | --- | --- | --- | --- |
-| **Elegir broker** (no se abrió ninguna cuenta). Propuesta en `1-harness/c-brigadas/11-trading/a-historia/brokers.md`: **IBKR** recomendada (Argentina figura en su lista oficial, paper gratis; hay que dejar TWS/Gateway abierto y escribir su adaptador). Segunda: IG (preguntarle si acepta Argentina). OANDA, que es el único adaptador real armado, parece **no** aceptar Argentina | Vos, con un contador antes de abrir cuenta | Decirlo en el chat: se escribe el adaptador del elegido | Hasta entonces Trading corre contra el simulado: señales y backtest funcionan |
-| Credenciales del broker elegido (para OANDA, solo si confirma Argentina: `OANDA_API_TOKEN`, `OANDA_ACCOUNT_ID`) | El broker, cuenta **demo** primero | `raphael.env` | Señal > orden: **siempre queda pendiente de tu aprobación**, también en demo. `TRADING_ALLOW_LIVE=1` es el candado extra para operar en real |
+| **Cuenta en Interactive Brokers** y su **cuenta paper** (usuario paper y número `DU…`). No hace falta fondearla para la demo. Antes de abrir cuenta, consultá con un contador por la tributación | interactivebrokers.com; la paper se pide desde el portal de la cuenta | — | Poder entrar a IB Gateway con el usuario paper |
+| **IB Gateway** (o TWS) abierto con el usuario paper. En Configuración > API: activar "Enable ActiveX and Socket Clients", **desactivar** "Read-Only API" (si no, no entran órdenes), puerto 4002 (Gateway) o 7497 (TWS), permitir 127.0.0.1 | Descarga de IB | — | Se desconecta solo una vez al día: Raphael reconecta en el próximo pedido |
+| `pip install ib_async` | pip, en el `.venv` | — | Importar `ib_async` |
+| Config de la brigada `data.adapter: ibkr` y `broker.adapter: ibkr` | — | `brigades.trading.config` | `estado` debe decir broker ibkr (no simulado) |
+| `IBKR_HOST` (127.0.0.1), `IBKR_PORT`, `IBKR_CLIENT_ID`, `IBKR_ACCOUNT` (la `DU…` paper). **No hay claves**: el login lo hace IB Gateway | Tu cuenta paper | `.env.plantilla` de Trading y `raphael.env` | En paper se rechaza una cuenta que no empiece con `DU` |
+| `TRADING_ALLOW_LIVE=1` | — | **No lo pongas** hasta decidir pasar a real | Candado extra: sin esto no se opera en real |
+
+Probar en este orden: `estado` > `analizar` (fuente ibkr) > `escanear` > `proponer` > aprobar UNA orden chica (**siempre queda pendiente de tu aprobación**, también en paper) > mirar en TWS que el stop y el objetivo quedaron colgados > `cerrar`.
+
+No probado: todo el trato con IB real (se verificó contra un `ib_async` falso). A mirar en la primera prueba: el tamaño mínimo de orden de forex en IDEALPRO (puede exigir más de lo que da el riesgo del 1 %), datos con retraso hasta fondear la cuenta y que las velas coincidan con las de TWS. OANDA quedó descartado (no figura Argentina).
 
 ## 8. Legales (16), Contenido (14)
 
