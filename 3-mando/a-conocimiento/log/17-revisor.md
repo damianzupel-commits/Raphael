@@ -97,3 +97,40 @@ Hoy solo Empresas tiene código, así que estas reglas todavía no se pueden ver
 - Encontré 4 huecos (la puerta y el test de imports no cubren brigadas nuevas, dos manifiestos en Empresas, e2e sin automatizar) y 5 riesgos de decisión; el que más importa es que el acceso sin clave desde la PC permite aprobar lo irreversible.
 - Dejé la lista de 9 puntos para revisar cada PR de la tanda (§2). No construí nada ni toqué archivos compartidos.
 - Cuando entren los PR de las brigadas, los reviso contra esa lista y agrego un informe por tanda en este mismo log.
+
+---
+
+## 25 nov 2026 · Tercera revisión: tanda de brigadas (PR 12 a 26, integrados en el PR 27) y PR 28
+Revisor en blanco. Revisé el árbol del PR 27 (`e9c0962`, integra las 16 piezas) y el diff del PR 28 (`f412e8b`). Corrí la puerta en la nube (Python 3.13, venv aparte): **EN VERDE, 1872 passed, 0 failed, ruff limpio** (core 430, orquestador 290, Empresas 141, servidor 97, seguridad 62, antimalware 83, investigación 68, geolocalización 88, memoria 149, ingesta 73, trading 59, operaciones 96, autorreparación 106, contenido 54, legales 54, cuentas 22): coincide con lo declarado. Revisé el conjunto contra la lista de 9 puntos, no cada PR línea por línea; los hallazgos por pieza se ven en el PR 27 porque contiene a todos. El PR 28 se fusiona sin conflictos sobre el 27 (probado, sin commitear).
+
+### Veredicto
+Lo estructural está bien hecho y se puede mergear en el orden 12 a 26, luego 27 y 28, **después de corregir A1 y A2**. El resto son avisos.
+
+### Cumplen (con evidencia)
+1. **Puerta**: `gate.py` corre las 16 suites; una brigada roja tumba la puerta. Resuelto el hueco del informe anterior.
+2. **Imports cruzados**: `test_imports_codigo_real.py` descubre las brigadas por `b-codigo/src/*` y las vigila a todas. Resuelto.
+3. **Trading**: `ejecutar_orden` y `cerrar_posicion` en `aprobacion` con `spend` e `irreversible`; además `_guard_never_automatic` corta aunque la instalación diga `automatico` (tests `test_aunque_la_instalacion_diga_automatico...` y `test_sin_confirmacion_el_harness_no_baja_a_automatico`). Cuenta real exige `TRADING_ALLOW_LIVE=1`; en paper rechaza cuentas que no empiecen con `DU`. Edición solo `personal`.
+4. **Pentest activo**: `ensure_local_edition` lo corta fuera de `personal` (Seguridad se monta también en `cloud`, pero solo en modo pasivo; el estado lo dice). Tests en `test_pentest.py` y `test_cooks.py`.
+5. **Lo sensible, local**: `modelos.personal.yaml` marca `private` a seguridad, investigación, memoria y operaciones; la pasarela salta cualquier proveedor que no sea local para un pedido privado, y el orquestador pide `private=True` si alguna brigada del reparto es privada. Sin modelo local cae a reglas y avisa.
+6. **Manifiestos**: 12 brigadas con `manifest.yaml`, `health` y los dos manifiestos (raíz y paquete) idénticos. Sin `__pycache__` ni `egg-info` versionados.
+7. **Secretos**: búsqueda de patrones (OpenRouter, NVIDIA, AWS, Meta, GitHub, Mercado Pago) sin coincidencias en archivos versionados; solo `*.plantilla`.
+8. **Contenido** no gasta sin aprobación (generación con ComfyUI local; `activar_campana` con `spend`). **Antimalware** manda a VirusTotal solo el SHA-256 y solo de lo que dio positivo local.
+9. **PR 28 (modo mixto)** resuelve el riesgo que marqué el 25 nov: aprobar, rechazar, resolver, hablar con la Secretaria, cambiar estado de pedido y cambiar claves piden clave aunque se entre sin clave desde la PC. Los endpoints que quedan con sesión local son de lectura (más `notices/seen`).
+
+### A corregir antes de mergear
+**A1. La confianza progresiva puede dejar en automático acciones que mandan mensajes o cobran, y rompe la regla "publicar, pagar, mandar mensajes o borrar siempre piden aprobación".** `RISKY_TAGS` es solo `spend` e `irreversible` (`manifest.py:51`), y las instalaciones personal y de la clienta traen `trust: enabled: true, approvals_to_step_down: 10`. Tras 10 aprobaciones seguidas sin cambios bajan solas a `automatico`, entre otras: `enviar_link_pago` y `confirmar_turno` (Empresas, tag solo `external`: mandan un mensaje y un link de cobro al cliente), `pentest_corrida` (Seguridad), `subir_campana_pausada` (Contenido) y `ejecutar_comando` y `abrir_app` (Operaciones, sin tags). Dos salidas: (a) marcar esas acciones con `irreversible` o `spend`, o (b) que `external` también cuente como riesgoso en `RISKY_TAGS` (cambia el harness: lo decide Damián). Falta un test que recorra todos los manifiestos y verifique que ninguna acción `external`, de borrado o de ejecución baje a automático; hoy solo Trading lo prueba.
+**A2. Trading no tiene `.env.plantilla`**, aunque el LIENZO (§7) e `ibkr.py` mandan a buscar ahí `IBKR_HOST`, `IBKR_PORT`, `IBKR_CLIENT_ID`, `IBKR_ACCOUNT` y `TRADING_ALLOW_LIVE`. Es la única brigada sin plantilla (las otras 12 la tienen). Los tests de Trading mencionan además un adaptador OANDA cuyas variables tampoco están en ninguna plantilla. Pendiente para Trading.
+
+### Avisos (no bloquean)
+1. `mando` y `voz` van primero a la nube (NVIDIA) en `modelos.personal.yaml`. Quedan protegidos solo cuando el reparto incluye una brigada privada; un pedido que no toque brigadas privadas (o que el clasificador no reconozca) sale a la nube con el texto de Damián. Es lo decidido ("el resto en la nube"); conviene saberlo.
+2. `enviar_recordatorio` y `avisar_estado` (Empresas) mandan mensajes a clientes en `automatico`. Ya estaban así antes de esta tanda y son parte del diseño de la brigada, pero contradicen la regla escrita. Decisión de Damián: aclarar la regla (avisos transaccionales automáticos) o pasarlos a `aprobacion`.
+3. `LOOPBACK` en `models/config.py` sigue incluyendo `0.0.0.0` (informe del 24 nov).
+4. `poner_en_cuarentena` (Antimalware) es automático y mueve archivos; es reversible con `restaurar_de_cuarentena`, lo dejo como OK.
+5. Sigue sin probarse con servicios reales: Meta, Mercado Pago, IBKR, OpenRouter, Ollama o LM Studio, VPS, app en teléfono y Windows. Los 1872 tests usan adaptadores simulados, como se pidió.
+6. Para el coordinador: ESTADO.md debe decir 1872; mergear el 28 después del 27 (ambos tocan `app.py`, aunque se fusionan sin conflicto).
+
+### Resumen de cierre
+- Revisé el PR 27 (integración de las 16 piezas) y el PR 28 contra la lista de 9 puntos; puerta EN VERDE con 1872 tests y ruff limpio.
+- Se cumplen las reglas duras de Trading, pentest solo en la PC, lo sensible en local, manifiestos, secretos, y la puerta y el test de imports ya cubren todas las brigadas.
+- Dos correcciones antes de mergear: la confianza progresiva puede automatizar acciones `external` (mensajes, link de cobro, pentest) y falta `.env.plantilla` en Trading.
+- No se tocó código ni archivos compartidos; solo este informe.
