@@ -35,6 +35,7 @@ Sin sesión: `GET /api/v1/health`, `POST /api/v1/login`, `GET /` (la página).
 | `GET /api/v1/brain` | roles, escalones, modelo local (responde o no) y brigadas privadas |
 | `GET /api/v1/brigades` | brigadas de la instalación: activas, montadas, privadas, no instaladas |
 | `GET/PUT /api/v1/config`, `POST /config/clave` | claves a voluntad (nunca se devuelven completas), cambio de clave |
+| `POST /api/v1/phone/pair`, `/phone/redeem`, `WS /ws/phone` | emparejar el celular con un código (QR) y enlazarlo con Operaciones |
 | `GET /api/v1/voz`, `POST /voz/transcribir` (audio crudo), `POST /voz/hablar` `{text}` → `audio/wav` | voz hablada local del orquestador (`speech_from`) |
 
 ## Qué no está hecho o no está probado

@@ -83,11 +83,19 @@ class Auth:
             self._fail(who)
             return None
         self._fails.pop(who, None)
+        return self.issue(device)
+
+    def issue(self, device: str = "") -> str:
+        """Una sesión nueva sin pedir la clave (solo para quien ya probó otra cosa: el código de emparejamiento)."""
         token = secrets.token_urlsafe(32)
         h = _hash_token(token)
         now = self.clock().isoformat(timespec="seconds")
         self.space.put("sessions", h, {"id": h, "device": (device or "")[:80], "created": now, "last": now})
         return token
+
+    def fail(self, who: str) -> None:
+        """Cuenta un intento fallido hecho por otra vía (el código de emparejamiento): mismo tope y bloqueo que la clave."""
+        self._fail(who)
 
     def check(self, token: str | None) -> dict | None:
         if not token:
