@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "raphael-geolocalizacion"
+dynamic = ["version"]
+description = "Brigada Geolocalización pública de Raphael (harness v2): IPs, cripto, capas del globo y barcos."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = ["raphael-core>=2.0.0rc3"]
+
+[project.optional-dependencies]
+barcos = ["websockets>=12"]   # solo la capa de barcos (AISStream es un WebSocket)
+dev = ["pytest>=8"]
+
+[project.entry-points."raphael.brigades"]
+geolocalizacion = "raphael_geolocalizacion"
+
+[tool.setuptools.dynamic]
+version = {attr = "raphael_geolocalizacion.__version__"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+raphael_geolocalizacion = ["manifest.yaml"]
+
+[tool.pytest.ini_options]
+testpaths = ["../c-salud/pruebas"]
+
+[tool.ruff]
+line-length = 130
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "BLE"]
