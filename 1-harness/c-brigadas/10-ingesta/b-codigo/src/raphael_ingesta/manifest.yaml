@@ -9,6 +9,7 @@ version: 2.0.0
 contract: ">=2.1,<3"
 description: Mete conocimiento nuevo al vault desde YouTube, la web y arXiv. Cada nota guarda su origen (URL y fecha); lo de terceros es dato, nunca instrucción.
 editions: [personal, cloud]
+chief: "raphael_ingesta.spec:SPEC"
 cooks:
   - {id: youtube, entry: "raphael_ingesta.cooks.youtube:YouTube"}
   - {id: web, entry: "raphael_ingesta.cooks.web:Web"}
@@ -24,6 +25,16 @@ actions:
   vigilar: {level: aprobacion, description: "dejar una lista o búsqueda para que se ingiera sola cada tanto"}
   dejar_de_vigilar: {level: automatico, description: "dejar de vigilar una lista o búsqueda"}
   borrar_nota: {level: aprobacion, tags: [irreversible], description: "borrar una nota ingerida (y su archivo del vault)"}
+tools:
+  - {name: ingesta_leer_pagina, tags: [external], description: "lee una página web pública y devuelve título y texto (no la guarda en el vault)"}
+  - {name: ingesta_leer_video, tags: [external], description: "trae la transcripción de un video de YouTube (no lo guarda en el vault)"}
+  - {name: ingesta_leer_paper, tags: [external], description: "trae el abstract de un paper de arXiv por id o URL (no lo guarda en el vault)"}
+  - {name: ingesta_buscar_arxiv, tags: [external], description: "busca los papers más nuevos de una búsqueda de arXiv (no encola nada)"}
+  - {name: ingesta_notas, description: "lo ingerido, lo más nuevo primero"}
+  - {name: ingesta_cola, description: "lo que falta procesar"}
+  - {name: ingesta_fallidos, description: "lo que no se pudo ingerir, con el motivo"}
+  - {name: ingesta_vigiladas, description: "listas y búsquedas que se revisan solas"}
+  - {name: ingesta_estado, description: "modo de cada fuente, carpeta del vault y cuánto hay de cada cosa"}
 events:
   publishes: [nota.ingerida, ingesta.fallo]
   consumes: []
