@@ -32,7 +32,7 @@ raphael/
         c-salud/             pruebas/  monitoreo/  mantenimiento/
   2-entrega/                 lo que llega a la gente
     a-conocimiento/          spec y log del servidor, la app y el instalador
-    b-codigo/                servidor/ (API, 26 tests), android/, panel-escritorio/
+    b-codigo/                servidor/ (API, 33 tests), android/, panel-escritorio/
     c-despliegue/            vps/, instalacion-clienta/, cuentas-y-apis/
   3-mando/                   cómo se dirige el proyecto
     a-conocimiento/          ESTADO, PLAN-MAESTRO, PIEZAS, BRIGADAS, SPEC-FAMILIA, log/

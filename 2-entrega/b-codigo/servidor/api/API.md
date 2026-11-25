@@ -63,4 +63,4 @@ Errores: `{"detail": "<mensaje en castellano para mostrar tal cual>"}` con `400`
 - Fuentes revisadas el 23 nov 2026 en developers.facebook.com. **No probado contra Meta real** (no hay cuentas todavía, pendiente para 04): probado con la Graph API falsa.
 
 ## Tests
-`python -m pytest` (26 tests: API, canal de Meta y armado del paquete del VPS). El cliente de la app se prueba contra esta API con `scripts\servidor_de_prueba.py` y `ApiContractTest` de la app (ver `..\android\README.md`).
+`python -m pytest` (33 tests: API, canal de Meta, claves y chequeo de arranque y armado del paquete del VPS). El cliente de la app se prueba contra esta API con `scripts\servidor_de_prueba.py` y `ApiContractTest` de la app (ver `..\android\README.md`).
