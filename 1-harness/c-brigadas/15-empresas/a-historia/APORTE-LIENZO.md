@@ -4,7 +4,7 @@
 | Qué hace falta | Dónde se saca | Dónde se pega | Qué se prueba después |
 | --- | --- | --- | --- |
 | Datos de la cuenta de la dueña: alias, CBU/CVU, titular, banco | Los tiene la dueña | Config de la instalación: `brigades.empresas.config.payments` (`alias`, `cbu`, `holder`, `bank`) o `perfil-clienta` | Mandar un presupuesto de prueba y ver que el mensaje trae los datos; "ya transferí" deja la confirmación a la dueña |
-| `MERCADOPAGO_ACCESS_TOKEN` (de prueba primero) | mercadopago.com.ar/developers > Tus integraciones > Credenciales | `raphael.env` (plantilla: `15-empresas/b-codigo/.env.plantilla`) | Poner `payments.mercadopago.mode: real`; presupuesto de prueba: la dueña recibe "mandar link de pago"; pagar con usuario de prueba |
+| `MERCADOPAGO_ACCESS_TOKEN` (de prueba primero) | mercadopago.com.ar/developers > Tus integraciones > Credenciales | `raphael.env` (plantilla: `15-empresas/b-codigo/empresas.env.plantilla`) | Poner `payments.mercadopago.mode: real`; presupuesto de prueba: la dueña recibe "mandar link de pago"; pagar con usuario de prueba |
 | `MERCADOPAGO_WEBHOOK_SECRET` | Tu aplicación > Webhooks > Clave secreta | `raphael.env` | Pago de prueba: llega el aviso y queda "Mercado Pago acreditó…" para confirmar |
 | URL de avisos (`payments.mercadopago.notification_url`) | `https://<servidor>/webhook/mercadopago` | Config de la instalación; la misma URL en Webhooks (evento "Pagos") de la app de Mercado Pago | Igual que arriba |
 Para andar sin cuenta: `payments.mercadopago.mode: mock` (links de mentira, circuito completo).
