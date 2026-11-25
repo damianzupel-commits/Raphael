@@ -253,9 +253,12 @@ PANEL_CONTACT = "damian"
 
 
 def build_gateway(store: Store, installation) -> ModelGateway | None:
-    """La pasarela con `modelos.yaml` del paquete y las claves del entorno (NVIDIA_API_KEY). Nunca las lee de archivos."""
+    """La pasarela con `modelos.yaml` del paquete (o el que diga RAPHAEL_PANEL_MODELS, por ejemplo el de Raphael
+    personal) y las claves del entorno. Nunca las lee de archivos."""
     try:
-        return ModelGateway(load_models(), Usage(store.space("_uso"), installation.limits.messages_month, datetime.now),
+        path = os.environ.get("RAPHAEL_PANEL_MODELS")
+        return ModelGateway(load_models(path) if path else load_models(),
+                            Usage(store.space("_uso"), installation.limits.messages_month, datetime.now),
                             plan=installation.plan, edition=installation.edition, env=dict(os.environ))
     except Exception:  # noqa: BLE001 - sin modelos el panel anda igual: el jefe degrada y lo dice
         return None
@@ -591,6 +594,13 @@ class PanelState:
                     replies.append(("brigade", f"{name} · {cid}", r.text))
             Runtime.run(rt._settle())  # noqa: SLF001 - las acciones que pidieron quedan resueltas o pendientes
             return replies or [("system", "harness", f"Ningún cocinero de {name} tomó el mensaje.")]
+        if rt.orchestrator is not None:        # en el panel habla la persona dueña, nunca un cliente
+            seen = {p["id"] for p in rt.approvals.list()}
+            reply = Runtime.run(rt.talk_to_owner(text, session="panel", channel="panel"))
+            out = [("brigade", "Raphael", reply.text)]
+            out += [("system", "harness", f"Quedó el pendiente #{p['id']} ({p['summary']}) en «Estado y tareas».")
+                    for p in rt.approvals.list() if p["id"] not in seen]
+            return out
         if not rt.brigades:
             return [("system", "harness", "No hay brigadas montadas. Agregalas con «Agregar brigadas». El orquestador "
                                           "de verdad es otra pieza (02); acá el núcleo reparte por interés.")]
@@ -609,7 +619,7 @@ class PanelState:
         if gw is None:
             return "sin pasarela de modelos"
         label = gw.label("jefe")
-        return label if label != "sin modelo" else "falta NVIDIA_API_KEY"
+        return label if label != "sin modelo" else "sin modelo (responde por reglas)"
 
     def status(self) -> dict:
         return {
