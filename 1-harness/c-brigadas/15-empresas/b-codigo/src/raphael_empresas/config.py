@@ -47,10 +47,34 @@ class Info(_Base):
     faq: tuple[Faq, ...] = ()
 
 
+class MercadoPagoCfg(_Base):
+    """Mercado Pago. Las claves NO van acá: `token_env` y `secret_env` nombran variables de entorno (`raphael.env`).
+    `mode`: off (sin Mercado Pago) · mock (simulado, sin cuenta) · real (con el access token de la dueña)."""
+
+    mode: Literal["off", "mock", "real"] = "off"
+    token_env: str = Field("MERCADOPAGO_ACCESS_TOKEN", pattern=r"^[A-Z][A-Z0-9_]{0,59}$")
+    secret_env: str = Field("MERCADOPAGO_WEBHOOK_SECRET", pattern=r"^[A-Z][A-Z0-9_]{0,59}$")
+    notification_url: str = ""                               # https://<servidor>/webhook/mercadopago
+    back_url: str = ""                                       # a dónde vuelve el cliente después de pagar
+    expires_hours: int = Field(48, ge=1, le=24 * 30)
+
+    @field_validator("notification_url", "back_url")
+    @classmethod
+    def _https(cls, v: str) -> str:
+        if v and not v.startswith("https://"):
+            raise ValueError("tiene que empezar con https://")
+        return v
+
+
 class Payments(_Base):
+    """Cobros de la seña: transferencia (datos de la cuenta; confirma la dueña a mano) y/o Mercado Pago."""
+
     deposit_pct: float = Field(50, ge=0, le=100)
     alias: str = ""
     holder: str = ""
+    cbu: str = Field("", pattern=r"^(\d{22})?$")              # CBU/CVU, 22 dígitos
+    bank: str = Field("", max_length=80)
+    mercadopago: MercadoPagoCfg = MercadoPagoCfg()
 
 
 class Price(_Base):

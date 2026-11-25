@@ -24,6 +24,7 @@ actions:
   enviar_recordatorio: {level: automatico, tags: [external], description: "recordarle a un cliente su turno, días antes"}
   confirmar_pago: {level: aprobacion, tags: [irreversible], description: "dar por recibida la seña de un encargo"}
   enviar_presupuesto: {level: aprobacion, tags: [external, irreversible], description: "mandarle el precio y la seña de un encargo al cliente"}
+  enviar_link_pago: {level: aprobacion, tags: [external], description: "mandarle al cliente el link de Mercado Pago para la seña"}
   cancelar_pedido: {level: aprobacion, tags: [external, irreversible], description: "cancelar un encargo y avisarle al cliente"}
   avisar_estado: {level: automatico, tags: [external], description: "avisarle al cliente que su encargo cambió de estado"}
 events:
@@ -44,6 +45,8 @@ commands:
   enviados: {read: true, description: "avisos de estado enviados a clientes"}
   productos: {read: true, description: "productos del catálogo de la tienda ({'q': texto})"}
   catalogo: {read: true, description: "estado del catálogo de la tienda"}
+  mp_aviso: {read: false, description: "aviso de Mercado Pago (payment_id, headers, query): deja la confirmación a la dueña"}
+  mp_estado: {read: true, description: "estado de Mercado Pago: modo, si tiene clave y el último error"}
   sincronizar: {read: false, description: "volver a leer el catálogo de la tienda ahora"}
 routing:
   signals:

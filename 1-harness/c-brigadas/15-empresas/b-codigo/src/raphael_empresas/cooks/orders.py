@@ -359,6 +359,10 @@ class Orders(Cook):
             out += f"Para confirmarlo se pide una seña del {c.deposit_pct:g}% ({money(o['deposit'])})"
             if c.alias:
                 out += f" por transferencia al alias {c.alias}" + (f" (a nombre de {c.holder})" if c.holder else "")
+            elif c.cbu:
+                out += " por transferencia" + (f" a nombre de {c.holder}" if c.holder else "")
+            if c.cbu:
+                out += f" (CBU/CVU {c.cbu}" + (f", {c.bank}" if c.bank else "") + ")"
             out += ".\n"
         if o.get("estimated_days"):
             out += f"Estaría listo en unos {o['estimated_days']} días desde que se confirma. "

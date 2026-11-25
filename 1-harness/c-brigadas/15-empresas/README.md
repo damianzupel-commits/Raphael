@@ -15,7 +15,7 @@ Nube (VPS) para clientes; adentro de Raphael personal es la brigada 11.
 | Secretaria (jefa) | existente | Ruteo de mensajes a los módulos y secretaria con IA (agente.py) y por reglas (secretaria.py): tareas pendientes, recomendaciones y ejecución por pedido de la dueña. |
 | Atención | existente | Responde WhatsApp e Instagram (mensajes directos), maneja reclamos y conversaciones abiertas; delega a la dueña con contexto y opciones. |
 | Agenda | existente | Turnos, citas y recordatorios. |
-| Cobros | existente | Seguimiento de cobros y deudas. |
+| Cobros | existente | Seguimiento de señas: transferencia (la dueña confirma) y Mercado Pago (link de pago, aviso verificado; real y simulado). Nunca confirma solo. |
 | Encargos | existente | Pedidos a medida, estados y entregas. |
 | Avisos | existente | Alertas y notificaciones a la dueña (push del celular). |
 | Tienda | nuevo | Conector de catálogo agnóstico a la plataforma: interfaz única (productos, precios, stock, imágenes, pedidos); adaptador por defecto con feed JSON o CSV por URL; opcionales Tiendanube, Shopify y WooCommerce. Solo lectura en la v1. |
