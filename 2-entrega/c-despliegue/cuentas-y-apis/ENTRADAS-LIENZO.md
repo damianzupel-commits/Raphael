@@ -1,0 +1,26 @@
+## Cuentas y APIs (pieza 4)
+
+| Cuenta | Qué hace falta | Dónde se saca | Dónde se pega | Qué se prueba después |
+| --- | --- | --- | --- | --- |
+| OpenRouter (IA en la nube de Empresas) | `OPENROUTER_API_KEY` | openrouter.ai → Keys → Create key (empieza con sk-or-). El saldo ya lo cargaste. | `raphael.env` (pantalla Configuración, `/config`) | `cuentas probar openrouter` (consulta la clave y el saldo restante). |
+| NVIDIA build.nvidia.com (IA en la nube de Raphael personal) | `NVIDIA_API_KEY` | build.nvidia.com → iniciar sesión → cualquier modelo → Get API Key (empieza con nvapi-). | `raphael.env` (pantalla Configuración, `/config`) | `cuentas probar nvidia` (lista los modelos con la clave). |
+| Modelo local (Ollama o LM Studio en tu PC) | `LOCAL_LLM_URL` (opc.), `LOCAL_LLM_KIND` (opc.) | Instalá Ollama (ollama.com) o LM Studio (lmstudio.ai) y bajá un modelo. No lleva clave. | `raphael.env` (pantalla Configuración, `/config`) (solo la dirección, que ya viene con el valor por defecto) | `cuentas probar local_llm` (con el programa prendido y un modelo bajado). |
+| Meta · app y webhook | `META_VERIFY_TOKEN`, `META_APP_SECRET`, `META_MODE` (opc.) | developers.facebook.com → crear app (tipo Business) → Configuración → Básica (clave secreta). El token de verificación lo inventás vos. | `raphael.env` (pantalla Configuración, `/config`); el mismo token de verificación va en la app de Meta. | `cuentas chequear --real` y que Meta acepte el webhook con la URL pública + /webhook/meta. |
+| WhatsApp Cloud API (número de prueba) | `META_WA_TOKEN`, `META_WA_PHONE_ID`, `META_GRAPH_VERSION` (opc.) | Meta Business → Usuarios del sistema → generar token permanente; WhatsApp → Configuración de la API → Phone number ID del número de prueba. | `raphael.env` (pantalla Configuración, `/config`) | `cuentas probar meta_whatsapp` (lee el número; no manda nada). |
+| Instagram (mensajes directos) *(opcional)* | `META_IG_TOKEN`, `META_IG_HOST` (opc.) | developers.facebook.com → tu app → Instagram API with Instagram Login → generar token de la cuenta profesional de prueba. | `raphael.env` (pantalla Configuración, `/config`) | `cuentas probar meta_instagram` (lee el usuario; no manda nada). |
+| Mercado Pago (cobros de Empresas) | `MP_ACCESS_TOKEN`, `MP_WEBHOOK_SECRET` (opc.), `MP_MODE` (opc.) | mercadopago.com.ar/developers → Tus integraciones → crear aplicación → Credenciales (Access Token de prueba primero, después el de producción). | `raphael.env` (pantalla Configuración, `/config`) | `cuentas probar mercado_pago` (lee el usuario de la cuenta; no cobra nada). |
+| Transferencia bancaria (datos de la cuenta de la dueña) | `TRANSFER_TITULAR`, `TRANSFER_CBU_CVU`, `TRANSFER_ALIAS` (opc.), `TRANSFER_BANCO` (opc.) | Los datos de la cuenta de la dueña (los pasa ella). | `raphael.env` (pantalla Configuración, `/config`) | `cuentas chequear` (formato de CBU/CVU de 22 dígitos). |
+| Tailscale Funnel (túnel hasta el VPS) | `RAPHAEL_PUBLIC_URL` | Ya está andando: `tailscale funnel status` muestra la URL (https://<pc>.<tailnet>.ts.net). | `raphael.env` (pantalla Configuración, `/config`) (RAPHAEL_PUBLIC_URL, sin barra al final) | `cuentas probar tailscale` (pide /api/v1/health por la URL pública). |
+| DuckDNS (dominio gratis para el VPS) *(opcional)* | `DUCKDNS_TOKEN`, `DUCKDNS_DOMAIN` | duckdns.org → iniciar sesión → crear subdominio; el token está arriba en la página. | `raphael.env` (pantalla Configuración, `/config`) | `cuentas chequear` (formato). No se prueba en vivo: actualizar el dominio cambia la IP registrada. |
+| Hetzner (VPS) *(opcional)* | `HCLOUD_TOKEN` | console.hetzner.cloud → proyecto → Seguridad → Tokens de API (lectura y escritura). No abrir la cuenta hasta que haya con qué pagar. | `raphael.env` (pantalla Configuración, `/config`) | `cuentas probar hetzner` (lista servidores; solo lectura). |
+| Tienda de la clienta (Tiendanube, Shopify o WooCommerce) *(opcional)* | `TIENDANUBE_TOKEN` (opc.), `SHOPIFY_TOKEN` (opc.), `WOO_KEY` (opc.), `WOO_SECRET` (opc.) | El panel de la tienda de la clienta (ella autoriza). | `raphael.env` (pantalla Configuración, `/config`) (piden reiniciar) | `cuentas chequear`. |
+| Broker para Trading (sin elegir) *(opcional)* | (pendiente) | Pendiente: lo define Damián con la propuesta del hilo de Trading. No se abre ninguna cuenta. | Pendiente (el hilo de Trading deja su plantilla). | Trading corre contra un simulado. |
+
+Supuestos sin verificar (no se probaron con cuentas reales):
+- **OpenRouter (IA en la nube de Empresas)**: Endpoint GET /api/v1/auth/key y su respuesta: confirmar en openrouter.ai/docs.
+- **NVIDIA build.nvidia.com (IA en la nube de Raphael personal)**: Endpoint GET /v1/models con Bearer en integrate.api.nvidia.com.
+- **WhatsApp Cloud API (número de prueba)**: GET /{version}/{phone_id}?fields=display_phone_number con Bearer: confirmar en la doc de Meta.
+- **Instagram (mensajes directos)**: GET /{version}/me?fields=username con Bearer: confirmar en la doc de Meta.
+- **Mercado Pago (cobros de Empresas)**: GET https://api.mercadopago.com/users/me con Bearer: confirmar en la doc de Mercado Pago.
+- **Hetzner (VPS)**: GET https://api.hetzner.cloud/v1/servers con Bearer: confirmar en docs.hetzner.cloud.
+
