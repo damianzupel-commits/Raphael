@@ -27,7 +27,7 @@ def test_catalogo_no_tiene_valores_de_claves():
 
 
 def test_plantilla_commiteada_al_dia_y_sin_valores_secretos():
-    assert (AQUI / ".env.plantilla").read_text(encoding="utf-8") == plantilla.generar() + "\n"
+    assert (AQUI / "cuentas.env.plantilla").read_text(encoding="utf-8") == plantilla.generar() + "\n"
     for line in plantilla.generar().splitlines():
         if "=" in line and not line.startswith("#"):
             k, _, v = line.partition("=")
@@ -40,7 +40,7 @@ def test_lista_de_lienzo_al_dia():
 
 
 def test_cubre_las_variables_de_la_plantilla_del_servidor():
-    srv = AQUI.parent / "raphael.env.plantilla"
+    srv = AQUI.parent / "raphaelcuentas.env.plantilla"
     if not srv.is_file():
         pytest.skip("sin plantilla del servidor")
     usadas = {k for k in entorno.parse_env(srv.read_text(encoding="utf-8").replace("# NVIDIA", "NVIDIA"))}
