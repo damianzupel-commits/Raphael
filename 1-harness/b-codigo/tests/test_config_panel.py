@@ -12,14 +12,17 @@ from config_modelo import Configuracion  # noqa: E402
 @pytest.fixture
 def cfg(tmp_path):
     base = tmp_path / "base.yaml"
-    base.write_text("""
+    base.write_text(
+        """
 providers:
   ollama: {base_url: "http://127.0.0.1:11434/v1", model: llama3.1:8b}
   nvidia: {base_url: "https://integrate.api.nvidia.com/v1", model: nemo, api_key_env: NVIDIA_API_KEY}
 tiers: {local: [ollama], gratis: [nvidia]}
 roles: {mando: [gratis, local], cocinero: [local, gratis]}
 private: [seguridad, memoria]
-""", encoding="utf-8")
+""",
+        encoding="utf-8",
+    )
     return Configuracion(tmp_path / "raphael.env", tmp_path / "modelos.usuario.yaml", tmp_path / "panel.json", base, environ={})
 
 
@@ -28,7 +31,7 @@ def test_claves_se_guardan_aplican_y_se_deshacen(cfg):
     assert cfg.aplicar({"NVIDIA_API_KEY": "nvapi-abc"}) == []
     assert cfg.env() == {"OTRA": "1", "NVIDIA_API_KEY": "nvapi-abc"} and cfg.environ["NVIDIA_API_KEY"] == "nvapi-abc"
     assert "# mío" in cfg.env_file.read_text(encoding="utf-8")
-    assert "nvapi-abc" not in str(cfg.historial())                     # el historial nunca lleva la clave
+    assert "nvapi-abc" not in str(cfg.historial())  # el historial nunca lleva la clave
     cfg.deshacer()
     assert "NVIDIA_API_KEY" not in cfg.env() and "NVIDIA_API_KEY" not in cfg.environ
 
@@ -58,7 +61,7 @@ def test_privadas_solo_aceptan_proveedores_de_esta_pc(cfg):
     with pytest.raises(ValueError):
         cfg.agregar_proveedor("raro", "http://ejemplo.com/v1", "m", escalon="local")
     with pytest.raises(ValueError):
-        cfg.agregar_proveedor("raro", "http://ejemplo.com/v1", "m")        # remota sin https
+        cfg.agregar_proveedor("raro", "http://ejemplo.com/v1", "m")  # remota sin https
 
 
 def test_sacar_de_solo_local_pide_confirmar_y_agregar_es_libre(cfg):
@@ -90,3 +93,33 @@ def test_apariencia_perfiles_y_exportar_sin_claves(cfg):
     cfg.aplicar({"RAPHAEL_VOZ_MODO": "off"})
     cfg.cargar_perfil("ahorro")
     assert cfg.env()["RAPHAEL_VOZ_MODO"] == "local" and cfg.env()["NVIDIA_API_KEY"] == "nvapi-secreta"
+
+
+def test_detecta_el_servicio_por_el_formato():
+    from config_modelo import detectar_servicio, variable_para
+
+    assert detectar_servicio("nvapi-abc").variable == "NVIDIA_API_KEY"
+    assert detectar_servicio("sk-or-v1-abc").variable == "OPENROUTER_API_KEY"  # sk-or- gana sobre sk-
+    assert detectar_servicio("sk-abc").variable == "OPENAI_API_KEY"
+    assert detectar_servicio("BSAxyz").variable == "BRAVE_SEARCH_API_KEY"
+    assert detectar_servicio("APP_USR-123").variable == "MP_ACCESS_TOKEN"
+    assert detectar_servicio("cualquier-cosa") is None
+    assert variable_para("Mi Servicio") == "MI_SERVICIO_API_KEY"
+    assert variable_para("nvidia") == "NVIDIA_API_KEY" and variable_para("GROQ_API_KEY") == "GROQ_API_KEY"
+    with pytest.raises(ValueError):
+        variable_para("1!")
+
+
+def test_agregar_clave_arranca_vacio_y_lista_lo_cargado(cfg):
+    assert cfg.claves() == []
+    assert cfg.agregar_clave("nvapi-abc") == ("NVIDIA_API_KEY", [])
+    with pytest.raises(ValueError, match="no reconozco"):
+        cfg.agregar_clave("clave-rara-123")
+    assert cfg.agregar_clave("clave-rara-123", "Mi Servicio")[0] == "MI_SERVICIO_API_KEY"
+    assert cfg.agregar_clave("TEST-9")[1] == ["MP_ACCESS_TOKEN"]
+    claves = {c["servicio"]: c["valor"] for c in cfg.claves()}
+    assert claves["NVIDIA"] == "nvapi-abc" and claves["MI_SERVICIO_API_KEY"] == "clave-rara-123"
+    with pytest.raises(ValueError):
+        cfg.agregar_clave("con espacios adentro", "Otro")
+    cfg.aplicar(None, ["NVIDIA_API_KEY"])
+    assert "NVIDIA" not in {c["servicio"] for c in cfg.claves()}

@@ -48,11 +48,11 @@ class Campo:
     nombre: str
     seccion: str
     etiqueta: str
-    tipo: str = "texto"                    # texto | secreto | opcion | bool | carpeta
+    tipo: str = "texto"  # texto | secreto | opcion | bool | carpeta
     opciones: tuple[str, ...] = ()
     ayuda: str = ""
-    reinicia: bool = False                 # True = hace falta reiniciar para que tome efecto
-    solo_local: bool = False               # dirección que tiene que ser de esta PC
+    reinicia: bool = False  # True = hace falta reiniciar para que tome efecto
+    solo_local: bool = False  # dirección que tiene que ser de esta PC
 
 
 def _c(nombre: str, seccion: str, etiqueta: str, tipo: str = "texto", ayuda: str = "", **kw) -> Campo:
@@ -64,8 +64,14 @@ CAMPOS: tuple[Campo, ...] = (
     _c("NVIDIA_API_KEY", "claves", "NVIDIA (IA en la nube de Personal)", "secreto", "build.nvidia.com → Get API Key (nvapi-…)"),
     _c("OPENROUTER_API_KEY", "claves", "OpenRouter (IA de Empresas / escalón pago)", "secreto", "openrouter.ai → Keys (sk-or-…)"),
     _c("BRAVE_SEARCH_API_KEY", "claves", "Brave Search (Investigación)", "secreto", "brave.com/search/api, plan gratis"),
-    _c("SEARXNG_URL", "claves", "SearXNG (alternativa a Brave)", "texto", "Dirección de tu SearXNG"),
-    _c("VIRUSTOTAL_API_KEY", "claves", "VirusTotal (Antimalware, opcional)", "secreto", "Solo manda el hash de lo que ya dio positivo"),
+    _c("SEARXNG_URL", "acceso", "SearXNG (alternativa a Brave)", "texto", "Dirección de tu SearXNG"),
+    _c(
+        "VIRUSTOTAL_API_KEY",
+        "claves",
+        "VirusTotal (Antimalware, opcional)",
+        "secreto",
+        "Solo manda el hash de lo que ya dio positivo",
+    ),
     _c("SHODAN_KEY", "claves", "Shodan (Geolocalización)", "secreto"),
     _c("AISSTREAM_KEY", "claves", "AISStream (barcos)", "secreto"),
     _c("FIRMS_MAP_KEY", "claves", "NASA FIRMS (incendios)", "secreto"),
@@ -85,7 +91,9 @@ CAMPOS: tuple[Campo, ...] = (
     # acceso y celular
     _c("RAPHAEL_PUBLIC_URL", "acceso", "Dirección para el celular", ayuda="La de Tailscale (https://….ts.net)"),
     _c("LOCAL_LLM_KIND", "acceso", "Modelo local: programa", "opcion", opciones=("ollama", "lmstudio")),
-    _c("LOCAL_LLM_URL", "acceso", "Modelo local: dirección", ayuda="Solo de esta PC, ej. http://127.0.0.1:11434", solo_local=True),
+    _c(
+        "LOCAL_LLM_URL", "acceso", "Modelo local: dirección", ayuda="Solo de esta PC, ej. http://127.0.0.1:11434", solo_local=True
+    ),
     _c("OLLAMA_MODEL", "acceso", "Ollama: modelo", ayuda="El de `ollama list`"),
     _c("LMSTUDIO_MODEL", "acceso", "LM Studio: modelo", ayuda="El que tenés cargado"),
     _c("MEMORIA_EMBEDDINGS_BASE_URL", "acceso", "Embeddings de Memoria: dirección", solo_local=True),
@@ -107,12 +115,91 @@ CAMPOS: tuple[Campo, ...] = (
     _c("RAPHAEL_AUTONOMIA", "autonomia", "Nivel de autonomía", "opcion", opciones=NIVELES_AUTONOMIA),
 )
 POR_NOMBRE = {c.nombre: c for c in CAMPOS}
+
+
+@dataclass(frozen=True)
+class Servicio:
+    nombre: str
+    variable: str
+    prefijos: tuple[str, ...] = ()  # cómo empieza la clave de ese servicio (para reconocerla sola)
+    ayuda: str = ""
+    reinicia: bool = False
+
+
+#: los servicios que Raphael sabe usar. El orden importa para reconocer: el prefijo más específico va primero.
+SERVICIOS: tuple[Servicio, ...] = (
+    Servicio("NVIDIA", "NVIDIA_API_KEY", ("nvapi-",), "build.nvidia.com → Get API Key"),
+    Servicio("OpenRouter", "OPENROUTER_API_KEY", ("sk-or-",), "openrouter.ai → Keys"),
+    Servicio("Brave Search", "BRAVE_SEARCH_API_KEY", ("BSA",), "brave.com/search/api"),
+    Servicio("Groq", "GROQ_API_KEY", ("gsk_",), "console.groq.com"),
+    Servicio("Hugging Face", "HF_TOKEN", ("hf_",), "huggingface.co/settings/tokens"),
+    Servicio("Google (Gemini)", "GEMINI_API_KEY", ("AIza",), "aistudio.google.com"),
+    Servicio("Anthropic", "ANTHROPIC_API_KEY", ("sk-ant-",), "console.anthropic.com"),
+    Servicio("OpenAI", "OPENAI_API_KEY", ("sk-proj-", "sk-"), "platform.openai.com"),
+    Servicio("GitHub", "GITHUB_TOKEN", ("ghp_", "github_pat_", "gho_"), ""),
+    Servicio("Mercado Pago", "MP_ACCESS_TOKEN", ("APP_USR-", "TEST-"), "Primero el de prueba", True),
+    Servicio("Shodan", "SHODAN_KEY"),
+    Servicio("VirusTotal", "VIRUSTOTAL_API_KEY", (), "Solo manda el hash de lo que ya dio positivo"),
+    Servicio("AISStream (barcos)", "AISSTREAM_KEY"),
+    Servicio("NASA FIRMS (incendios)", "FIRMS_MAP_KEY"),
+    Servicio("Windy (cámaras)", "WINDY_WEBCAMS_KEY"),
+    Servicio("OpenWeather (clima)", "OPENWEATHER_KEY"),
+    Servicio("OpenCellID (antenas)", "OPENCELLID_KEY"),
+    Servicio("Mercado Pago: clave de avisos", "MP_WEBHOOK_SECRET", reinicia=True),
+    Servicio("Meta: clave secreta de la app", "META_APP_SECRET"),
+    Servicio("Meta: verify token", "META_VERIFY_TOKEN", ayuda="Lo inventás vos"),
+    Servicio("WhatsApp", "META_WA_TOKEN"),
+    Servicio("Instagram", "META_IG_TOKEN"),
+    Servicio("Instagram (publicar)", "IG_ACCESS_TOKEN"),
+    Servicio("Meta Ads", "META_ADS_ACCESS_TOKEN", ayuda="Activar anuncios gasta plata: siempre pide aprobación"),
+    Servicio("Hetzner", "HCLOUD_TOKEN", reinicia=True),
+    Servicio("DuckDNS", "DUCKDNS_TOKEN", reinicia=True),
+)
+SERVICIO_POR_VARIABLE = {sv.variable: sv for sv in SERVICIOS}
+
+
+def detectar_servicio(clave: str) -> Servicio | None:
+    """Reconoce el servicio por cómo empieza la clave (nvapi- es NVIDIA, sk-or- es OpenRouter…). None = no se sabe."""
+    c = clave.strip()
+    mejor: tuple[int, Servicio] | None = None
+    for sv in SERVICIOS:
+        for p in sv.prefijos:
+            if c.startswith(p) and (mejor is None or len(p) > mejor[0]):
+                mejor = (len(p), sv)
+    return mejor[1] if mejor else None
+
+
+def variable_para(nombre: str) -> str:
+    """Nombre escrito a mano → variable. «Mi Servicio» → MI_SERVICIO_API_KEY (si ya es un nombre de variable, se respeta)."""
+    n = nombre.strip()
+    for sv in SERVICIOS:
+        if n.lower() == sv.nombre.lower():
+            return sv.variable
+    if re.fullmatch(r"[A-Z][A-Z0-9_]*", n) and len(n) >= 3:
+        return n
+    base = re.sub(r"[^A-Za-z0-9]+", "_", n).strip("_").upper()
+    if not base or not base[0].isalpha():
+        raise ValueError("el nombre del servicio: letras y números, empezando con una letra")
+    return base if base.endswith(("_KEY", "_TOKEN", "_SECRET")) else base + "_API_KEY"
+
+
 _NOMBRE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 _LINEA = re.compile(r"^[\x21-\x7e]+$")
-APARIENCIA_BASE = {"tema": "oscuro", "acento": "#35e0ff", "letra": 10, "densidad": "normal", "idioma": "es",
-                   "nombre": "Raphael", "tono": "cercano"}
-OPCIONES_APARIENCIA = {"tema": ("oscuro", "claro", "automatico"), "densidad": ("compacta", "normal", "comoda"),
-                       "idioma": ("es", "en"), "tono": ("formal", "cercano", "breve")}
+APARIENCIA_BASE = {
+    "tema": "oscuro",
+    "acento": "#35e0ff",
+    "letra": 10,
+    "densidad": "normal",
+    "idioma": "es",
+    "nombre": "Raphael",
+    "tono": "cercano",
+}
+OPCIONES_APARIENCIA = {
+    "tema": ("oscuro", "claro", "automatico"),
+    "densidad": ("compacta", "normal", "comoda"),
+    "idioma": ("es", "en"),
+    "tono": ("formal", "cercano", "breve"),
+}
 
 
 def parse_env(text: str) -> dict[str, str]:
@@ -152,7 +239,7 @@ class Configuracion:
     usuario_file: Path
     panel_file: Path
     modelos_base: Path = DEFAULT_PATH
-    environ: dict[str, str] = field(default_factory=lambda: os.environ)   # el entorno del proceso (se aplica en caliente)
+    environ: dict[str, str] = field(default_factory=lambda: os.environ)  # el entorno del proceso (se aplica en caliente)
 
     # --- variables y claves ---------------------------------------------------------------------------------------
     def env(self) -> dict[str, str]:
@@ -178,14 +265,17 @@ class Configuracion:
                 raise ValueError(f"{nombre} corre en esta PC: http://127.0.0.1:<puerto>")
             if c.tipo == "opcion":
                 v = v.lower()
+        if c is None and self._es_secreta(nombre) and not _LINEA.match(v):
+            raise ValueError(f"{nombre} tiene espacios o caracteres raros: copiala de nuevo, entera")
         if nombre == "RAPHAEL_PUBLIC_URL" and not v.startswith("https://"):
             raise ValueError("la dirección pública empieza con https://")
         if "\x00" in v or "#" in v and c is not None and c.tipo == "secreto":
             raise ValueError(f"{nombre} tiene caracteres que no sirven en una clave")
         return v
 
-    def aplicar(self, poner: Mapping[str, str] | None = None, quitar: list[str] | None = None, *,
-                quien: str = "panel") -> list[str]:
+    def aplicar(
+        self, poner: Mapping[str, str] | None = None, quitar: list[str] | None = None, *, quien: str = "panel"
+    ) -> list[str]:
         """Valida todo primero (si algo está mal no se cambia nada), guarda en raphael.env y en el entorno del
         proceso, y anota el cambio en el historial. Devuelve los nombres que piden reiniciar."""
         cambios: dict[str, str | None] = {}
@@ -204,8 +294,7 @@ class Configuracion:
                 self.environ.pop(n, None)
             else:
                 self.environ[n] = v
-        self._historia({"que": "env", "quien": quien,
-                        "antes": {n: antes.get(n) for n in cambios}, "despues": dict(cambios)})
+        self._historia({"que": "env", "quien": quien, "antes": {n: antes.get(n) for n in cambios}, "despues": dict(cambios)})
         return sorted(n for n in cambios if n in POR_NOMBRE and POR_NOMBRE[n].reinicia)
 
     def _escribir_env(self, cambios: Mapping[str, str | None]) -> None:
@@ -223,12 +312,48 @@ class Configuracion:
         out += [f"{k}={v}" for k, v in cambios.items() if v is not None and k not in visto]
         _escribir_atomico(self.env_file, "\n".join(out) + "\n")
 
+    def claves(self) -> list[dict]:
+        """Las claves ya cargadas (cualquier variable secreta de raphael.env), con el nombre del servicio."""
+        out = []
+        for n, v in sorted(self.env().items()):
+            if not self._es_secreta(n):
+                continue
+            sv = SERVICIO_POR_VARIABLE.get(n)
+            out.append({"variable": n, "servicio": sv.nombre if sv else n, "valor": v, "reinicia": bool(sv and sv.reinicia)})
+        return out
+
+    def agregar_clave(self, clave: str, servicio: str = "", *, quien: str = "panel") -> tuple[str, list[str]]:
+        """Guarda una clave. Si no decís el servicio, se reconoce por el formato; si no se reconoce, hay que elegirlo o
+        escribirlo. Devuelve (variable, variables que piden reiniciar)."""
+        clave = clave.strip()
+        if not clave:
+            raise ValueError("pegá la clave")
+        if servicio.strip():
+            variable = variable_para(servicio)
+        else:
+            sv = detectar_servicio(clave)
+            if sv is None:
+                raise ValueError("no reconozco esta clave: elegí el servicio o escribí su nombre")
+            variable = sv.variable
+        return variable, self.aplicar({variable: clave}, quien=quien)
+
     def vista(self) -> list[dict]:
         """Lo que se muestra: los secretos se ven con el ojito en la pantalla (decisión de Damián), pero nunca van a
         la auditoría ni al historial exportado."""
         env = self.env()
-        return [{"nombre": c.nombre, "seccion": c.seccion, "etiqueta": c.etiqueta, "tipo": c.tipo, "ayuda": c.ayuda,
-                 "opciones": c.opciones, "reinicia": c.reinicia, "valor": env.get(c.nombre, "")} for c in CAMPOS]
+        return [
+            {
+                "nombre": c.nombre,
+                "seccion": c.seccion,
+                "etiqueta": c.etiqueta,
+                "tipo": c.tipo,
+                "ayuda": c.ayuda,
+                "opciones": c.opciones,
+                "reinicia": c.reinicia,
+                "valor": env.get(c.nombre, ""),
+            }
+            for c in CAMPOS
+        ]
 
     # --- modelos ---------------------------------------------------------------------------------------------------
     def _usuario(self) -> dict:
@@ -255,7 +380,7 @@ class Configuracion:
         return models_from(self.modelos_datos())
 
     def _guardar_modelos(self, usuario: dict, *, quien: str, que: str) -> ModelsConfig:
-        cfg = models_from(self.modelos_datos(usuario))                                   # valida referencias antes de guardar nada
+        cfg = models_from(self.modelos_datos(usuario))  # valida referencias antes de guardar nada
         self._revisar_privadas(cfg)
         antes = self._usuario()
         _escribir_atomico(self.usuario_file, yaml.safe_dump(usuario, allow_unicode=True, sort_keys=True), privado=False)
@@ -272,8 +397,18 @@ class Configuracion:
                     if not cfg.providers[n].is_local and cfg.providers[n].base_url:
                         raise ValueError(f"el proveedor «{n}» está en el escalón local pero no corre en esta PC")
 
-    def agregar_proveedor(self, nombre: str, base_url: str, modelo: str, api_key_env: str = "", *, rpm: int | None = None,
-                          usd_in: float = 0.0, usd_out: float = 0.0, escalon: str = "") -> ModelsConfig:
+    def agregar_proveedor(
+        self,
+        nombre: str,
+        base_url: str,
+        modelo: str,
+        api_key_env: str = "",
+        *,
+        rpm: int | None = None,
+        usd_in: float = 0.0,
+        usd_out: float = 0.0,
+        escalon: str = "",
+    ) -> ModelsConfig:
         """Cualquier API compatible con OpenAI. La clave no se guarda acá: solo el nombre de su variable."""
         if not re.fullmatch(r"[a-z0-9][a-z0-9_-]{0,40}", nombre):
             raise ValueError("el nombre del proveedor: minúsculas, números, guion; sin espacios")
@@ -286,8 +421,13 @@ class Configuracion:
         if not modelo.strip():
             raise ValueError("falta el modelo")
         u = self._usuario()
-        spec = {"base_url": base_url.strip(), "model": modelo.strip(), "api_key_env": api_key_env,
-                "usd_per_million_in": usd_in, "usd_per_million_out": usd_out}
+        spec = {
+            "base_url": base_url.strip(),
+            "model": modelo.strip(),
+            "api_key_env": api_key_env,
+            "usd_per_million_in": usd_in,
+            "usd_per_million_out": usd_out,
+        }
         if rpm:
             spec["rpm"] = rpm
         u.setdefault("providers", {})[nombre] = spec
@@ -337,7 +477,7 @@ class Configuracion:
             tier = f"propio-{rol}-{destino}".replace(".", "-")
             u.setdefault("tiers", {})[tier] = list(proveedores)
             u.setdefault("overrides", {})[clave] = [tier]
-        else:                                                      # volver a lo de la base
+        else:  # volver a lo de la base
             u.get("overrides", {}).pop(clave, None)
             u.get("tiers", {}).pop(f"propio-{rol}-{destino}".replace(".", "-"), None)
             if clave in self._base().get("overrides", {}):
@@ -419,8 +559,14 @@ class Configuracion:
     def _historia(self, entrada: dict) -> None:
         d = self._panel()
         h = d.setdefault("historial", [])
-        h.append({"n": (h[-1]["n"] + 1) if h else 1, "cuando": datetime.now().isoformat(timespec="seconds"), **entrada,
-                  "deshecho": False})
+        h.append(
+            {
+                "n": (h[-1]["n"] + 1) if h else 1,
+                "cuando": datetime.now().isoformat(timespec="seconds"),
+                **entrada,
+                "deshecho": False,
+            }
+        )
         d["historial"] = h[-200:]
         self._guardar_panel(d)
 
@@ -452,8 +598,9 @@ class Configuracion:
                     else:
                         self.environ[k] = v
             elif e["que"] == "modelos":
-                _escribir_atomico(self.usuario_file, yaml.safe_dump(e["antes_usuario"], allow_unicode=True, sort_keys=True),
-                                  privado=False)
+                _escribir_atomico(
+                    self.usuario_file, yaml.safe_dump(e["antes_usuario"], allow_unicode=True, sort_keys=True), privado=False
+                )
             else:
                 d.setdefault("apariencia", {}).update(e["antes"])
             d = self._panel()
@@ -522,5 +669,9 @@ def rutas_por_defecto(data_dir: Path, project_root: Path | None = None) -> dict[
     if not base and project_root is not None:
         cand = project_root / "2-entrega" / "c-despliegue" / "personal" / "modelos.personal.yaml"
         base = str(cand) if cand.is_file() else ""
-    return {"env_file": env_file, "usuario_file": data_dir / "modelos.usuario.yaml", "panel_file": data_dir / "panel-config.json",
-            "modelos_base": Path(base) if base else DEFAULT_PATH}
+    return {
+        "env_file": env_file,
+        "usuario_file": data_dir / "modelos.usuario.yaml",
+        "panel_file": data_dir / "panel-config.json",
+        "modelos_base": Path(base) if base else DEFAULT_PATH,
+    }
