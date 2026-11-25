@@ -154,3 +154,71 @@ data class ChatLine(val fromClient: Boolean, val text: String, val time: String)
         fun from(o: JSONObject) = ChatLine(o.str("from") == "contact", o.str("text"), o.str("when"))
     }
 }
+
+// --- Raphael personal (API en raphael_personal_api; misma sesión, otras pantallas) ---------------------------------------
+
+/** Una variable de la pantalla de Configuración. Los secretos llegan solo con los últimos 4 caracteres (`hint`). */
+data class ConfigField(val name: String, val group: String, val label: String, val secret: Boolean, val help: String,
+                       val set: Boolean, val hint: String, val value: String, val live: Boolean) {
+    companion object {
+        fun from(o: JSONObject) = ConfigField(o.str("name"), o.str("group"), o.str("label"), o.optBoolean("secret", true),
+            o.str("help"), o.optBoolean("set"), o.str("hint"), o.str("value"), o.optBoolean("live", true))
+    }
+}
+
+/** Un renglón del chequeo del servidor: `status` es ok, falta, aviso o info. */
+data class CheckItem(val area: String, val status: String, val text: String) {
+    companion object {
+        fun from(o: JSONObject) = CheckItem(o.str("area"), o.str("status"), o.str("text"))
+    }
+}
+
+data class ConfigView(val fields: List<ConfigField>, val checks: List<CheckItem>, val restartNeeded: List<String>) {
+    companion object {
+        fun from(o: JSONObject): ConfigView {
+            val fa = o.optJSONArray("fields")
+            val ca = o.optJSONArray("checks")
+            return ConfigView(
+                if (fa == null) emptyList() else (0 until fa.length()).mapNotNull { fa.optJSONObject(it)?.let(ConfigField::from) },
+                if (ca == null) emptyList() else (0 until ca.length()).mapNotNull { ca.optJSONObject(it)?.let(CheckItem::from) },
+                o.optJSONArray("restart_needed").strings())
+        }
+    }
+}
+
+/** Qué modelo usa cada rol y si el modelo local está prendido (lo privado solo corre ahí). */
+data class RoleInfo(val role: String, val tiers: List<String>, val now: String)
+
+data class Brain(val localReady: Boolean, val hints: List<String>, val privateBrigades: List<String>, val privateMode: String,
+                 val roles: List<RoleInfo>) {
+    companion object {
+        fun from(o: JSONObject): Brain {
+            val local = o.optJSONObject("local") ?: JSONObject()
+            val r = o.optJSONObject("roles") ?: JSONObject()
+            val roles = r.keys().asSequence().toList().map { k ->
+                val x = r.optJSONObject(k) ?: JSONObject()
+                RoleInfo(k, x.optJSONArray("tiers").strings(), x.str("now"))
+            }
+            return Brain(local.optBoolean("ready"), local.optJSONArray("hints").strings(), o.optJSONArray("private").strings(),
+                o.str("private_mode"), roles)
+        }
+    }
+}
+
+/** Lo que trae el QR de emparejamiento: `raphael://pair?host=https://…&code=ABCD2345`. */
+data class PairLink(val host: String, val code: String) {
+    companion object {
+        /** null si no es un enlace de emparejamiento. El host viene en el enlace o lo pone la persona. */
+        fun parse(raw: String?): PairLink? {
+            if (raw.isNullOrBlank() || !raw.startsWith("raphael://pair")) return null
+            val q = raw.substringAfter('?', "")
+            val params = q.split('&').mapNotNull {
+                val i = it.indexOf('=')
+                if (i <= 0) null else it.substring(0, i) to java.net.URLDecoder.decode(it.substring(i + 1), "UTF-8")
+            }.toMap()
+            val code = params["code"]?.trim()?.uppercase().orEmpty()
+            if (!Regex("^[A-Z0-9]{4,20}$").matches(code)) return null
+            return PairLink(params["host"].orEmpty().trim().trimEnd('/'), code)
+        }
+    }
+}

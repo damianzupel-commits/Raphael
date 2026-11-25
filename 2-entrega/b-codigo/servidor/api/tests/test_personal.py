@@ -359,11 +359,22 @@ def test_ws_phone_sin_sesion_se_cierra_sin_tocar_el_enlace_y_avisa(api):
     assert any(e == "acceso.fallido" and d.get("via") == "ws/phone" for e, d in rt.bus.history)
 
 
-def test_ws_phone_sin_operaciones_instalada_cierra_con_motivo(tmp_path):
+def test_ws_phone_sin_operaciones_instalada_cierra_con_motivo(tmp_path, monkeypatch):
     from starlette.websockets import WebSocketDisconnect
+
+    monkeypatch.setattr("raphael_personal_api.app.phone_link_default", lambda: None)   # como si Operaciones no estuviera
 
     rt, report = boot.start(INSTALACION, tmp_path, dev_dirs=[], environ={}, installed=False)
     app = create_app(rt, report=report, tick=False, environ={})
     with TestClient(app) as c, pytest.raises(WebSocketDisconnect) as e, c.websocket_connect("/ws/phone"):
         pass
     assert e.value.code == 1013
+
+
+def test_el_codigo_trae_un_qr_si_esta_segno_y_la_pagina_deja_cargar_imagenes_data(api):
+    pytest.importorskip("segno")
+    c, rt, env_file, environ, *_ = api
+    environ["RAPHAEL_PUBLIC_URL"] = "https://pc.tail1.ts.net"
+    d = c.post("/api/v1/phone/pair").json()
+    assert "<svg" in d["qr_svg"]
+    assert "img-src data:" in c.get("/").headers["content-security-policy"]

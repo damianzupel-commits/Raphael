@@ -80,7 +80,7 @@ fun TodayScreen(vm: AppViewModel) {
             }
         }
         Row(Modifier.fillMaxWidth().padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            OutlinedTextField(text, { text = it }, modifier = Modifier.weight(1f), placeholder = { Text("Decile algo a tu secretaria") },
+            OutlinedTextField(text, { text = it }, modifier = Modifier.weight(1f), placeholder = { Text(if (vm.personal) "Decile algo a Raphael" else "Decile algo a tu secretaria") },
                 maxLines = 4)
             IconButton(onClick = { if (text.isNotBlank()) vm.ask(text.trim()); text = "" }, enabled = !vm.busy) {
                 Icon(Icons.Filled.Send, "Mandar", tint = MaterialTheme.colorScheme.primary)

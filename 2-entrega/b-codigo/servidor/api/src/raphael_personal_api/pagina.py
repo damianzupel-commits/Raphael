@@ -36,6 +36,8 @@ nav{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}nav button{flex:1}nav butto
 <section id="t-pend" class="card hide"><h2>Pendientes de tu aprobación</h2><div id="pend"></div></section>
 <section id="t-cerebro" class="card hide"><h2>Cerebro</h2><div id="brain"></div></section>
 <div id="t-config" class="hide"><section class="card"><h2>Estado</h2><div id="checks"></div></section><div id="groups"></div>
+<section class="card"><h2>Emparejar el celular</h2><p class="mut">Genera un código de un solo uso (5 minutos). Escaneá el QR con la cámara del celular: se abre la app de Raphael con el código cargado.</p>
+<button id="pairb" class="sec">Generar código</button><div id="pair" style="margin-top:10px"></div></section>
 <section class="card"><h2>Clave de la app</h2><label for="nk">Clave nueva <small>(mínimo 8 caracteres)</small></label>
 <input id="nk" type="password" autocomplete="new-password"><p class="mut">Al cambiarla se cierran las demás sesiones.</p>
 <button id="chk" class="sec">Cambiar clave</button></section></div>
@@ -97,6 +99,11 @@ $("k").onkeydown=e=>{if(e.key==="Enter")$("go").click()};
 $("chk").onclick=async()=>{const k=$("nk").value;try{await api("/api/v1/config/clave",{method:"POST",body:JSON.stringify({key:k})});
  const d=await api("/api/v1/login",{method:"POST",body:JSON.stringify({key:k,device:"web"})});tok=d.token;try{sessionStorage.setItem("t",tok)}catch(e){}
  $("nk").value="";say("Clave cambiada.",true);loadCfg()}catch(e){say(e.message)}};
+$("pairb").onclick=async()=>{try{const d=await api("/api/v1/phone/pair",{method:"POST"});const p=$("pair");p.replaceChildren();
+ p.append(el("div",{textContent:"Código: "+d.code,style:"font-size:1.4rem;font-weight:700;letter-spacing:.1em"}),el("div",{className:"mut",textContent:"Vale "+Math.round(d.expires_in/60)+" minutos y una sola vez."}));
+ if(d.qr_svg)p.append(el("img",{src:"data:image/svg+xml;charset=utf-8,"+encodeURIComponent(d.qr_svg),alt:"QR de emparejamiento",style:"width:220px;background:#fff;padding:8px;margin-top:8px"}));
+ else p.append(el("div",{className:"st aviso",textContent:"Sin imagen de QR (falta instalar segno). Escribí el código en la app. Enlace: "+d.payload}));
+ if(!d.host)p.append(el("div",{className:"st aviso",textContent:"Falta la dirección para el celular (Configuración → Celular): el QR no lleva servidor."}))}catch(e){say(e.message)}};
 $("out").onclick=async()=>{try{await api("/api/v1/logout",{method:"POST"})}catch(e){}tok=null;try{sessionStorage.removeItem("t")}catch(e){}show(false)};
 enter();
 </script></main></body></html>

@@ -22,6 +22,11 @@ class Prefs(context: Context) {
     var business: String
         get() = p.getString("business", "") ?: ""
         set(v) = p.edit { putString("business", v) }
+    /** Qué servidor es: "empresas" (la dueña) o "personal" (Raphael de Damián). Lo dice `/api/v1/health` al entrar. */
+    var edition: String
+        get() = p.getString("edition", null) ?: "empresas"
+        set(v) = p.edit { putString("edition", v) }
+
     /** El número de pendiente más alto que ya se avisó (para no repetir notificaciones). */
     var lastNotified: Int
         get() = p.getInt("last_notified", 0)
