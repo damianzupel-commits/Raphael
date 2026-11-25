@@ -9,6 +9,7 @@ version: 2.0.0
 contract: ">=2.1,<3"
 description: Atiende a los clientes por WhatsApp e Instagram, toma encargos a medida, lleva señas, turnos y avisos, y contesta con el catálogo de la tienda. Lo que sale al mundo o no tiene vuelta atrás lo decide la dueña.
 editions: [personal, cloud]
+chief: "raphael_empresas.spec:SPEC"
 cooks:
   - {id: encargos, entry: "raphael_empresas.cooks.orders:Orders"}
   - {id: cobros, entry: "raphael_empresas.cooks.payments:Payments"}
@@ -27,6 +28,18 @@ actions:
   enviar_link_pago: {level: aprobacion, tags: [external], description: "mandarle al cliente el link de Mercado Pago para la seña"}
   cancelar_pedido: {level: aprobacion, tags: [external, irreversible], description: "cancelar un encargo y avisarle al cliente"}
   avisar_estado: {level: aprobacion, tags: [external], description: "avisarle al cliente que su encargo cambió de estado"}
+tools:
+  - {name: empresas_tareas, description: "lo que la dueña tiene que mirar hoy (encargos por vencer, turnos de hoy y mañana, señas atrasadas, catálogo)"}
+  - {name: empresas_encargos, description: "encargos activos (o todos con todos=true)"}
+  - {name: empresas_encargo, description: "un encargo por número"}
+  - {name: empresas_turnos, description: "turnos confirmados desde hoy"}
+  - {name: empresas_calendario, description: "turnos confirmados agrupados por fecha"}
+  - {name: empresas_senas_esperando, description: "señas que todavía no llegaron"}
+  - {name: empresas_pagos_avisados, description: "pagos avisados por clientes, sin confirmar"}
+  - {name: empresas_dudas, description: "preguntas de clientes que el bot no supo responder"}
+  - {name: empresas_avisos_enviados, description: "avisos de estado enviados a clientes"}
+  - {name: empresas_productos, description: "productos del catálogo de la tienda, con búsqueda por texto"}
+  - {name: empresas_catalogo, description: "estado del catálogo de la tienda"}
 events:
   publishes: [revision.pedida, consentimiento.recibido, baja.solicitada, conversacion.derivada, encargo.creado, encargo.presupuesto_enviado, encargo.estado_cambiado, turno.pedido,
               turno.confirmado, pago.confirmado]

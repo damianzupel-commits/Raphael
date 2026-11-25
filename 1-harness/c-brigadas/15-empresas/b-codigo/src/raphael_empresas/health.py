@@ -8,6 +8,7 @@ from pydantic import ValidationError
 from raphael_core import Health
 
 from .config import business_config
+from .tools import make_tools
 
 
 def check(ctx) -> Health:
@@ -27,3 +28,5 @@ def validate(ctx) -> None:
     except ValidationError as exc:
         first = exc.errors()[0]
         raise ValueError(f"config del negocio inválida: {'.'.join(map(str, first['loc']))}: {first['msg']}") from None
+    for name, fn in make_tools(ctx).items():
+        ctx.register_tool(name, fn)
