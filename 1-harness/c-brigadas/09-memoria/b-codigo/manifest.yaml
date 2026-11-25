@@ -1,0 +1,70 @@
+# Brigada Memoria · Cerebro (pieza 09): la ÚNICA fuente de verdad de lo que la brigada puede hacer.
+# Cada acción con efecto declara su nivel (automatico | aprobacion | humano) y sus etiquetas:
+#   external = sale al mundo · irreversible = no tiene vuelta atrás · spend = gasta plata.
+# Lo que guarda es ADITIVO (notas nuevas, vectores, contadores) y vive en la PC; lo que borra o exporta pide aprobación.
+# Memoria lee las notas personales de Damián: TODO pedido a un modelo va como privado (solo modelos en la PC). Para que el
+# harness lo haga cumplir también desde afuera, `modelos.yaml` tiene que listar `memoria` en `private` (ver modelos.memoria.yaml).
+id: memoria
+name: Memoria · Cerebro
+version: 2.0.0
+contract: ">=2.1,<3"
+description: Guarda, consolida y recupera conocimiento en un vault de notas, siempre con su origen. Lo sensible corre en local; sin modelo cae a reglas y avisa.
+editions: [personal, cloud]
+cooks:
+  - {id: recuperador, entry: "raphael_memoria.cooks.retriever:Retriever"}
+  - {id: consolidador, entry: "raphael_memoria.cooks.consolidator:Consolidator"}
+  - {id: asociativo, entry: "raphael_memoria.cooks.associative:Associative"}
+  - {id: proactivo, entry: "raphael_memoria.cooks.proactive:Proactive"}
+actions:
+  guardar_nota: {level: automatico, description: "guardar una nota nueva en el vault (firmada jarvis; lo capturado por otras brigadas lleva su origen)"}
+  reindexar: {level: automatico, description: "recalcular los embeddings de las notas con el modelo local"}
+  registrar_episodio: {level: automatico, description: "guardar el turno en el crudo y, si fue sustantivo, destilarlo en un episodio"}
+  dar_feedback: {level: automatico, description: "reforzar o debilitar las notas usadas según cómo salió la tarea"}
+  consolidar: {level: aprobacion, description: "escribir notas de síntesis de grupos de notas relacionadas (no toca las originales)"}
+  olvidar: {level: aprobacion, tags: [irreversible], description: "borrar un episodio o una nota del vault (deja constancia en el registro)"}
+  exportar_vault: {level: aprobacion, description: "copiar el vault entero a un .zip en la ruta que se indique"}
+events:
+  publishes: [memoria.degradada, memoria.recuperada]
+  consumes: [memoria.captura, memoria.turno, nota.ingerida]
+commands:
+  recordar: {read: true, description: "evidencia de una consulta, con la nota fuente y su extracto textual {'query', 'limit'}"}
+  buscar: {read: true, description: "búsqueda híbrida de notas {'query'}"}
+  leer_nota: {read: true, description: "una nota por id {'id'}"}
+  notas: {read: true, description: "notas del vault {'author', 'tag'}"}
+  estado: {read: true, description: "estado del Cerebro: vault, embeddings, modelo local"}
+  rastro: {read: true, description: "último rastro de activación del recall asociativo"}
+  asociar: {read: true, description: "recuperación asociativa por activación propagada {'query', 'limit'}"}
+  analogias: {read: true, description: "análogos estructurales de una nota en otros dominios {'nota'}"}
+  componer: {read: true, description: "notas en la intersección de varios conceptos {'conceptos': [...]}"}
+  curiosidad: {read: true, description: "huecos del vault: notas citadas que no existen y notas huérfanas"}
+  feedback: {read: false, description: "marcar notas usadas y cómo salió {'ids', 'signals', 'situacion'}"}
+  consolidar_vista: {read: true, description: "qué consolidaría, sin escribir nada"}
+  consolidar: {read: false, description: "consolidar notas relacionadas (pide aprobación)"}
+  guardar: {read: false, description: "guardar una nota {'title', 'content', 'tags'}"}
+  reindexar: {read: false, description: "recalcular los embeddings"}
+  episodios: {read: true, description: "episodios recientes o por tema {'tema'}"}
+  verificar_registro: {read: true, description: "verificar la cadena de hashes del registro de memoria"}
+  olvidar: {read: false, description: "olvidar un episodio o una nota (pide aprobación)"}
+  exportar: {read: false, description: "exportar el vault a un .zip (pide aprobación)"}
+  actividad: {read: true, description: "lo que Cerebro hizo solo, lo más nuevo primero"}
+  pasada: {read: false, description: "correr ahora una pasada proactiva"}
+routing:
+  signals:
+    - {pattern: "\\bnotas?\\b|\\bvault\\b|\\bobsidian\\b|\\bmemoria\\b|\\bcerebro\\b|\\brecorda\\w*|\\bque sabes\\b|\\bapuntes?\\b", weight: 2}
+    - {pattern: "\\bconsolid\\w+|\\bepisodios?\\b|\\banalogias?\\b|\\bconocimiento\\b|\\bacordate\\b", weight: 1}
+store:
+  space: memoria
+uninstall:
+  export: [episodios, crudo, aprendizaje, registro]
+  delete: ["*"]
+setup: "raphael_memoria.health:validate"
+health: "raphael_memoria.health:check"
+config_schema:
+  type: object
+  additionalProperties: false
+  properties:
+    vault: {type: object}
+    embeddings: {type: object}
+    consolidation: {type: object}
+    proactive: {type: object}
+    episodes: {type: object}

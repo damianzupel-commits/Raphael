@@ -1,0 +1,12 @@
+# Configuración de las pruebas de esta brigada (viven en c-salud/pruebas, separadas del código en b-codigo).
+# pytest arranca desde acá; ruff hereda la configuración del código.
+
+[tool.pytest.ini_options]
+testpaths = ["."]
+
+[tool.ruff]
+extend = "../../b-codigo/pyproject.toml"
+src = ["../../b-codigo/src"]   # para que isort reconozca el paquete propio
+
+[tool.ruff.lint.per-file-ignores]
+"*.py" = ["E501"]   # los tests llevan frases largas en español
