@@ -1112,7 +1112,49 @@ def main() -> None:
         messagebox.showerror("Raphael — Harness v2", "El panel no pudo arrancar.\n\nEl detalle quedó en "
                              f"{HERE / 'ultimo-error.txt'}\n\n{detail[-600:]}")
         return
+    _diagnostico(app)
     app.mainloop()
+    _log_diag("mainloop terminó (la ventana se cerró de forma normal)")
+
+
+_DIAG = HERE / "diagnostico-panel.log"
+
+
+def _log_diag(msg: str) -> None:
+    import time
+
+    try:
+        with _DIAG.open("a", encoding="utf-8") as f:
+            f.write(f"{time.strftime('%Y-%m-%d %H:%M:%S')} {msg}\n")
+    except OSError:
+        pass
+
+
+def _diagnostico(app: tk.Tk) -> None:
+    """Deja en un archivo cómo termina el panel, para encontrar cierres sin error visible."""
+    import atexit
+    import faulthandler
+    import traceback
+
+    _log_diag("panel iniciado")
+    try:
+        app._faulthandler_file = _DIAG.open("a", encoding="utf-8")  # type: ignore[attr-defined]
+        faulthandler.enable(app._faulthandler_file)  # type: ignore[attr-defined]
+    except OSError:
+        pass
+    atexit.register(lambda: _log_diag("el proceso terminó (atexit)"))
+
+    def _hook(tp, val, tb):
+        _log_diag("excepción sin atrapar:\n" + "".join(traceback.format_exception(tp, val, tb)))
+
+    sys.excepthook = _hook
+    threading.excepthook = lambda a: _log_diag(f"excepción en hilo: {a.exc_type.__name__}: {a.exc_value}")
+
+    def _cierre() -> None:
+        _log_diag("se pidió cerrar la ventana (WM_DELETE_WINDOW)")
+        app.destroy()
+
+    app.protocol("WM_DELETE_WINDOW", _cierre)
 
 
 if __name__ == "__main__":
