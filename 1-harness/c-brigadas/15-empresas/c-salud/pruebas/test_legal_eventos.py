@@ -43,5 +43,6 @@ def test_antes_de_mandar_presupuesto_y_aviso_se_pide_revision():
     assert r["ref"].startswith("presupuesto-") and "100.000" in r["text"]
     x.cmd("encargos", "estado", {"number": 1, "status": "listo"})
     x.tick()
+    x.approve(x.pending("avisar_estado")[0]["id"])             # el aviso también espera la OK de la dueña
     avisos = [d for d in _ev(x, "revision.pedida") if d["ref"].startswith("aviso-")]
-    assert avisos or x.pending("avisar_estado") == []          # el aviso es automático: si salió, pidió revisión
+    assert avisos

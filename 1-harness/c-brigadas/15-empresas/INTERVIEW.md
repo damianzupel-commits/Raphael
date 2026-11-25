@@ -39,7 +39,7 @@ Tono de la entrevista: corto, rioplatense, con ejemplos de su rubro. Mostrar, no
 | 2.4 | ¿Cuándo es "urgente"? ¿Cobrás extra? | menos de 15 días | |
 | 2.5 | ¿Cómo tomás las medidas: en persona, por foto, con una cinta que te mandan? | En persona, en el turno | |
 | 2.6 | ¿Qué estados tiene un encargo para vos (en confección, prueba, listo, entregado)? ¿Falta alguno? | en_confeccion, prueba, listo, entregado, cancelado | |
-| 2.7 | ¿Cuándo querés que se le avise a la clienta que cambió el estado? | Automático (`avisar_estado`) | |
+| 2.7 | ¿Cuándo querés que se le avise a la clienta que cambió el estado? | Pide tu OK cada vez (`avisar_estado`, regla general del 25 nov); se puede relajar por instalación solo si lo confirmás a mano | |
 | 2.8 | ¿Aceptás cancelaciones? ¿Qué pasa con la seña? | Cancelar pide aprobación de ella | |
 
 ## 3. Cobros y señas (Cobros)

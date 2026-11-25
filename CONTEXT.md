@@ -22,7 +22,7 @@ raphael/
   README.md                  el árbol explicado
   1-harness/                 la base: sin harness no corre nada
     a-conocimiento/          spec, diseño, qué se portó y log del harness
-    b-codigo/                raphael-core (430 tests) y el panel de escritorio (panel/)
+    b-codigo/                raphael-core (604 tests) y el panel de escritorio (panel/)
     c-brigadas/              todo lo que se monta sobre el harness
       00-orquestador/        el que habla con la persona y reparte (266 tests)
       05-seguridad/ ... 14-contenido/, 15-empresas/, 16-legales/
@@ -36,7 +36,7 @@ raphael/
     c-despliegue/            vps/, instalacion-clienta/, cuentas-y-apis/
   3-mando/                   cómo se dirige el proyecto
     a-conocimiento/          ESTADO, LIENZO-DAMIAN (lo único que falta poner), PLAN-MAESTRO, PIEZAS, BRIGADAS, SPEC-FAMILIA, log/
-    b-herramientas/          gate.bat (puerta de todas las suites, 1872 tests el 25 nov, + ruff), pruebas-contrato/, pruebas-e2e/
+    b-herramientas/          gate.bat (puerta de todas las suites, 2048 tests el 25 nov, + ruff), pruebas-contrato/, pruebas-e2e/
     c-referencia/            código viejo de JarvisRemote y Empresas, solo lectura
   .venv/, .data/             entorno y datos locales, fuera de git
 ```

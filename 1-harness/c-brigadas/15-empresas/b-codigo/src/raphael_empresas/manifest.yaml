@@ -21,12 +21,12 @@ actions:
   responder_duda: {level: humano, tags: [external], description: "contestarle a un cliente una pregunta que el bot no sabe"}
   derivar_humano: {level: humano, description: "un reclamo o un cliente que pidió hablar con una persona"}
   confirmar_turno: {level: aprobacion, tags: [external], description: "confirmarle a un cliente el día y la hora de un turno"}
-  enviar_recordatorio: {level: automatico, tags: [external], description: "recordarle a un cliente su turno, días antes"}
+  enviar_recordatorio: {level: aprobacion, tags: [external], description: "recordarle a un cliente su turno, días antes"}
   confirmar_pago: {level: aprobacion, tags: [irreversible], description: "dar por recibida la seña de un encargo"}
   enviar_presupuesto: {level: aprobacion, tags: [external, irreversible], description: "mandarle el precio y la seña de un encargo al cliente"}
   enviar_link_pago: {level: aprobacion, tags: [external], description: "mandarle al cliente el link de Mercado Pago para la seña"}
   cancelar_pedido: {level: aprobacion, tags: [external, irreversible], description: "cancelar un encargo y avisarle al cliente"}
-  avisar_estado: {level: automatico, tags: [external], description: "avisarle al cliente que su encargo cambió de estado"}
+  avisar_estado: {level: aprobacion, tags: [external], description: "avisarle al cliente que su encargo cambió de estado"}
 events:
   publishes: [revision.pedida, consentimiento.recibido, baja.solicitada, conversacion.derivada, encargo.creado, encargo.presupuesto_enviado, encargo.estado_cambiado, turno.pedido,
               turno.confirmado, pago.confirmado]

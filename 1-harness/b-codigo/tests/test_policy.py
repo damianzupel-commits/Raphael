@@ -4,7 +4,8 @@ from raphael_core.manifest import ActionSpec
 from raphael_core.policy import PolicyEngine
 from raphael_core.store import Store
 
-ACTIONS = {"leer": ActionSpec(level=Level.AUTO), "enviar": ActionSpec(level=Level.APPROVAL, tags={"external"}),
+ACTIONS = {"leer": ActionSpec(level=Level.AUTO), "enviar": ActionSpec(level=Level.APPROVAL),
+           "publicar": ActionSpec(level=Level.APPROVAL, tags={"external"}),
            "pagar": ActionSpec(level=Level.APPROVAL, tags={"spend"}),
            "borrar": ActionSpec(level=Level.HUMAN, tags={"irreversible"})}
 
@@ -57,3 +58,13 @@ def test_terceros_y_tabla():
     assert t[("b", "pagar")]["risky"] and t[("b", "leer")]["level"] == "automatico"
     p.unregister("b")
     assert p.table() == []
+
+
+def test_lo_que_sale_al_mundo_nunca_baja_solo_a_automatico():
+    """Regla general (Damián, 25 nov 2026): lo que sale hacia afuera cuenta como riesgo, igual que gastar o no tener vuelta."""
+    p = motor(trust={"approvals_to_step_down": 1})
+    assert ACTIONS["publicar"].risky and ACTIONS["pagar"].risky and ACTIONS["borrar"].risky and not ACTIONS["enviar"].risky
+    assert p.record_approval("b", "publicar") == "propose"        # propone bajar, pero no baja sola
+    assert p.level("b", "publicar") is Level.APPROVAL
+    p2 = motor(autonomy={"b.publicar": "automatico"})              # a mano, sin confirmar: se ignora
+    assert p2.level("b", "publicar") is not Level.AUTO

@@ -10,8 +10,8 @@ Se monta en el harness v2 (`raphael-core`, contrato 2.1) por su `manifest.yaml`.
 | `atencion` | Responde solo con la información cargada, anota las dudas (`responder_duda`, humano) y deriva reclamos (`derivar_humano`, humano). Es el cocinero de red de la instalación |
 | `encargos` | Pedido a medida paso a paso, precio sugerido con la tabla de precios, `enviar_presupuesto` (aprobación, irreversible), estados del encargo (comando `estado`, solo la dueña) |
 | `cobros` | Circuito de la seña: el cliente avisa y queda `confirmar_pago` (aprobación, irreversible) |
-| `agenda` | Turnos (`confirmar_turno`, aprobación) y recordatorios (`enviar_recordatorio`, automático) |
-| `avisos` | Le avisa al cliente cada cambio de estado (`avisar_estado`, automático) |
+| `agenda` | Turnos (`confirmar_turno`, aprobación) y recordatorios (`enviar_recordatorio`, aprobación: sale al mundo) |
+| `avisos` | Le avisa al cliente cada cambio de estado (`avisar_estado`, aprobación: sale al mundo) |
 | `tareas` | Lo del negocio para la Secretaria del orquestador (`owner_tasks`): prioridades, motivos y opciones A/B/C |
 | `tienda` | Catálogo de solo lectura (feed JSON o CSV por URL, Tiendanube, Shopify o WooCommerce): precio, stock y link; nunca inventa |
 
