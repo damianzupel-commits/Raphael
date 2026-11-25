@@ -16,6 +16,7 @@ from __future__ import annotations
 import queue
 import sys
 import threading
+import time
 import tkinter as tk
 from collections.abc import Callable
 from pathlib import Path
@@ -83,6 +84,8 @@ class RaphaelApp(tk.Tk):
         super().__init__()
         self.app = PanelState()
         self._jobs: queue.Queue = queue.Queue()
+        self._approving = 0.0   # momento en que empezó a correr una acción aprobada (0 = ninguna)
+        self._approving_pid = 0
         self._busy = False   # True mientras el chat espera a un modelo (el tick no se cruza)
         self.scope = ORCHESTRATOR
         self._view_now = "main"
@@ -117,7 +120,7 @@ class RaphaelApp(tk.Tk):
     def reload_ui(self) -> None:
         """Recarga la interfaz sin cerrar la app: vuelve a leer raphael.env y los modelos, re-descubre las brigadas y
         vuelve a armar todas las vistas. Se queda en la misma brigada y en la misma sección."""
-        if self._busy:
+        if self._busy or self._approving:
             return
         scope, view = self.scope, self._view_now
         try:
@@ -149,7 +152,7 @@ class RaphaelApp(tk.Tk):
 
     def _tick(self) -> None:
         """Cada minuto: tareas programadas de las brigadas y su healthcheck (que el runtime corre cada 5 min)."""
-        if not self._busy:
+        if not self._busy and not self._approving:
             try:
                 self.app.tick()
             except Exception:  # noqa: BLE001 - un tick que falla no tumba la ventana; queda en la auditoría
@@ -711,12 +714,38 @@ class RaphaelApp(tk.Tk):
             self.refresh()
 
     def _resolve(self, pid: int, approve: bool) -> None:
-        try:
-            msg = self.app.approve(pid) if approve else self.app.reject(pid)
-        except Exception as exc:  # noqa: BLE001
-            msg = f"No se pudo: {exc}"
-        self.chat_note.configure(text=msg)
-        self.refresh()
+        if not approve:
+            try:
+                msg = self.app.reject(pid)
+            except Exception as exc:  # noqa: BLE001
+                msg = f"No se pudo: {exc}"
+            self.chat_note.configure(text=msg)
+            self.refresh()
+            return
+        if self._approving:
+            self.chat_note.configure(text="Ya hay una acción corriendo: esperá a que termine.")
+            return
+        # lo aprobado se ejecuta (un escaneo puede tardar minutos): en segundo plano, para que la ventana no se congele
+        self._approving = time.monotonic()
+        self._approving_pid = pid
+        self._tick_running()
+
+        def work() -> None:
+            try:
+                msg = self.app.approve(pid)
+            except Exception as exc:  # noqa: BLE001
+                msg = f"No se pudo: {exc}"
+            self._jobs.put(("approval", (True, msg)))
+
+        threading.Thread(target=work, daemon=True).start()
+
+    def _tick_running(self) -> None:
+        """Mientras corre una acción aprobada, la nota del chat dice cuánto lleva."""
+        if not self._approving:
+            return
+        self.chat_note.configure(
+            text=f"ejecutando #{self._approving_pid}… {int(time.monotonic() - self._approving)} s (podés seguir usando el panel)")
+        self.after(1000, self._tick_running)
 
     # --- vista de una brigada -------------------------------------------------------------------------------------------
     def _view_brigade(self, f: tk.Frame) -> None:
@@ -1010,6 +1039,11 @@ class RaphaelApp(tk.Tk):
         try:
             while True:
                 kind, (ok, out) = self._jobs.get_nowait()
+                if kind == "approval":
+                    self._approving = 0.0
+                    self.app._say(self.scope, "system", "harness", f"Acción aprobada, resultado: {out}")  # noqa: SLF001
+                    self.refresh()
+                    continue
                 if kind == "chat":
                     self.chat_send.set(enabled=True)
                     self._busy = False
