@@ -1,0 +1,54 @@
+# Brigada Seguridad (pieza 05): la ÚNICA fuente de verdad de lo que puede hacer.
+# Niveles: automatico | aprobacion | humano. Etiquetas: external = sale al mundo · irreversible = sin vuelta atrás · spend = gasta plata.
+# Reglas que no se tocan: el pentest activo corre SOLO en la edición personal (PC de Damián): sus tools son `active_scan`, el harness
+# no las carga en la nube y el cocinero se niega igual. Cada corrida pide aprobación. Nada se explota: se reporta.
+id: seguridad
+name: Seguridad
+version: 2.0.0
+contract: ">=2.1,<3"
+description: Audita código propio (secretos, dependencias, configuración), hace pentest activo solo en la PC de Damián con su aprobación por corrida y vigila la propia instalación. Nunca explota nada.
+editions: [personal, cloud]
+cooks:
+  - {id: auditor, entry: "raphael_seguridad.cooks:Auditor"}
+  - {id: pentest, entry: "raphael_seguridad.cooks:Pentest"}
+  - {id: vigilancia, entry: "raphael_seguridad.cooks:Watch"}
+actions:
+  pentest_corrida: {level: aprobacion, tags: [external], description: "correr un escaneo activo (nmap, ZAP o sqlmap) sobre un objetivo autorizado, solo en la PC"}
+  purgar_historial: {level: aprobacion, tags: [irreversible], description: "borrar el historial de auditorías, pentests, alertas o accesos"}
+tools:
+  - {name: nmap_scan, level: aprobacion, tags: [external], active_scan: true, description: "escanea puertos con nmap (solo PC, objetivos autorizados)"}
+  - {name: zap_scan, level: aprobacion, tags: [external], active_scan: true, description: "escaneo web con ZAP (solo PC, objetivos autorizados)"}
+  - {name: sqlmap_scan, level: aprobacion, tags: [external], active_scan: true, description: "detecta inyección SQL sin volcar datos (solo PC, objetivos autorizados)"}
+  - {name: auditar_proyecto, description: "auditoría estática de un repo de la lista autorizada"}
+events:
+  publishes: [seguridad.auditoria_terminada, seguridad.hallazgo_critico, seguridad.alerta, seguridad.pentest_terminado]
+  consumes: [acceso.fallido]
+commands:
+  auditar: {read: true, description: "audita un repo de la lista autorizada {'repo': ruta}"}
+  hallazgos: {read: true, description: "hallazgos abiertos de las auditorías {'severity', 'tool'}"}
+  ultimo_reporte: {read: true, description: "el último reporte de auditoría {'repo'}"}
+  repos: {read: true, description: "repos autorizados para auditar"}
+  purgar: {read: false, description: "borra historial {'what': auditorias|pentests|alertas|accesos}; pide aprobación"}
+  pentest_proponer: {read: false, description: "propone un escaneo {'kind': nmap|zap|sqlmap, 'target', 'option'}; pide aprobación"}
+  pentest_estado: {read: true, description: "edición, adaptador y lista de objetivos del pentest"}
+  pentest_resultados: {read: true, description: "resultados de pentests guardados"}
+  vigilar: {read: true, description: "corre los chequeos de vigilancia ahora"}
+  alertas: {read: true, description: "alertas abiertas de la vigilancia"}
+routing:
+  signals:
+    - {pattern: "\\bseguridad\\b|\\bpentest\\b|\\bvulnerabilidad\\w*|\\bauditor\\w*|\\bsecretos expuestos\\b|\\bnmap\\b|\\bsqlmap\\b", weight: 2}
+    - {pattern: "\\bescane\\w+|\\bcertificado\\b|\\bbackups?\\b|\\balertas?\\b|\\bintentos de acceso\\b", weight: 1}
+store:
+  space: seguridad
+uninstall:
+  export: [auditorias, pentests, alertas]
+  delete: ["*"]
+setup: "raphael_seguridad.health:validate"
+health: "raphael_seguridad.health:check"
+config_schema:
+  type: object
+  additionalProperties: false
+  properties:
+    repos: {type: array, items: {type: string}}
+    targets_file: {type: string}
+    watch: {type: object}
