@@ -59,7 +59,8 @@ def main(argv: list[str] | None = None) -> int:
         print(f"ERROR {k}: {v}", file=sys.stderr)
     print(f"Canal de Meta en modo {meta.settings.mode}: {', '.join(sorted(rt.connectors)) or 'sin canales'}")
     env_file = Path(a.datos) / "raphael.env"
-    app = create_app(rt, meta=meta, env_file=env_file)
+    local_open = os.environ.get("RAPHAEL_LOCAL_SIN_CLAVE") == "1"
+    app = create_app(rt, meta=meta, env_file=env_file, local_open=local_open)
     if a.accion == "servir" and not app.state.auth.has_key():
         print(first_key(app, Path(a.datos)).replace("{port}", str(a.port)))
     items = [] if a.accion == "clave" else check(
