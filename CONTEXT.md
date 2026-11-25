@@ -36,7 +36,7 @@ raphael/
     c-despliegue/            vps/, instalacion-clienta/, cuentas-y-apis/
   3-mando/                   cómo se dirige el proyecto
     a-conocimiento/          ESTADO, LIENZO-DAMIAN (lo único que falta poner), PLAN-MAESTRO, PIEZAS, BRIGADAS, SPEC-FAMILIA, log/
-    b-herramientas/          gate.bat (puerta de todas las suites, 1854 tests el 25 nov, + ruff), pruebas-contrato/, pruebas-e2e/
+    b-herramientas/          gate.bat (puerta de todas las suites, 1872 tests el 25 nov, + ruff), pruebas-contrato/, pruebas-e2e/
     c-referencia/            código viejo de JarvisRemote y Empresas, solo lectura
   .venv/, .data/             entorno y datos locales, fuera de git
 ```

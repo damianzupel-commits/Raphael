@@ -32,14 +32,14 @@ class Risk(_Base):
 
 
 class Data(_Base):
-    adapter: str = Field("simulado", pattern="^(simulado|csv|oanda)$")
+    adapter: str = Field("simulado", pattern="^(simulado|csv|oanda|ibkr)$")
     csv_path: str = ""                               # para adapter=csv: columnas t,o,h,l,c[,v]
     candles: int = Field(300, ge=60, le=5000)
     sim_seed: int | None = None                      # semilla del simulado (vacío = una por instrumento)
 
 
 class Broker(_Base):
-    adapter: str = Field("simulado", pattern="^(simulado|oanda)$")
+    adapter: str = Field("simulado", pattern="^(simulado|oanda|ibkr)$")
     environment: str = Field("practice", pattern="^(practice|live)$")   # real exige además TRADING_ALLOW_LIVE=1
 
 

@@ -12,6 +12,7 @@ dependencies = ["raphael-core>=2.0.0rc3", "pydantic>=2.5", "pyyaml>=6", "httpx>=
 
 [project.optional-dependencies]
 dev = ["pytest>=8"]
+ibkr = ["ib_async>=1.0"]
 
 [project.entry-points."raphael.brigades"]
 trading = "raphael_trading"

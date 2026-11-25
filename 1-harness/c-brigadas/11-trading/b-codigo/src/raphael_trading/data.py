@@ -17,6 +17,7 @@ from pathlib import Path
 import httpx
 
 from . import engine as E
+from . import ibkr
 from .config import Instrument, TradingConfig
 
 OANDA_HOSTS = {"practice": "https://api-fxpractice.oanda.com", "live": "https://api-fxtrade.oanda.com"}
@@ -68,7 +69,8 @@ def oanda_candles(inst: Instrument, n: int, *, env: dict | None = None, transpor
 
 
 def load_candles(cfg: TradingConfig, inst: Instrument, *, env: dict | None = None,
-                 transport: httpx.BaseTransport | None = None) -> tuple[list[E.Candle], Source]:
+                 transport: httpx.BaseTransport | None = None,
+                 ibkr_session: ibkr.IbkrSession | None = None) -> tuple[list[E.Candle], Source]:
     """Velas del instrumento según `cfg.data.adapter`; si el real no se puede usar, cae al simulado y lo dice."""
     env = os.environ if env is None else env
     n = cfg.data.candles
@@ -77,6 +79,15 @@ def load_candles(cfg: TradingConfig, inst: Instrument, *, env: dict | None = Non
         if not cfg.data.csv_path or not Path(cfg.data.csv_path).is_file():
             return simulated_candles(inst, n, cfg.data.sim_seed), Source("simulado", True, "no encuentro el CSV: uso simulados")
         return csv_candles(cfg.data.csv_path, n), Source("csv", False)
+    if kind == "ibkr":
+        try:
+            if ibkr_session is None and not ibkr.available():
+                raise ibkr.IbkrError("falta instalar ib_async")
+            session = ibkr_session or ibkr.get_session(cfg.broker.environment, env)
+            candles = ibkr.fetch_candles(session, inst.name, inst.timeframe, n)
+        except ibkr.IbkrError as exc:
+            return simulated_candles(inst, n, cfg.data.sim_seed), Source("simulado", True, f"IBKR: {exc}: uso simulados")
+        return candles, Source("ibkr", False)
     if kind == "oanda":
         if not env.get("OANDA_API_TOKEN"):
             return simulated_candles(inst, n, cfg.data.sim_seed), Source("simulado", True, "falta OANDA_API_TOKEN: uso simulados")

@@ -362,7 +362,7 @@ def test_ws_phone_sin_sesion_se_cierra_sin_tocar_el_enlace_y_avisa(api):
 def test_ws_phone_sin_operaciones_instalada_cierra_con_motivo(tmp_path, monkeypatch):
     from starlette.websockets import WebSocketDisconnect
 
-    monkeypatch.setattr("raphael_personal_api.app.phone_link_default", lambda: None)   # como si Operaciones no estuviera
+    monkeypatch.setattr("raphael_personal_api.app.phone_link_default", lambda: None)   # aunque la brigada esté instalada con pip
 
     rt, report = boot.start(INSTALACION, tmp_path, dev_dirs=[], environ={}, installed=False)
     app = create_app(rt, report=report, tick=False, environ={})
