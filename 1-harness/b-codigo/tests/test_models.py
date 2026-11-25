@@ -46,6 +46,7 @@ CONFIG = {
     "overrides": {"cocinero.forense": ["local"]},
     "private": ["cerebro"],
     "paid_cap_usd_month": 0.02,
+    "local_retry_seconds": 0,
 }
 ENV = {"K_PAGO": "kp", "K_G1": "k1", "K_G2": "k2"}
 
@@ -200,3 +201,25 @@ def test_set_env_pone_y_saca_claves_en_caliente():
     assert t.llamadas[0][2]["Authorization"] == "Bearer nueva"
     g.set_env({})
     assert g.label("mando").startswith("casa")
+
+
+def test_un_modelo_local_que_se_corta_se_reintenta_una_vez_y_no_queda_en_pausa():
+    class SeCortaUnaVez(Transporte):
+        def __call__(self, url, body, headers):
+            self.llamadas.append((url, body, headers))
+            if len(self.llamadas) == 1:
+                raise RuntimeError("Channel Error")      # LM Studio descargó el modelo a mitad de la respuesta
+            return OK
+
+    t = SeCortaUnaVez()
+    g, usage, _ = gw(transport=t)
+    assert g.complete("ruteo", [], prefer="casa") == "hola"
+    assert len(t.llamadas) == 2 and usage.summary()["ai_failures"] == 0
+    assert g.complete("ruteo", [], prefer="casa") == "hola"     # no quedó en pausa: sigue atendiendo
+
+
+def test_un_proveedor_de_la_nube_que_falla_no_se_reintenta():
+    t = Transporte(fallan={"https://pago.example": RuntimeError("caído")})
+    g, _, _ = gw(transport=t)
+    g.complete("mando", [])
+    assert sum(1 for u, *_ in t.llamadas if u.startswith("https://pago.example")) == 1

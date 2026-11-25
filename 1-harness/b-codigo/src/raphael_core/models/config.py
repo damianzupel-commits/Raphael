@@ -68,6 +68,7 @@ class ModelsConfig(_Base):
     paid_cap_usd_month: float = Field(0.0, ge=0)   # 0 = en los escalones pagos solo se usan proveedores sin costo
     private: list[str] = Field(default_factory=list)  # brigadas o ayudantes privados: solo modelos locales
     cooldown_seconds: float = Field(60.0, ge=0)        # pausa de un proveedor que dio "límite alcanzado"
+    local_retry_seconds: float = Field(3.0, ge=0)     # espera antes de reintentar UNA vez un modelo local que se cortó
     error_cooldown_seconds: float = Field(20.0, ge=0)  # pausa de un proveedor que falló por otra cosa
 
     @model_validator(mode="after")

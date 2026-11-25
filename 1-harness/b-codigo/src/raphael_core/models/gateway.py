@@ -165,8 +165,17 @@ class ModelGateway:
                 headers["Authorization"] = f"Bearer {key}"   # la clave de ESTE proveedor, solo a él
             self._calls[c.name].append(self._now())
             try:
-                data = self._transport(f"{c.spec.base_url.rstrip('/')}/chat/completions",
-                                       {"model": c.spec.model, "messages": messages, **body, **c.spec.extra}, headers)
+                try:
+                    data = self._transport(f"{c.spec.base_url.rstrip('/')}/chat/completions",
+                                           {"model": c.spec.model, "messages": messages, **body, **c.spec.extra}, headers)
+                except Exception as exc:  # noqa: BLE001
+                    if not c.spec.is_local or _is_rate_limit(exc):
+                        raise
+                    # el modelo local a veces se descarga a mitad de una respuesta (LM Studio lo saca al cargar otro, p. ej.
+                    # el de embeddings): se reintenta una vez, ya recargado, antes de darlo por caído y pausarlo
+                    time.sleep(self.config.local_retry_seconds)
+                    data = self._transport(f"{c.spec.base_url.rstrip('/')}/chat/completions",
+                                           {"model": c.spec.model, "messages": messages, **body, **c.spec.extra}, headers)
                 out = accept(data["choices"][0]["message"] or {})
             except Exception as exc:  # noqa: BLE001 - cualquier falla pasa al siguiente candidato
                 self.usage.record_ai(role, c.spec.model, 0, 0, 0.0, False, tier=c.tier, provider=c.name)
