@@ -1,0 +1,38 @@
+# EJEMPLO (no se carga solo) de modelos por rol para Raphael personal: mixto, decidido por Damián el 25 nov 2026.
+#  - Lo sensible (Seguridad, Investigación, Memoria, Operaciones) corre en LOCAL (Ollama o LM Studio en su PC).
+#  - Lo demás, en la nube (NVIDIA). Cualquier rol se puede cambiar editando `roles` / `overrides`.
+#  - Si el modelo local no está prendido: el orquestador avisa y lo sensible sigue por reglas. NUNCA se manda a la nube.
+# El archivo real de modelos es del harness (1-harness/b-codigo/src/raphael_core/models/modelos.yaml); este ejemplo es el que
+# se copia como modelos de la instalación personal. Las claves van por variable de entorno, nunca acá.
+# SUPUESTOS sin verificar: el slug del modelo local (el que Damián tenga bajado), los ids de brigada de `private` (se alinean
+# con el `id` de cada manifest.yaml cuando las otras piezas lo terminen), y que los términos de NVIDIA permitan este uso personal.
+providers:
+  local-ollama:
+    base_url: http://localhost:11434/v1        # Ollama. Para LM Studio: http://localhost:1234/v1
+    model: llama3.1:8b                          # SUPUESTO: poné el modelo que tengas bajado (`ollama list`)
+    # sin api_key_env: el local no lleva clave
+  nvidia:
+    base_url: https://integrate.api.nvidia.com/v1
+    model: nvidia/nemotron-3.5-super-vl-120b-a12b
+    api_key_env: NVIDIA_API_KEY
+    usd_per_million_in: 0
+    usd_per_million_out: 0
+    rpm: 40
+    extra:
+      chat_template_kwargs: {enable_thinking: false}
+tiers:
+  pago: []
+  gratis: [nvidia]
+  local: [local-ollama]
+roles:
+  mando: [gratis, local]
+  voz: [gratis, local]
+  ruteo: [gratis, local]
+  jefe: [gratis, local]
+  cocinero: [gratis, local]
+  efimero: [gratis, local]
+# Lo privado usa SOLO el escalón local (la pasarela lo exige mirando la dirección: localhost), sin importar el rol.
+private: [seguridad, investigacion, memoria, operaciones]
+overrides: {}        # ej.: "ruteo.trading": [local]  para cambiar un rol de una brigada a local
+paid_tiers: []
+paid_cap_usd_month: 0

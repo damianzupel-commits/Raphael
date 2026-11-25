@@ -89,6 +89,14 @@ class ProactiveConfig(_Base):
     enabled: bool = True
     new_pending: Literal["human", "all", "none"] = "human"   # qué pendientes nuevos se avisan
     remind_after_hours: float = Field(24, ge=0)               # 0 = sin recordatorios
+    warn_no_ai: bool = True                                   # avisar (una vez por día) si falta el modelo de algún rol
+
+
+class SpeechConfig(_Base):
+    """Voz hablada (oír y hablar). `auto` = local si están los paquetes y la voz, si no apagada y lo avisa; `mock` = simulada."""
+
+    mode: Literal["auto", "local", "mock", "off"] = "auto"
+    max_chars: int = Field(1200, ge=100, le=5000)    # lo más largo que se lee en voz alta
 
 
 class OrchestratorConfig(_Base):
@@ -99,6 +107,7 @@ class OrchestratorConfig(_Base):
     watchdog: WatchdogConfig = WatchdogConfig()
     joint: JointConfig = JointConfig()
     proactive: ProactiveConfig = ProactiveConfig()
+    speech: SpeechConfig = SpeechConfig()
     chat_direct: bool = True        # saludo / gracias / chau los contesta el orquestador sin despertar a una brigada
     self_knowledge: bool = True     # "¿qué brigadas tenés?" lo contesta el orquestador con el catálogo
     drafts: bool | None = None      # comandos de brigadas por borrador; None = solo en la edición personal

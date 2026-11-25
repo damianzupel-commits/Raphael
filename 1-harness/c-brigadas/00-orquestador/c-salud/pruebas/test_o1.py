@@ -195,6 +195,8 @@ def test_el_orquestador_no_importa_brigadas_ni_nada_fuera_del_nucleo_y_la_stdlib
                 names = [node.module]
             for n in names:
                 top = n.split(".")[0]
+                if f.name == "speech_worker.py" and top in ("faster_whisper", "piper"):
+                    continue   # subproceso aparte con las librerías de voz local (opcionales, importadas adentro)
                 if top not in ALLOWED and top not in sys.stdlib_module_names:
                     bad.append(f"{f.name}: {n}")
     assert bad == [], bad

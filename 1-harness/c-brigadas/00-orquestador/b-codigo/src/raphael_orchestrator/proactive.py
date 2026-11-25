@@ -7,6 +7,8 @@ brigadas 07 y 09). Acá corre en los ganchos del harness (`on_event` y `tick`), 
   - pendiente nuevo que resuelve una persona (o todos, según config) -> aviso;
   - el jefe de una brigada quedó caído, o su chequeo de salud la dejó sin atender -> aviso;
   - el harness propone dejar algo en automático (confianza progresiva) -> aviso;
+  - falta el modelo de IA de un rol (sin clave, tope agotado) o el modelo LOCAL que necesitan las brigadas privadas
+    (apagado): se avisa y se sigue por reglas; lo privado nunca se manda a la nube para compensar;
   - un pendiente que lleva más de `remind_after_hours` sin resolverse -> un recordatorio (una sola vez por pendiente).
 Cada aviso se da una sola vez (se recuerda en el espacio del orquestador).
 """
@@ -71,12 +73,34 @@ def on_event(ctx: Any, cfg: OrchestratorConfig, event: str, data: dict) -> dict 
     return None
 
 
+def no_ai_problems(ctx: Any) -> list[tuple[str, str]]:
+    """Qué falta de IA: lista de (clave, mensaje). Solo lee. Los roles que habla la persona (mando, voz, ruteo) y, si hay
+    brigadas privadas montadas, el modelo local que ellas exigen."""
+    out = [(f"role-{r}", f"No hay modelo de IA para el rol «{r}» (falta la clave o se llegó al tope): sigo por reglas.")
+           for r in ("mando", "voz", "ruteo") if not ctx.has_ai(r)]
+    private = [b.get("name") or b["id"] for b in ctx.catalog() if b.get("private") and b.get("mounted", True)]
+    if private and not ctx.has_ai("voz", private=True):
+        out.append(("local", "El modelo local (Ollama o LM Studio) no está prendido o no está configurado. "
+                             f"Lo sensible ({', '.join(private)}) sigue sin IA y NO se manda a la nube; "
+                             "prendelo para volver a usarlo."))
+    return out
+
+
+def _no_ai_notices(ctx: Any, cfg: OrchestratorConfig, now: datetime) -> list[dict]:
+    if not cfg.proactive.warn_no_ai:
+        return []
+    return [ctx.notify(msg, kind="no_ai") for key, msg in no_ai_problems(ctx)
+            if _once(ctx, f"noai-{key}-{now.date().isoformat()}")]
+
+
 def tick(ctx: Any, cfg: OrchestratorConfig, now: datetime) -> list[dict]:
     """Recordatorios de pendientes viejos. Solo lee y avisa."""
     p = cfg.proactive
-    if not p.enabled or p.remind_after_hours <= 0:
+    if not p.enabled:
         return []
-    out = []
+    out = _no_ai_notices(ctx, cfg, now)
+    if p.remind_after_hours <= 0:
+        return out
     for doc in ctx.pending():
         try:
             age = (now - datetime.fromisoformat(doc.get("created"))).total_seconds() / 3600
