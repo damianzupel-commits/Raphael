@@ -394,3 +394,17 @@ def test_los_roles_no_muestran_un_modelo_local_que_no_esta_prendido():
     assert st["roles"]["ruteo"]["now"].startswith("ollama")
     sin_nube = ModelGateway(cfg, Usage(Espacio(), 10**6, ahora), env={})
     assert cerebro.status(cfg, caido, sin_nube)["roles"]["mando"]["now"] == "sin modelo (reglas)"
+
+
+def test_el_tope_de_gasto_es_cero_salvo_que_se_pida():
+    from raphael_personal_api import cerebro
+
+    assert cerebro.load(environ={}).paid_cap_usd_month == 0
+    assert cerebro.load(environ={"RAPHAEL_TOPE_PAGO_USD": "5"}).paid_cap_usd_month == 5
+    assert cerebro.check_field("RAPHAEL_TOPE_PAGO_USD", "2,5") == "2.5"
+    for mal in ("-1", "mucho", "5000"):
+        try:
+            cerebro.check_field("RAPHAEL_TOPE_PAGO_USD", mal)
+        except ValueError:
+            continue
+        raise AssertionError(mal)

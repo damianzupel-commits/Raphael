@@ -16,7 +16,7 @@ if not exist "%ROOT%\.venv\Scripts\python.exe" (
 set "PY=%ROOT%\.venv\Scripts\python.exe"
 "%PY%" -m pip install -q --upgrade pip
 echo Instalando el nucleo, el orquestador y el servidor...
-"%PY%" -m pip install -q -e "%ROOT%\1-harness\b-codigo" -e "%ROOT%\1-harness\c-brigadas\00-orquestador\b-codigo" -e "%ROOT%\2-entrega\b-codigo\servidor\api" || goto falla
+"%PY%" -m pip install -q -e "%ROOT%\1-harness\b-codigo" -e "%ROOT%\1-harness\c-brigadas\00-orquestador\b-codigo" -e "%ROOT%\1-harness\c-brigadas\15-empresas\b-codigo" -e "%ROOT%\2-entrega\b-codigo\servidor\api" || goto falla
 echo Instalando las brigadas que haya en el repo...
 for /d %%D in ("%ROOT%\1-harness\c-brigadas\*") do (
     if /i not "%%~nxD"=="00-orquestador" if exist "%%D\b-codigo\pyproject.toml" (
@@ -28,7 +28,7 @@ call "%~dp0arrancar-personal.bat" chequear
 echo.
 echo Dejando Raphael como servicio de fondo (arranca con Windows)...
 call "%~dp0instalar-servicio.bat"
-schtasks /Run /TN "Raphael Personal" >nul 2>&1
+schtasks /Run /TN "Raphael Personal" >nul 2>&1 || wscript.exe "%~dp0arrancar-oculto.vbs"
 echo Creando el acceso directo "Raphael" en el escritorio...
 powershell -NoProfile -Command "$s=(New-Object -ComObject WScript.Shell).CreateShortcut([Environment]::GetFolderPath('Desktop')+'\Raphael.url'); $s.TargetPath='http://127.0.0.1:8788/'; $s.Save()" 
 echo.
