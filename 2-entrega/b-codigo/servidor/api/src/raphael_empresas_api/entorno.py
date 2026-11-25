@@ -140,8 +140,8 @@ def check(*, env: Mapping[str, str], installation: Any, models: Any, meta: Any, 
             "falta el perfil real de la clienta: perfil_a_instalacion.py, después de la entrevista")
     else:
         add("Perfil", "ok", f"negocio: {name}")
-    add("App", "ok" if app_key_set else "falta", "clave de la app puesta" if app_key_set else
-        "no hay clave de la app: la dueña no puede entrar", "python -m raphael_empresas_api clave --instalacion … --datos …")
+    add("App", "ok" if app_key_set else "info", "clave de la app puesta" if app_key_set else
+        "todavía no hay clave de la app: se genera sola en el primer arranque y se muestra una vez")
     return items
 
 

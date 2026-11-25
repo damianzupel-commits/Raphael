@@ -1,6 +1,8 @@
 # Qué cargar y dónde
 
-Un solo archivo de claves, un solo arranque. No hay que tocar código: todo lo que falta se carga en **`raphael.env`**.
+Un solo arranque, sin ninguna clave previa. Las claves se cargan, cambian o sacan **desde la pantalla de Configuración** (`http://127.0.0.1:8787/config`, o la dirección pública del túnel + `/config`), sin tocar archivos ni código; se aplican en el momento, sin reiniciar (las de la tienda piden reiniciar). Se guardan solo en el archivo local **`raphael.env`** (fuera de git) y la pantalla nunca las muestra completas: solo "cargada" y los últimos 4 caracteres. Editar el archivo a mano sigue andando igual.
+
+**Primer acceso:** en el primer arranque Raphael genera sola la clave de la app (formato `xxxx-xxxx-xxxx`), la muestra una vez en la ventana y la deja en `.data\empresas\clave-inicial.txt`. Con ella entrás a Configuración; ahí podés cambiarla (se borra `clave-inicial.txt`). El acceso directo abre la pantalla solo.
 Sin una clave el sistema no se rompe, degrada: sin IA responde por reglas, sin Meta real el canal queda en `mock` (no manda nada a nadie).
 
 ## Dónde va el archivo
@@ -25,17 +27,16 @@ Está fuera de git (`.data/`, `*.env`). Las claves **nunca** van al repo ni al c
 | `NVIDIA_API_KEY` | Solo pruebas de desarrollo; ningún escalón la usa por defecto | build.nvidia.com | Nada |
 
 Además, dos cosas que no son claves:
-- **Clave de la app de la dueña:** `arrancar.bat clave` (mínimo 8 caracteres). Sin ella la app no puede entrar.
+- **Clave de la app de la dueña:** se genera sola la primera vez; se cambia desde Configuración o con `arrancar.bat clave` (mínimo 8 caracteres).
 - **Perfil real de la clienta:** hoy la instalación trae datos de ejemplo (Taller Ejemplo). Se carga después de la entrevista con `1-harness\c-brigadas\15-empresas\b-codigo\scripts\perfil_a_instalacion.py`, y el resultado se guarda como `.data\empresas\installation.yaml`.
 
 El modelo, los escalones y el tope mensual de gasto en IA están en `1-harness/b-codigo/src/raphael_core/models/modelos.yaml` (hoy USD 5 por mes, supuesto a ajustar). Los slugs y precios de ese archivo son supuestos sin verificar contra openrouter.ai/models.
 
 ## Arrancar en la PC (Windows)
 1. `2-entrega\c-despliegue\windows\arrancar.bat chequear` → lista qué está cargado y qué falta, sin mostrar ningún valor. Se puede correr las veces que haga falta.
-2. `arrancar.bat clave` → la clave de la app (una vez).
-3. `arrancar.bat` → levanta todo (harness, Secretaria, brigada Empresas, API y canal de Meta) en `127.0.0.1:8787` y imprime el chequeo.
-4. Túnel: `tailscale funnel --bg 8787` y `tailscale funnel status` para ver la URL pública (verificarlo con la versión de Tailscale instalada). Esa URL + `/webhook/meta` es lo que se pega en la app de Meta, suscripto a `messages`. Poné la URL en `RAPHAEL_PUBLIC_URL` para que el chequeo la repita.
-5. Cuando todo esté: `META_MODE=real`, y `arrancar.bat chequear --real` tiene que terminar sin faltantes (código 0).
+2. `arrancar.bat` (o el acceso directo) → levanta todo (harness, Secretaria, brigada Empresas, API y canal de Meta) en `127.0.0.1:8787` y imprime el chequeo.
+3. Túnel: `tailscale funnel --bg 8787` y `tailscale funnel status` para ver la URL pública (verificarlo con la versión de Tailscale instalada). Esa URL + `/webhook/meta` es lo que se pega en la app de Meta, suscripto a `messages`. Poné la URL en `RAPHAEL_PUBLIC_URL` para que el chequeo la repita.
+4. Cuando todo esté: `META_MODE=real`, y `arrancar.bat chequear --real` tiene que terminar sin faltantes (código 0).
 
 Requiere que la PC esté prendida y con Python 3.12 y el `.venv` del repo (el mismo de la puerta). `arrancar.bat` agrega las cuatro piezas al `PYTHONPATH`, no hace falta instalarlas.
 

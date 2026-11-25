@@ -28,7 +28,7 @@ raphael/
 Cada carpeta tiene su README: qué es y cómo debe funcionar.
 
 ## Puerta
-`3-mando\b-herramientas\gate.bat` corre los 831 tests y ruff. Sale con 0 si todo pasa y con 2 si algo falla.
+`3-mando\b-herramientas\gate.bat` corre los 841 tests y ruff. Sale con 0 si todo pasa y con 2 si algo falla.
 
 ## Datos locales (fuera de git)
 `.venv/` y `.data/` en la raíz; `1-harness/b-codigo/.venv` y `.datos` son el entorno y los datos del panel. No se leen ni se suben.
