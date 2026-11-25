@@ -58,6 +58,7 @@ def start(installation_path: str | Path, data_dir: str | Path, *, dev_dirs: Iter
     """(runtime montado, reporte del cargador). El reporte trae `errors` por brigada y del orquestador.
     `connectors`: los canales de salida por nombre ("whatsapp", "instagram"), con un método `send(destinatario, texto)`."""
     inst = load_installation(installation_path)
+    inst.use_profile_from(os.environ if env is None else env)   # RAPHAEL_AUTONOMIA (deslizador de autonomía)
     data = Path(data_dir)
     data.mkdir(parents=True, exist_ok=True)
     clock = clock or local_clock(inst.timezone)

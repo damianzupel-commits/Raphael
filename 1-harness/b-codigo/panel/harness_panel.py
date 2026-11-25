@@ -25,6 +25,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent / "src"))
 sys.path.insert(0, str(HERE))
 
+from config_vista import ConfigView  # noqa: E402
 from demo import EXAMPLE_DRAFT, EXAMPLE_MANIFEST, MODULES, ORCHESTRATOR, STAGES, PanelState  # noqa: E402
 from widgets import (  # noqa: E402
     ACTIVE,
@@ -54,7 +55,6 @@ from widgets import (  # noqa: E402
     spaced,
 )
 
-from config_vista import ConfigView  # noqa: E402
 from raphael_core import CONTRACT_VERSION  # noqa: E402
 
 #: subvistas del Núcleo (herramientas del harness)

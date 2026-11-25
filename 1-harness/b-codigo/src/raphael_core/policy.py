@@ -10,6 +10,10 @@ Nivel de partida (gana el más específico, no el más estricto):
 Dejar a mano en `automatico` una acción con gasto o irreversible exige `confirmed_by`; si falta, esa regla
 se ignora con un aviso y se sigue con la capa siguiente.
 
+Perfil global (`installation.profile`, deslizador `RAPHAEL_AUTONOMIA`): cauteloso apaga la confianza progresiva y pide
+aprobación aun donde el manifiesto dice automático; confiado la baja con la mitad de aprobaciones. No toca la regla general:
+lo externo, lo que gasta y lo irreversible no baja solo a automático en ningún perfil.
+
 Confianza progresiva (por brigada y acción, guardada en el espacio `_trust`):
     - aprobar SIN cambios suma 1; a las `approvals_to_step_down` seguidas baja un escalón;
     - rechazar, aprobar CON cambios o corregir una acción automática sube un escalón;
@@ -89,8 +93,15 @@ class PolicyEngine:
                 continue
             return rule.level, source, notes
         if spec is not None:
+            if spec.level is Level.AUTO and self._inst.profile == "cauteloso":
+                return Level.APPROVAL, "el manifiesto (perfil cauteloso)", notes
             return spec.level, "el manifiesto", notes
         return Level.APPROVAL, "acción no declarada", notes
+
+    def _needed(self) -> int:
+        """Aprobaciones seguidas sin cambios para bajar un escalón: las de la instalación; en confiado, la mitad (mínimo 2)."""
+        n = self._inst.trust.approvals_to_step_down
+        return max(2, n // 2) if self._inst.profile == "confiado" and n > 2 else n
 
     def _state(self, brigade: str, action: str) -> dict:
         return self._trust.get(self.TRUST, f"{brigade}.{action}") or \
@@ -104,6 +115,8 @@ class PolicyEngine:
         spec = self.spec(brigade, action)
         risky = bool(spec and spec.risky)
         steps = self._state(brigade, action)["steps"] if self._inst.trust.enabled else 0
+        if self._inst.profile == "cauteloso":
+            steps = max(steps, 0)            # cauteloso: la confianza nunca baja un nivel (sí puede subirlo)
         level = _ORDER[max(0, min(len(_ORDER) - 1, base.weight + steps))]
         if origin is Origin.THIRD_PARTY and self._inst.trust.third_party_step_up and steps >= 0 and level is not Level.HUMAN:
             level = level.higher()
@@ -116,7 +129,7 @@ class PolicyEngine:
     # --- confianza progresiva ------------------------------------------------------------------------------------------
     def record_approval(self, brigade: str, action: str, changed: bool = False, who: str = "") -> str | None:
         """La persona aprobó. Devuelve "lowered", "propose" (hay que preguntarle) o None."""
-        if not self._inst.trust.enabled:
+        if not self._inst.trust.enabled or self._inst.profile == "cauteloso":
             return None
         if changed:
             return self.record_correction(brigade, action, who=who, why="aprobó con cambios")
@@ -125,7 +138,7 @@ class PolicyEngine:
             return None
         st = self._state(brigade, action)
         st["streak"] += 1
-        if st["streak"] < self._inst.trust.approvals_to_step_down:
+        if st["streak"] < self._needed():
             self._save(st)
             return None
         if d.level.lower() is Level.AUTO and d.risky:
@@ -137,7 +150,7 @@ class PolicyEngine:
         self._save(st)
         self._on_change("confianza_baja", who=who or "confianza", brigada=brigade, accion=action,
                         nivel=self.level(brigade, action).value,
-                        why=f"{self._inst.trust.approvals_to_step_down} aprobaciones seguidas sin cambios")
+                        why=f"{self._needed()} aprobaciones seguidas sin cambios")
         return "lowered"
 
     def record_correction(self, brigade: str, action: str, who: str = "", why: str = "") -> str | None:

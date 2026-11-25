@@ -10,9 +10,10 @@ import urllib.request
 from collections.abc import Callable
 from tkinter import filedialog, messagebox, ttk
 
-from config_modelo import (CAMPOS, NIVELES_AUTONOMIA, OPCIONES_APARIENCIA, SECCIONES, SIEMPRE_PIDE, Configuracion, es_local)
+from config_modelo import CAMPOS, NIVELES_AUTONOMIA, OPCIONES_APARIENCIA, SECCIONES, SIEMPRE_PIDE, Configuracion, es_local
+from widgets import ACTIVE, BG, CARD, CYAN, GREEN, INPUT, MONO, MUTED, ORANGE, PANEL, RED, SANS, TEXT, Pill, spaced
+
 from raphael_core.models.config import ROLES
-from widgets import ACTIVE, BG, CARD, CYAN, GREEN, INPUT, MUTED, ORANGE, PANEL, RED, SANS, TEXT, MONO, Pill, spaced
 
 #: prefijos de variables por brigada (id de la carpeta sin número) para el editor de «toda su config»
 PREFIJOS = {"seguridad": ("SEGURIDAD_", "NMAP_", "SQLMAP_", "ZAP_"), "antimalware": ("ANTIMALWARE_", "CLAMD_", "VIRUSTOTAL_"),
@@ -43,7 +44,7 @@ class ConfigView(tk.Frame):
         side.pack_propagate(False)
         tk.Label(side, text=spaced("Configuración"), bg=PANEL, fg=MUTED, font=(SANS, 8, "bold")).pack(anchor="w", padx=14, pady=(14, 8))
         self.nav: dict[str, tk.Label] = {}
-        for key, titulo, sub in SECCIONES:
+        for key, titulo, _sub in SECCIONES:
             b = tk.Label(side, text=titulo, bg=PANEL, fg=TEXT, font=(SANS, 10, "bold"), anchor="w", cursor="hand2", padx=14, pady=7)
             b.pack(fill="x")
             b.bind("<Button-1>", lambda e, k=key: self.mostrar(k))

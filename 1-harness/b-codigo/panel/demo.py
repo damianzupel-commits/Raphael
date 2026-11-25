@@ -22,6 +22,7 @@ from datetime import datetime
 from pathlib import Path
 
 import yaml
+from config_modelo import Configuracion, rutas_por_defecto
 from pydantic import ValidationError
 
 import raphael_core
@@ -34,8 +35,6 @@ from raphael_core.isolation import Guard
 from raphael_core.manifest import manifest_from
 from raphael_core.models import ModelGateway, Usage, load_models
 from raphael_core.store import Store
-
-from config_modelo import Configuracion, rutas_por_defecto
 
 PACKAGE_ROOT = Path(__file__).resolve().parents[1]
 
