@@ -9,6 +9,7 @@ from raphael_core import Health
 
 from .brain import Brain
 from .config import memoria_config, vault_path
+from .tools import make_tools
 
 
 def _config_error(exc: ValidationError) -> str:
@@ -44,3 +45,5 @@ def validate(ctx) -> None:
         memoria_config(ctx.config)
     except ValidationError as exc:
         raise ValueError(_config_error(exc)) from None
+    for name, fn in make_tools(ctx).items():
+        ctx.register_tool(name, fn)

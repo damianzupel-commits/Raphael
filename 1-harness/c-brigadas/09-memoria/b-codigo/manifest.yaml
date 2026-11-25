@@ -10,6 +10,7 @@ version: 2.0.0
 contract: ">=2.1,<3"
 description: Guarda, consolida y recupera conocimiento en un vault de notas, siempre con su origen. Lo sensible corre en local; sin modelo cae a reglas y avisa.
 editions: [personal, cloud]
+chief: "raphael_memoria.spec:SPEC"
 cooks:
   - {id: recuperador, entry: "raphael_memoria.cooks.retriever:Retriever"}
   - {id: consolidador, entry: "raphael_memoria.cooks.consolidator:Consolidator"}
@@ -23,6 +24,22 @@ actions:
   consolidar: {level: aprobacion, description: "escribir notas de síntesis de grupos de notas relacionadas (no toca las originales)"}
   olvidar: {level: aprobacion, tags: [irreversible], description: "borrar un episodio o una nota del vault (deja constancia en el registro)"}
   exportar_vault: {level: aprobacion, description: "copiar el vault entero a un .zip en la ruta que se indique"}
+tools:
+  - {name: memoria_recordar, description: "evidencia de una consulta: notas fuente con su extracto textual"}
+  - {name: memoria_buscar, description: "búsqueda híbrida (semántica y palabra clave) de notas"}
+  - {name: memoria_leer_nota, description: "una nota por id"}
+  - {name: memoria_notas, description: "notas del vault, filtradas por autor o etiqueta"}
+  - {name: memoria_estado, description: "estado del Cerebro: vault, embeddings, modo de búsqueda"}
+  - {name: memoria_asociar, description: "recuperación asociativa por activación propagada por los wikilinks"}
+  - {name: memoria_analogias, description: "análogos estructurales de una nota en otros dominios"}
+  - {name: memoria_componer, description: "notas en la intersección de varios conceptos"}
+  - {name: memoria_curiosidad, description: "huecos del vault: notas citadas que no existen y notas huérfanas"}
+  - {name: memoria_episodios, description: "episodios recientes o por tema"}
+  - {name: memoria_verificar_registro, description: "verifica la cadena de hashes del registro de memoria"}
+  - {name: memoria_actividad, description: "lo que Cerebro hizo solo, lo más nuevo primero"}
+  - {name: memoria_guardar, description: "guarda una nota nueva en el vault, firmada jarvis (aditivo: no toca las existentes)"}
+  - {name: memoria_olvidar, level: aprobacion, tags: [irreversible], description: "borrar un episodio o una nota del vault"}
+  - {name: memoria_exportar, level: aprobacion, description: "copiar el vault entero a un .zip en la ruta que se indique"}
 events:
   publishes: [memoria.degradada, memoria.recuperada]
   consumes: [memoria.captura, memoria.turno, nota.ingerida]
