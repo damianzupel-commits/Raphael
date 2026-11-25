@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "raphael-investigacion"
+dynamic = ["version"]
+description = "Brigada Investigación de Raphael (harness v2): forense, Scout, ideas y prototipos, tendencias."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = ["raphael-core>=2.0.0rc3", "pydantic>=2.5", "pyyaml>=6"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "raphael-orchestrator"]
+forense = ["pypdf>=4", "python-docx>=1", "Pillow>=10"]
+
+[project.entry-points."raphael.brigades"]
+investigacion = "raphael_investigacion"
+
+[tool.setuptools.dynamic]
+version = {attr = "raphael_investigacion.__version__"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+raphael_investigacion = ["manifest.yaml"]
+
+[tool.pytest.ini_options]
+testpaths = ["../c-salud/pruebas"]
+
+[tool.ruff]
+line-length = 130
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "BLE"]
+ignore = ["E501"]   # los textos en castellano van enteros en una línea; el formato lo cuida el autor, no el límite

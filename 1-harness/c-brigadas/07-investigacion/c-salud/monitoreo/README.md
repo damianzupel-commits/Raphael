@@ -1,6 +1,4 @@
 # Investigación · monitoreo
-Cómo se sabe si la brigada anda bien mientras corre.
-- Healthcheck: la función que declara `health` en `b-codigo/manifest.yaml`. Todavía no existe.
-- Métricas: qué se mide (latencia, errores, aprobaciones pendientes) y dónde se mira (panel del harness).
-- Alertas: qué dispara un aviso al dueño y por qué canal.
-Anotá acá cada chequeo nuevo con qué mira y qué hacer si falla.
+- Healthcheck: `raphael_investigacion.health:check` (al montar y cada 5 min). Da MAL solo con una config inválida. Que falte proveedor de búsqueda, `INVESTIGACION_LOG_KEY` o `inbox_dir` NO es salud mala: va en el detalle.
+- El cocinero `forense` también da mal si el registro encadenado de algún caso fue alterado.
+- Qué mirar: temas con `last_status` "sin proveedor", casos con `verificar_log` en falso, pendientes de confirmación viejos.
