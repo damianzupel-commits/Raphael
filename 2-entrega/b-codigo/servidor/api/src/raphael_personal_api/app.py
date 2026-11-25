@@ -10,13 +10,15 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import hashlib
 import os
+import secrets
 import time
 from collections.abc import AsyncIterator
 from pathlib import Path
 from typing import Any
 
-from fastapi import Depends, FastAPI, Header, HTTPException, Request
+from fastapi import Depends, FastAPI, Header, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse, Response
 from pydantic import BaseModel, Field
 from raphael_core import ActionError, Runtime
@@ -46,6 +48,25 @@ class CommandIn(BaseModel):
     data: dict[str, Any] = Field(default_factory=dict)
 
 
+class PairIn(BaseModel):
+    code: str = Field(min_length=4, max_length=20)
+    device: str = Field("", max_length=80)
+
+
+PAIR_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"   # sin 0/O ni 1/I
+PAIR_TTL = 300.0
+WS_AUTH_SECONDS = 10.0
+
+
+def phone_link_default():
+    """El enlace con el celular de la brigada Operaciones (`link`), o None si esa brigada no está instalada."""
+    try:
+        from raphael_operaciones.adapters.phone import link
+    except ImportError:
+        return None
+    return link
+
+
 class ChatIn(BaseModel):
     text: str = Field(min_length=1, max_length=4000)
     session: str = Field("app", max_length=40, pattern=r"^[A-Za-z0-9_-]+$")
@@ -62,11 +83,13 @@ def pending_view(p: dict) -> dict:
 
 def create_app(rt: Runtime, *, report: dict | None = None, tick: bool = True, env_file: Path | None = None,
                environ: dict[str, str] | None = None, local_open: bool = False, models_path: str | Path | None = None,
-               fetch: cerebro.Fetch = cerebro.http_get, speech: Any = None) -> FastAPI:
+               fetch: cerebro.Fetch = cerebro.http_get, speech: Any = None, phone_link: Any = None) -> FastAPI:
     """`report`: lo que devolvió `boot.start` (brigadas montadas, errores, pendientes).
     `env_file`: el `raphael.env` local donde la pantalla de Configuración guarda las claves (None = sin Configuración).
     `fetch`: cómo se mira si el modelo local responde (los tests ponen uno falso).
     `speech`: la voz hablada del orquestador (`speech_from`); None = sin voz (los endpoints dicen por qué).
+    `phone_link`: el enlace con el celular de Operaciones (`register`, `handle_incoming`, `unregister`); None = se busca
+    `raphael_operaciones.adapters.phone.link` al conectarse el celular.
     `local_open`: en la PC, los pedidos de esa misma PC entran sin clave (ver `is_same_pc`)."""
     environ = os.environ if environ is None else environ
     report = report or {}
@@ -164,6 +187,84 @@ def create_app(rt: Runtime, *, report: dict | None = None, tick: bool = True, en
         d = r.to_dict()
         d["meta"] = {"warnings": (d.get("meta") or {}).get("warnings", [])}
         return d
+
+    # --- celular: emparejamiento por código (QR) y WebSocket de Operaciones
+    pairing: dict[str, float] = {}      # hash del código -> vence (monotonic); de un solo uso
+
+    @app.post("/api/v1/phone/pair")
+    async def phone_pair(s: dict = Depends(session)) -> dict:
+        """Un código de un solo uso (5 minutos) para emparejar el celular. El QR lleva `payload`; sin `segno` no hay imagen."""
+        now = time.monotonic()
+        for h in [h for h, t in pairing.items() if t < now]:
+            pairing.pop(h)
+        if len(pairing) >= 5:
+            raise HTTPException(429, "ya hay códigos sin usar: esperá a que venzan o usalos")
+        code = "".join(secrets.choice(PAIR_ALPHABET) for _ in range(8))
+        pairing[hashlib.sha256(code.encode()).hexdigest()] = now + PAIR_TTL
+        base = environ.get("RAPHAEL_PUBLIC_URL", "").rstrip("/")
+        payload = f"raphael://pair?host={base}&code={code}" if base else f"raphael://pair?code={code}"
+        out = {"code": code, "expires_in": int(PAIR_TTL), "payload": payload, "host": base, "qr_svg": ""}
+        try:
+            import io
+
+            import segno
+
+            buf = io.BytesIO()
+            segno.make(payload).save(buf, kind="svg", scale=6)
+            out["qr_svg"] = buf.getvalue().decode()
+        except Exception:  # noqa: BLE001 - sin la librería (o falla): queda el texto del payload
+            pass
+        rt.audit.record("celular_codigo", who=user)
+        return out
+
+    @app.post("/api/v1/phone/redeem")
+    async def phone_redeem(body: PairIn, request: Request) -> dict:
+        """El celular canjea el código por una sesión. Sin sesión previa; el mismo tope de intentos que la clave."""
+        who = request.client.host if request.client else "?"
+        if auth.locked(who):
+            raise HTTPException(429, "demasiados intentos: esperá unos minutos")
+        h = hashlib.sha256(body.code.strip().upper().encode()).hexdigest()
+        exp = pairing.pop(h, None)
+        if exp is None or exp < time.monotonic():
+            auth.fail(who)
+            rt.bus.publish("acceso.fallido", {"source": who, "device": body.device[:40], "locked": auth.locked(who),
+                                              "via": "emparejamiento"}, source="servidor")
+            raise HTTPException(401, "código inválido o vencido")
+        rt.audit.record("celular_emparejado", who=user, dispositivo=body.device[:40])
+        return {"token": auth.issue(body.device or "celular"), "user": user}
+
+    @app.websocket("/ws/phone")
+    async def ws_phone(ws: WebSocket) -> None:
+        """El celular de Operaciones. Se identifica con `Authorization: Bearer` o con un primer mensaje `{"token": …}` (nunca
+        por la dirección, que queda en los registros). Cada mensaje siguiente va a `link.handle_incoming`."""
+        link = phone_link or phone_link_default()
+        if link is None:
+            await ws.close(code=1013, reason="Operaciones no está instalada")
+            return
+        h = ws.headers.get("authorization", "")
+        token = h[7:] if h.lower().startswith("bearer ") else None
+        await ws.accept()
+        if token is None:
+            try:
+                first = await asyncio.wait_for(ws.receive_json(), WS_AUTH_SECONDS)
+                token = first.get("token") if isinstance(first, dict) else None
+            except (TimeoutError, ValueError, WebSocketDisconnect):
+                token = None
+        if auth.check(token) is None:
+            who = ws.client.host if ws.client else "?"
+            rt.bus.publish("acceso.fallido", {"source": who, "device": "", "locked": False, "via": "ws/phone"}, source="servidor")
+            await ws.close(code=1008, reason="sesión inválida")
+            return
+        await link.register(ws)
+        rt.audit.record("celular_conectado", who=user)
+        try:
+            while True:
+                await link.handle_incoming(await ws.receive_text())
+        except WebSocketDisconnect:
+            pass
+        finally:
+            await link.unregister(ws)
+            rt.audit.record("celular_desconectado", who=user)
 
     # --- comandos y eventos (para los clientes de las brigadas, ej. el globo de Geolocalización: pines, capa, pin.agregado)
     @app.post("/api/v1/command")
