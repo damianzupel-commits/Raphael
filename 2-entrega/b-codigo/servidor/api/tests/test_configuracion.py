@@ -1,11 +1,10 @@
 """Configuración desde la app: claves a voluntad, guardadas solo en local, aplicadas en caliente y nunca devueltas completas."""
 
-import stat
-
 import pytest
 from fastapi.testclient import TestClient
 from test_entorno import boot
 
+from raphael_empresas_api import permisos
 from raphael_empresas_api.__main__ import first_key
 from raphael_empresas_api.app import create_app
 from raphael_empresas_api.meta import MetaChannel, http_post, settings_from_env
@@ -63,7 +62,7 @@ def test_poner_una_clave_de_ia_la_aplica_en_caliente_y_no_vuelve_completa(api):
     assert KEY not in c.get("/api/v1/config").text
     txt = env_file.read_text(encoding="utf-8")
     assert f"OPENROUTER_API_KEY={KEY}" in txt and "# mis claves" in txt and environ["OPENROUTER_API_KEY"] == KEY
-    assert stat.S_IMODE(env_file.stat().st_mode) == 0o600
+    assert permisos.es_privado(env_file)   # 600 en Linux/macOS; en Windows, sin acceso heredado (icacls)
 
 
 def test_sacar_la_clave_la_borra_del_archivo_y_de_la_ia(api):

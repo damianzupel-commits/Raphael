@@ -14,7 +14,9 @@ import tempfile
 from collections.abc import Mapping, MutableMapping
 from dataclasses import dataclass
 from pathlib import Path
+from urllib.parse import urlparse
 
+from . import permisos
 from .entorno import parse_env
 
 
@@ -37,6 +39,18 @@ FIELDS: tuple[Field, ...] = (
     Field("META_WA_PHONE_ID", "meta", "WhatsApp: id del número", secret=False, help="Phone number ID"),
     Field("META_IG_TOKEN", "meta", "Instagram: token", help="Token de usuario de la cuenta profesional"),
     Field("META_IG_HOST", "meta", "Instagram: servidor", secret=False, help="graph.instagram.com o graph.facebook.com"),
+    Field("MP_ACCESS_TOKEN", "cobros", "Mercado Pago: token", live=False, help="developers de Mercado Pago → Credenciales (el de prueba primero)"),
+    Field("MP_WEBHOOK_SECRET", "cobros", "Mercado Pago: clave de avisos", live=False, help="Sin ella no se acepta ningún aviso de pago"),
+    Field("MP_MODE", "cobros", "Mercado Pago: modo", secret=False, live=False, help="mock = simulado · real = cobra de verdad"),
+    Field("TRANSFER_TITULAR", "cobros", "Transferencia: titular", secret=False, live=False, help="Nombre del titular de la cuenta de la dueña"),
+    Field("TRANSFER_CBU_CVU", "cobros", "Transferencia: CBU o CVU", secret=False, live=False, help="22 dígitos"),
+    Field("TRANSFER_ALIAS", "cobros", "Transferencia: alias", secret=False, live=False),
+    Field("TRANSFER_BANCO", "cobros", "Transferencia: banco", secret=False, live=False),
+    Field("LOCAL_LLM_URL", "ia", "Modelo local: dirección", secret=False, help="Ollama http://127.0.0.1:11434 · LM Studio :1234"),
+    Field("LOCAL_LLM_KIND", "ia", "Modelo local: programa", secret=False, help="ollama o lmstudio"),
+    Field("DUCKDNS_TOKEN", "red", "DuckDNS: token (opcional)", live=False, help="duckdns.org, arriba en la página"),
+    Field("DUCKDNS_DOMAIN", "red", "DuckDNS: subdominio", secret=False, live=False, help="Sin .duckdns.org"),
+    Field("HCLOUD_TOKEN", "red", "Hetzner: token (opcional)", live=False, help="Solo cuando haya VPS"),
     Field("RAPHAEL_PUBLIC_URL", "red", "Dirección pública", secret=False, help="La del túnel; sirve para mostrarte el webhook"),
     Field("TIENDANUBE_TOKEN", "tienda", "Tiendanube: token", live=False),
     Field("SHOPIFY_TOKEN", "tienda", "Shopify: token", live=False),
@@ -45,6 +59,7 @@ FIELDS: tuple[Field, ...] = (
 )
 BY_NAME = {f.name: f for f in FIELDS}
 MAX_LEN = 600
+FREE_TEXT = {"TRANSFER_TITULAR", "TRANSFER_BANCO"}
 _ASCII_LINE = re.compile(r"^[\x21-\x7e]+$")   # claves y tokens: sin espacios ni saltos de línea
 
 
@@ -52,10 +67,10 @@ def hint(value: str) -> str:
     return "…" + value[-4:] if len(value) >= 12 else "••••"
 
 
-def view(env: Mapping[str, str]) -> list[dict]:
+def view(env: Mapping[str, str], fields: tuple[Field, ...] = FIELDS) -> list[dict]:
     """Lo que ve la app: nunca el valor completo de un secreto."""
     out = []
-    for f in FIELDS:
+    for f in fields:
         v = env.get(f.name, "")
         row = {"name": f.name, "group": f.group, "label": f.label, "secret": f.secret, "help": f.help, "set": bool(v),
                "live": f.live}
@@ -65,14 +80,20 @@ def view(env: Mapping[str, str]) -> list[dict]:
     return out
 
 
-def validate(name: str, value: str) -> str:
-    """El valor limpio o ValueError con el motivo (en español, sin repetir el valor)."""
-    if name not in BY_NAME:
+def validate(name: str, value: str, by_name: Mapping[str, Field] = BY_NAME, extra=None) -> str:
+    """El valor limpio o ValueError con el motivo (en español, sin repetir el valor).
+    `by_name`: los campos que acepta esta edición. `extra(name, valor)`: validación propia (devuelve el valor o ValueError)."""
+    if name not in by_name:
         raise ValueError(f"{name} no se puede cambiar desde la app")
     v = value.strip()
     if not v:
         raise ValueError(f"{name} está vacío (para sacarla usá «quitar»)")
-    if len(v) > MAX_LEN or not _ASCII_LINE.match(v):
+    if name == "TRANSFER_CBU_CVU":
+        v = re.sub(r"[\s.-]", "", v)               # se suele pegar con espacios o guiones
+    if name in FREE_TEXT:                           # nombres y bancos: con espacios y tildes, pero una sola línea limpia
+        if len(v) > 80 or not v.isprintable() or "#" in v or '"' in v or "'" in v:
+            raise ValueError(f"{name} tiene que ser una sola línea corta, sin comillas ni #")
+    elif len(v) > MAX_LEN or not _ASCII_LINE.match(v):
         raise ValueError(f"{name} tiene espacios, saltos de línea o caracteres raros: copiala de nuevo, entera")
     if name == "META_MODE" and v.lower() not in ("mock", "real"):
         raise ValueError("el modo es mock o real")
@@ -80,7 +101,18 @@ def validate(name: str, value: str) -> str:
         raise ValueError("el servidor de Instagram es graph.instagram.com o graph.facebook.com")
     if name == "RAPHAEL_PUBLIC_URL" and not v.startswith("https://"):
         raise ValueError("la dirección pública empieza con https://")
-    return v.lower() if name == "META_MODE" else v
+    if name == "MP_MODE" and v.lower() not in ("mock", "real", "off"):
+        raise ValueError("el modo de Mercado Pago es mock, real u off")
+    if name == "TRANSFER_CBU_CVU":
+        if not re.fullmatch(r"\d{22}", v):
+            raise ValueError("el CBU o CVU tiene 22 dígitos")
+    if name == "LOCAL_LLM_KIND" and v.lower() not in ("ollama", "lmstudio"):
+        raise ValueError("es ollama o lmstudio")
+    if name == "LOCAL_LLM_URL" and (urlparse(v).hostname or "") not in ("localhost", "127.0.0.1", "::1"):
+        raise ValueError("el modelo local corre en esta PC: http://127.0.0.1:<puerto>")
+    if extra is not None:
+        return extra(name, v)
+    return v.lower() if name in ("META_MODE", "MP_MODE", "LOCAL_LLM_KIND") else v
 
 
 def write_env_file(path: Path, changes: Mapping[str, str | None]) -> None:
@@ -102,8 +134,7 @@ def write_env_file(path: Path, changes: Mapping[str, str | None]) -> None:
     try:
         with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as fh:
             fh.write("\n".join(out) + "\n")
-        with contextlib.suppress(OSError):
-            os.chmod(tmp, 0o600)
+        permisos.restringir(tmp)
         os.replace(tmp, path)
     except BaseException:
         with contextlib.suppress(OSError):
@@ -111,14 +142,15 @@ def write_env_file(path: Path, changes: Mapping[str, str | None]) -> None:
         raise
 
 
-def apply(path: Path, environ: MutableMapping[str, str], set_: Mapping[str, str], clear: list[str]) -> list[str]:
+def apply(path: Path, environ: MutableMapping[str, str], set_: Mapping[str, str], clear: list[str],
+          by_name: Mapping[str, Field] = BY_NAME, extra=None) -> list[str]:
     """Valida todo primero (si algo está mal no se cambia nada), guarda en el archivo y en el entorno del proceso.
     Devuelve los nombres que necesitan reiniciar para tener efecto."""
     changes: dict[str, str | None] = {}
     for name, value in set_.items():
-        changes[name] = validate(name, str(value))
+        changes[name] = validate(name, str(value), by_name, extra)
     for name in clear:
-        if name not in BY_NAME:
+        if name not in by_name:
             raise ValueError(f"{name} no se puede cambiar desde la app")
         changes[name] = None
     for name, v in changes.items():
@@ -127,7 +159,7 @@ def apply(path: Path, environ: MutableMapping[str, str], set_: Mapping[str, str]
         else:
             environ.pop(name, None)
     write_env_file(path, changes)
-    return [n for n in changes if not BY_NAME[n].live]
+    return [n for n in changes if not by_name[n].live]
 
 
 def file_values(path: Path) -> dict[str, str]:

@@ -20,6 +20,7 @@ from pathlib import Path
 
 from raphael_empresas.boot import start
 
+from . import permisos, puentes
 from .app import create_app
 from .entorno import check, exit_code, load_env, render
 from .meta import MetaChannel, settings_from_env
@@ -32,10 +33,7 @@ def first_key(app, datos: Path) -> str:
     app.state.auth.set_key(k)
     note = datos / "clave-inicial.txt"
     note.write_text(k + "\n", encoding="utf-8")
-    try:
-        note.chmod(0o600)
-    except OSError:
-        pass
+    permisos.restringir(note)
     return (f"\n  Primera vez: la clave de la app es  {k}\n  Entrá en http://127.0.0.1:{{port}}/config para cargar las claves. "
             f"Queda en {note} hasta que la cambies desde Configuración.\n")
 
@@ -52,8 +50,10 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--real", action="store_true", help="chequear: exigir también IA, Meta real y perfil de la clienta")
     a = ap.parse_args(argv)
     env_files = load_env(a.datos, a.env)
+    puentes.apply_aliases(os.environ)
+    instalacion = puentes.efectiva(a.instalacion, Path(a.datos) / "installation.efectiva.yaml", os.environ)
     meta = MetaChannel.build(settings_from_env(os.environ))
-    rt, report = start(a.instalacion, a.datos, dev_dirs=a.dev, connectors=meta.connectors())
+    rt, report = start(instalacion, a.datos, dev_dirs=a.dev, connectors=meta.connectors())
     meta.bind(rt)
     for k, v in report["errors"].items():
         print(f"ERROR {k}: {v}", file=sys.stderr)
