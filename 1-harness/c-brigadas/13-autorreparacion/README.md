@@ -22,10 +22,11 @@ PC de Damián.
 - Ninguna brigada importa a otra: todo intercambio pasa por el harness y el orquestador.
 - Lo que sale al mundo, gasta plata o no tiene vuelta atrás pide aprobación (el nivel es configurable).
 - Sin modelo o sin red, la brigada cae a reglas y avisa; nunca inventa.
+- Las líneas rojas (seguridad, auth, secretos, políticas, niveles de autonomía y esta misma brigada) no se tocan ni con aprobación.
 - Cada acción declara su nivel de autonomía (automatico, aprobacion, humano) en el manifiesto.
 
 ## Estado
-Existe en JarvisRemote. Estado de validación: sin relevar.
+Portada al harness v2 (25 nov 2026): brigada `autorreparacion` 2.0.0, edición personal, 3 cocineros, 106 tests en verde y suite de contrato pasando. Probada solo con modelo y proyecto simulados: falta probarla en la PC de Damián contra el repo real y con una clave de IA real (ver `b-codigo/autorreparacionautorreparacion.env.plantilla`). Detalle de cómo se protege: `b-codigo/README.md`.
 
 ## Criterios de aceptación (mínimos)
 - Pasa la suite de contrato del harness v2 (manifiesto válido, healthcheck, montar y desmontar).
