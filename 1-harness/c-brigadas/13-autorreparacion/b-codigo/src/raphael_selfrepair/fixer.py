@@ -142,7 +142,8 @@ def verify(command: list[str], root: Path, timeout: int) -> tuple[bool, str]:
         return True, ""
     try:
         r = subprocess.run(command, cwd=root, capture_output=True, text=True, timeout=timeout, stdin=subprocess.DEVNULL,
-                           encoding="utf-8", errors="replace")
+                           encoding="utf-8", errors="replace",
+                           env={**os.environ, "PYTHONUTF8": "1"})   # en Windows un hijo escribe en cp1252
     except subprocess.TimeoutExpired:
         return False, f"se pasó de {timeout} s"
     except (FileNotFoundError, OSError) as exc:
