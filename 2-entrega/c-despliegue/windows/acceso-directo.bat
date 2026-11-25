@@ -23,6 +23,8 @@ echo.
 echo Arrancando Raphael. Deja esta ventana abierta; si la cerras, se apaga.
 echo Lo que falte cargar aparece abajo.
 echo.
+rem Abre la pantalla de Configuracion (claves) en el navegador cuando el servidor ya levanto.
+start "" /min cmd /c "timeout /t 6 /nobreak >nul & start http://127.0.0.1:8787/config"
 call "%~dp0arrancar.bat"
 echo.
 echo Raphael se apago.

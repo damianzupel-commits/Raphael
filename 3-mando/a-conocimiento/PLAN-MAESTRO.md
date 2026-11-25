@@ -94,7 +94,7 @@ El repo sigue el patrón a/b/c de a tres (ver `README.md` de la raíz): `1-harne
 - `2-entrega/c-despliegue/vps`: kit del VPS (pertenece al chat 3).
 - `2-entrega/c-despliegue/instalacion-clienta`: `clienta.installation.yaml` y `requirements-vps.txt` (chats 3 y 15).
 - `3-mando/b-herramientas/pruebas-contrato` y `3-mando/b-herramientas/pruebas-e2e`: suites transversales.
-- `3-mando/b-herramientas/`: scripts y la puerta de calidad `3-mando\b-herramientas\gate.bat` (core 408 + orchestrator 266 + business 124 + server 33 = 831 en verde, ruff limpio).
+- `3-mando/b-herramientas/`: scripts y la puerta de calidad `3-mando\b-herramientas\gate.bat` (core 409 + orchestrator 266 + business 124 + server 42 = 841 en verde, ruff limpio).
 - `3-mando/a-conocimiento/`: SPEC-FAMILIA, ESTADO, PIEZAS, BRIGADAS, PLAN-MAESTRO y el log del mando y del revisor. Los diseños y logs de cada pieza están en su rama.
 - `3-mando/c-referencia/`: código viejo de solo lectura. No se edita.
 - Chats de vida (Estudio, Divague, Rutina): no son del producto; sin código ni planes salvo que Damián lo pida.

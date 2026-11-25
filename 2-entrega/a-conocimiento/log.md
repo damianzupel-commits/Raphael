@@ -23,3 +23,9 @@ Resumen de cierre:
 - `c-despliegue/windows/arrancar.bat`, `raphael.env.plantilla` y `QUE-CARGAR.md` (el único documento de claves).
 - 7 tests nuevos (33 en el servidor, puerta 831). Probado en la nube con webhook mock y OpenRouter falso. Sin probar: el .bat en Windows, el túnel, OpenRouter y Meta reales.
 - Pendiente: perfil real de la clienta (entrevista); decidir si las respuestas a clientes pueden usar IA (hoy solo reglas).
+
+## 2026-11-25 · Configuración desde la app
+Resumen de cierre:
+- Raphael arranca sin claves. La clave de la app se genera sola la primera vez (se muestra una vez y queda en `clave-inicial.txt`); el chequeo ya no la marca como faltante.
+- Pantalla de Configuración web (`/config`) y API `/api/v1/config`: poner o sacar OpenRouter, Meta (modo mock/real, WhatsApp, Instagram), URL pública y tienda; se guardan solo en `raphael.env` local, se aplican en caliente y nunca se devuelven completas.
+- Tests: server 42, core 409, puerta 841. Pendiente: lo mismo en la app Android; `/config` no pasa por Caddy en el VPS (hay que habilitarlo ahí si se quiere).

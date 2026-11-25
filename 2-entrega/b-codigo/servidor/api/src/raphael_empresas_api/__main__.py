@@ -14,13 +14,30 @@ from __future__ import annotations
 import argparse
 import getpass
 import os
+import secrets
 import sys
+from pathlib import Path
 
 from raphael_empresas.boot import start
 
 from .app import create_app
 from .entorno import check, exit_code, load_env, render
 from .meta import MetaChannel, settings_from_env
+
+
+def first_key(app, datos: Path) -> str:
+    """Primer arranque sin clave: se genera una, se guarda hasheada y se muestra UNA vez (también queda en
+    `clave-inicial.txt` en la carpeta local de datos hasta que se cambie desde Configuración)."""
+    k = "-".join(secrets.token_hex(2) for _ in range(3))
+    app.state.auth.set_key(k)
+    note = datos / "clave-inicial.txt"
+    note.write_text(k + "\n", encoding="utf-8")
+    try:
+        note.chmod(0o600)
+    except OSError:
+        pass
+    return (f"\n  Primera vez: la clave de la app es  {k}\n  Entrá en http://127.0.0.1:{{port}}/config para cargar las claves. "
+            f"Queda en {note} hasta que la cambies desde Configuración.\n")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -41,7 +58,10 @@ def main(argv: list[str] | None = None) -> int:
     for k, v in report["errors"].items():
         print(f"ERROR {k}: {v}", file=sys.stderr)
     print(f"Canal de Meta en modo {meta.settings.mode}: {', '.join(sorted(rt.connectors)) or 'sin canales'}")
-    app = create_app(rt, meta=meta)
+    env_file = Path(a.datos) / "raphael.env"
+    app = create_app(rt, meta=meta, env_file=env_file)
+    if a.accion == "servir" and not app.state.auth.has_key():
+        print(first_key(app, Path(a.datos)).replace("{port}", str(a.port)))
     items = [] if a.accion == "clave" else check(
         env=os.environ, installation=rt.installation, models=rt.models, meta=meta.settings,
         app_key_set=app.state.auth.has_key(), env_files=env_files, public_url=os.environ.get("RAPHAEL_PUBLIC_URL", ""))

@@ -10,19 +10,23 @@ import asyncio
 import contextlib
 import hmac
 import json
+import os
 import re
 from collections.abc import AsyncIterator
 from datetime import date
+from pathlib import Path
 from typing import Any
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
-from fastapi.responses import PlainTextResponse
+from fastapi.responses import HTMLResponse, PlainTextResponse
 from pydantic import BaseModel, Field
 from raphael_core import ActionError, Runtime
 
-from . import API_VERSION, __version__
+from . import API_VERSION, __version__, configuracion
 from .auth import Auth
+from .entorno import check
 from .meta import MetaChannel, parse_webhook, verify_signature
+from .pagina import PAGINA
 
 BRIGADE = "empresas"
 TICK_SECONDS = 60
@@ -40,6 +44,15 @@ STATUSES = ("en_confeccion", "prueba", "listo", "entregado", "cancelado")
 class LoginIn(BaseModel):
     key: str = Field(min_length=1, max_length=200)
     device: str = Field("", max_length=80)
+
+
+class ConfigIn(BaseModel):
+    set: dict[str, str] = Field(default_factory=dict)
+    clear: list[str] = Field(default_factory=list, max_length=40)
+
+
+class NewKeyIn(BaseModel):
+    key: str = Field(max_length=200)
 
 
 class ApproveIn(BaseModel):
@@ -98,8 +111,12 @@ def pending_view(p: dict) -> dict:
             "can": ["resolve"] if human else (["approve", "reject"] if p.get("kind") in ("action", "tool", "trust") else [])}
 
 
-def create_app(rt: Runtime, *, tick: bool = True, meta: MetaChannel | None = None) -> FastAPI:
-    """`meta`: el canal de WhatsApp e Instagram (sus conectores ya tienen que estar en el runtime); None = sin webhooks."""
+def create_app(rt: Runtime, *, tick: bool = True, meta: MetaChannel | None = None, env_file: Path | None = None,
+               environ: dict[str, str] | None = None) -> FastAPI:
+    """`meta`: el canal de WhatsApp e Instagram (sus conectores ya tienen que estar en el runtime); None = sin webhooks.
+    `env_file`: el `raphael.env` local donde la pantalla de Configuración guarda las claves (None = sin Configuración).
+    `environ`: el entorno del proceso que se cambia en caliente (por defecto `os.environ`)."""
+    environ = os.environ if environ is None else environ
     auth = Auth(rt.store, rt.clock)
     lock = asyncio.Lock()
     owner = rt.installation.identity.user or "dueña"
@@ -227,6 +244,63 @@ def create_app(rt: Runtime, *, tick: bool = True, meta: MetaChannel | None = Non
         drain_failures()
         return {"mode": meta.settings.mode, "channels": sorted(rt.connectors), "problems": meta.settings.problems(),
                 "graph_version": meta.settings.graph_version}
+
+    # --- configuración (claves a voluntad, solo con sesión; nunca se devuelven completas)
+    @app.get("/", response_class=HTMLResponse)
+    @app.get("/config", response_class=HTMLResponse)
+    async def pagina() -> HTMLResponse:
+        return HTMLResponse(PAGINA, headers={"Cache-Control": "no-store", "X-Frame-Options": "DENY",
+                                             "Content-Security-Policy": "default-src 'self'; style-src 'unsafe-inline'; "
+                                                                        "script-src 'unsafe-inline'; frame-ancestors 'none'"})
+
+    def _config_view(restart: list[str] | None = None) -> dict:
+        if env_file is None:
+            raise HTTPException(404, "este servidor no tiene pantalla de Configuración")
+        items = check(env=environ, installation=rt.installation, models=rt.models,
+                      meta=meta.settings if meta else _no_meta(), app_key_set=auth.has_key(),
+                      env_files=[env_file.name] if env_file.is_file() else [], public_url=environ.get("RAPHAEL_PUBLIC_URL", ""))
+        return {"fields": configuracion.view(environ), "checks": [vars(i) for i in items],
+                "restart_needed": restart or [], "initial_key_file": (env_file.parent / "clave-inicial.txt").is_file()}
+
+    def _no_meta() -> Any:
+        from .meta import MetaSettings
+
+        return MetaSettings()
+
+    @app.get("/api/v1/config")
+    async def config_get(s: dict = Depends(session)) -> dict:
+        return _config_view()
+
+    @app.put("/api/v1/config")
+    async def config_put(body: ConfigIn, s: dict = Depends(session)) -> dict:
+        if env_file is None:
+            raise HTTPException(404, "este servidor no tiene pantalla de Configuración")
+        try:
+            async with lock:
+                restart = configuracion.apply(env_file, environ, body.set, body.clear)
+                if rt.models is not None:
+                    rt.models.set_env(dict(environ))
+                if meta is not None:
+                    from .meta import settings_from_env
+
+                    meta.reconfigure(settings_from_env(environ), rt)
+        except ValueError as exc:
+            raise HTTPException(400, str(exc)) from None
+        rt.audit.record("config_cambiada", who=owner, puso=sorted(body.set), saco=sorted(body.clear))   # solo nombres
+        return _config_view(restart)
+
+    @app.post("/api/v1/config/clave")
+    async def config_key(body: NewKeyIn, request: Request, s: dict = Depends(session)) -> dict:
+        """Cambia la clave de la app. Cierra todas las sesiones: la app entra de nuevo con la clave nueva."""
+        try:
+            auth.set_key(body.key)
+        except ValueError as exc:
+            raise HTTPException(400, str(exc)) from None
+        if env_file is not None:
+            with contextlib.suppress(OSError):
+                (env_file.parent / "clave-inicial.txt").unlink()
+        rt.audit.record("clave_app_cambiada", who=owner)
+        return {"ok": True}
 
     @app.post("/api/v1/logout")
     async def logout(request: Request, s: dict = Depends(session)) -> dict:

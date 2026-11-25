@@ -186,3 +186,15 @@ def test_extra_del_proveedor_va_en_el_cuerpo():
 def test_config_invalida(cambio):
     with pytest.raises(ValidationError):
         models_from({**CONFIG, **cambio})
+
+
+def test_set_env_pone_y_saca_claves_en_caliente():
+    t = Transporte()
+    g, _, _ = gw(env={}, transport=t)
+    assert g.label("mando").startswith("casa")        # sin claves solo queda el local
+    g.set_env({"K_PAGO": "nueva"})
+    assert g.label("mando").startswith("potente")
+    g.complete("mando", [])
+    assert t.llamadas[0][2]["Authorization"] == "Bearer nueva"
+    g.set_env({})
+    assert g.label("mando").startswith("casa")

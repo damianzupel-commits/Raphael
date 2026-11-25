@@ -32,5 +32,8 @@ target-version = "py311"
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP", "BLE"]
 
+[tool.ruff.lint.per-file-ignores]
+"src/raphael_empresas_api/pagina.py" = ["E501"]   # HTML y JS en una cadena
+
 [tool.ruff.lint.flake8-bugbear]
 extend-immutable-calls = ["fastapi.Depends", "fastapi.Header"]

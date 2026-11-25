@@ -226,11 +226,22 @@ class MetaChannel:
     last_inbound: Callable[[str], datetime | None] = field(default=lambda contact: None)
     clock: Callable[[], datetime] = datetime.now
     _seen: OrderedDict = field(default_factory=OrderedDict)
+    _fixed_transport: bool = False
 
     @classmethod
     def build(cls, settings: MetaSettings, transport: Transport | None = None, *, threaded: bool = True) -> MetaChannel:
         mock = (lambda url, body, headers: {"mock": True}) if not settings.real else None
-        return cls(settings, Outbox(transport or mock, threaded=threaded))
+        ch = cls(settings, Outbox(transport or mock, threaded=threaded))
+        ch._fixed_transport = transport is not None
+        return ch
+
+    def reconfigure(self, settings: MetaSettings, runtime: Any) -> None:
+        """Cambio en caliente (pantalla de Configuración): modo mock/real, tokens y qué canales existen."""
+        self.settings = settings
+        if not self._fixed_transport:
+            self.outbox.transport = http_post if settings.real else (lambda url, body, headers: {"mock": True})
+        runtime.connectors.clear()
+        runtime.connectors.update(self.connectors())
 
     def bind(self, runtime: Any) -> None:
         """Después de armar el runtime: la ventana de 24 h sale de cuándo escribió el cliente por última vez."""

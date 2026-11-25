@@ -65,6 +65,10 @@ class ModelGateway:
         self._calls: dict[str, deque[float]] = defaultdict(deque)
         self._turn: dict[str, int] = defaultdict(int)
 
+    def set_env(self, env: dict[str, str]) -> None:
+        """Cambia las claves en caliente (la pantalla de Configuración). Se copia: el gateway no comparte el diccionario."""
+        self._env = dict(env)
+
     # --- elección -------------------------------------------------------------------------------------------------------
     def chain(self, role: str, *, target: str | None = None, prefer: str | None = None) -> list[str]:
         """Escalones en orden para ese rol (y esa brigada o ayudante, si tiene override)."""

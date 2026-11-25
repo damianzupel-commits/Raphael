@@ -42,10 +42,12 @@ def test_sin_claves_arranca_en_reglas_y_dice_que_falta(tmp_path):
     assert "Arranca" in render(items)
 
 
-def test_sin_clave_de_la_app_es_imprescindible(tmp_path):
+def test_sin_clave_de_la_app_no_frena_el_arranque(tmp_path):
+    """La clave de la app se genera sola en el primer arranque: no es un faltante."""
     rt = boot(tmp_path, {})
     items = check(env={}, installation=rt.installation, models=rt.models, meta=MetaSettings(), app_key_set=False)
-    assert exit_code(items) == 2
+    assert [i.status for i in items if i.area == "App"] == ["info"]
+    assert exit_code(items) == 0
 
 
 def test_meta_real_incompleta_falta_y_nunca_muestra_valores(tmp_path):
