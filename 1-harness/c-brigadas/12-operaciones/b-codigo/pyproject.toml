@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "raphael-operaciones"
+dynamic = ["version"]
+description = "Brigada Operaciones de Raphael (harness v2): las manos de Raphael en la PC, el celular y el navegador."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = ["raphael-core>=2.0.0rc3"]
+
+[project.optional-dependencies]
+# lo real, solo en la PC de Damián (sin esto la brigada corre igual, con los adaptadores simulados)
+escritorio = ["pyautogui>=0.9", "pywinauto>=0.6; sys_platform == 'win32'", "pywin32>=306; sys_platform == 'win32'"]
+navegador = ["playwright>=1.40"]
+web = ["scrapling>=0.2"]
+dev = ["pytest>=8"]
+
+[project.entry-points."raphael.brigades"]
+operaciones = "raphael_operaciones"
+
+[tool.setuptools.dynamic]
+version = {attr = "raphael_operaciones.__version__"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+raphael_operaciones = ["manifest.yaml"]
+
+[tool.pytest.ini_options]
+testpaths = ["../c-salud/pruebas"]
+
+[tool.ruff]
+line-length = 130
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "BLE"]
+
+[tool.ruff.lint.per-file-ignores]
+"src/raphael_operaciones/setup.py" = ["E501"]   # la tabla de tools con sus descripciones para el modelo
