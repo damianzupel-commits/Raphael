@@ -10,19 +10,36 @@ import urllib.request
 from collections.abc import Callable
 from tkinter import filedialog, messagebox, ttk
 
-from config_modelo import CAMPOS, NIVELES_AUTONOMIA, OPCIONES_APARIENCIA, SECCIONES, SIEMPRE_PIDE, Configuracion, es_local
+from config_modelo import (
+    CAMPOS,
+    NIVELES_AUTONOMIA,
+    OPCIONES_APARIENCIA,
+    SECCIONES,
+    SERVICIOS,
+    SIEMPRE_PIDE,
+    Configuracion,
+    detectar_servicio,
+    es_local,
+)
 from widgets import ACTIVE, BG, CARD, CYAN, GREEN, INPUT, MONO, MUTED, ORANGE, PANEL, RED, SANS, TEXT, Pill, spaced
 
 from raphael_core.models.config import ROLES
 
 #: prefijos de variables por brigada (id de la carpeta sin número) para el editor de «toda su config»
-PREFIJOS = {"seguridad": ("SEGURIDAD_", "NMAP_", "SQLMAP_", "ZAP_"), "antimalware": ("ANTIMALWARE_", "CLAMD_", "VIRUSTOTAL_"),
-            "investigacion": ("INVESTIGACION_", "BRAVE_", "SEARXNG_"), "geolocalizacion-publica": ("RAPHAEL_GEO_", "SHODAN_", "AISSTREAM_",
-                                                                                                 "FIRMS_", "WINDY_", "OPENWEATHER_", "OPENCELLID_"),
-            "memoria-cerebro": ("MEMORIA_",), "ingesta": ("RAPHAEL_VAULT_", "YT_", "INGESTA_"), "trading": ("TRADING_", "IBKR_"),
-            "operaciones": ("OPERACIONES_",), "autorreparacion": ("RAPHAEL_REPAIR_",), "contenido": ("CONTENIDO_", "IG_", "META_ADS_",
-                                                                                                   "COMFYUI_", "VIDEO_"),
-            "raphael-empresas": ("MP_", "META_", "TRANSFER_", "TIENDANUBE_", "SHOPIFY_", "WOO_"), "legales": ("LEGALES_",)}
+PREFIJOS = {
+    "seguridad": ("SEGURIDAD_", "NMAP_", "SQLMAP_", "ZAP_"),
+    "antimalware": ("ANTIMALWARE_", "CLAMD_", "VIRUSTOTAL_"),
+    "investigacion": ("INVESTIGACION_", "BRAVE_", "SEARXNG_"),
+    "geolocalizacion-publica": ("RAPHAEL_GEO_", "SHODAN_", "AISSTREAM_", "FIRMS_", "WINDY_", "OPENWEATHER_", "OPENCELLID_"),
+    "memoria-cerebro": ("MEMORIA_",),
+    "ingesta": ("RAPHAEL_VAULT_", "YT_", "INGESTA_"),
+    "trading": ("TRADING_", "IBKR_"),
+    "operaciones": ("OPERACIONES_",),
+    "autorreparacion": ("RAPHAEL_REPAIR_",),
+    "contenido": ("CONTENIDO_", "IG_", "META_ADS_", "COMFYUI_", "VIDEO_"),
+    "raphael-empresas": ("MP_", "META_", "TRANSFER_", "TIENDANUBE_", "SHOPIFY_", "WOO_"),
+    "legales": ("LEGALES_",),
+}
 
 
 def _probar(url: str, clave: str) -> str:
@@ -42,10 +59,14 @@ class ConfigView(tk.Frame):
         side = tk.Frame(self, bg=PANEL, width=230)
         side.pack(side="left", fill="y", padx=(0, 14))
         side.pack_propagate(False)
-        tk.Label(side, text=spaced("Configuración"), bg=PANEL, fg=MUTED, font=(SANS, 8, "bold")).pack(anchor="w", padx=14, pady=(14, 8))
+        tk.Label(side, text=spaced("Configuración"), bg=PANEL, fg=MUTED, font=(SANS, 8, "bold")).pack(
+            anchor="w", padx=14, pady=(14, 8)
+        )
         self.nav: dict[str, tk.Label] = {}
         for key, titulo, _sub in SECCIONES:
-            b = tk.Label(side, text=titulo, bg=PANEL, fg=TEXT, font=(SANS, 10, "bold"), anchor="w", cursor="hand2", padx=14, pady=7)
+            b = tk.Label(
+                side, text=titulo, bg=PANEL, fg=TEXT, font=(SANS, 10, "bold"), anchor="w", cursor="hand2", padx=14, pady=7
+            )
             b.pack(fill="x")
             b.bind("<Button-1>", lambda e, k=key: self.mostrar(k))
             self.nav[key] = b
@@ -92,14 +113,27 @@ class ConfigView(tk.Frame):
     def _titulo(self, p: tk.Frame, texto: str, sub: str = "") -> None:
         tk.Label(p, text=texto, bg=PANEL, fg=TEXT, font=(SANS, 14, "bold"), anchor="w").pack(fill="x")
         if sub:
-            tk.Label(p, text=sub, bg=PANEL, fg=MUTED, font=(SANS, 9), anchor="w", wraplength=820, justify="left").pack(fill="x", pady=(2, 10))
+            tk.Label(p, text=sub, bg=PANEL, fg=MUTED, font=(SANS, 9), anchor="w", wraplength=820, justify="left").pack(
+                fill="x", pady=(2, 10)
+            )
 
     def _sub(self, p: tk.Frame, texto: str) -> None:
         tk.Label(p, text=spaced(texto), bg=PANEL, fg=MUTED, font=(SANS, 8, "bold"), anchor="w").pack(fill="x", pady=(16, 6))
 
     def _entry(self, p: tk.Misc, ancho: int = 40, secreto: bool = False) -> tk.Entry:
-        return tk.Entry(p, width=ancho, bg=INPUT, fg=TEXT, insertbackground=TEXT, relief="flat", font=(MONO, 10),
-                        show="•" if secreto else "", highlightthickness=1, highlightbackground="#1d2b42", highlightcolor=CYAN)
+        return tk.Entry(
+            p,
+            width=ancho,
+            bg=INPUT,
+            fg=TEXT,
+            insertbackground=TEXT,
+            relief="flat",
+            font=(MONO, 10),
+            show="•" if secreto else "",
+            highlightthickness=1,
+            highlightbackground="#1d2b42",
+            highlightcolor=CYAN,
+        )
 
     def _boton(self, p: tk.Misc, texto: str, cmd: Callable[[], None], variante: str = "ghost", ancho: int = 130) -> Pill:
         return Pill(p, [texto], command=cmd, variant=variante, outer=PANEL, width=ancho, height=34, size=9)
@@ -131,11 +165,25 @@ class ConfigView(tk.Frame):
             w.pack(side="left", padx=6)
             cajas[c.nombre] = w
             if c.tipo == "secreto":
-                tk.Button(fila, text="👁", bg=PANEL, fg=MUTED, relief="flat", cursor="hand2",
-                          command=lambda e=w: e.configure(show="" if e.cget("show") else "•")).pack(side="left")
+                tk.Button(
+                    fila,
+                    text="👁",
+                    bg=PANEL,
+                    fg=MUTED,
+                    relief="flat",
+                    cursor="hand2",
+                    command=lambda e=w: e.configure(show="" if e.cget("show") else "•"),
+                ).pack(side="left")
             if c.tipo == "carpeta":
-                tk.Button(fila, text="…", bg=PANEL, fg=MUTED, relief="flat", cursor="hand2",
-                          command=lambda e=w, n=c.nombre: self._elegir(e, n)).pack(side="left")
+                tk.Button(
+                    fila,
+                    text="…",
+                    bg=PANEL,
+                    fg=MUTED,
+                    relief="flat",
+                    cursor="hand2",
+                    command=lambda e=w, n=c.nombre: self._elegir(e, n),
+                ).pack(side="left")
             if c.reinicia:
                 tk.Label(fila, text="reinicia", bg=PANEL, fg=ORANGE, font=(SANS, 8)).pack(side="left", padx=4)
             if c.ayuda:
@@ -163,18 +211,145 @@ class ConfigView(tk.Frame):
         self._boton(botones, "Guardar cambios", guardar, "primary", 150).pack(side="left")
 
     def _s_claves(self) -> None:
-        self._formulario("claves", "Claves y cuentas", "Se guardan solo en tu raphael.env local (nunca en git ni en el chat) y se aplican en "
-                         "caliente. Dejar vacío y guardar quita la clave. Las que dicen «reinicia» toman efecto al reabrir.")
+        """Arranca vacía: un botón «Agregar API key», y abajo las que ya cargaste (ojito, editar, quitar)."""
+        p = self._scroll()
+        self._titulo(
+            p,
+            "Claves y cuentas",
+            "Se guardan solo en tu raphael.env local (nunca en git ni en el chat) y se aplican en caliente. "
+            "Pegá una clave y Raphael reconoce el servicio por cómo empieza.",
+        )
+        self._boton(p, "＋ Agregar API key", lambda: self._form_clave(zona), "primary", 190).pack(anchor="w")
+        zona = tk.Frame(p, bg=PANEL)
+        zona.pack(fill="x")
+        self.zona_clave = zona
+        self._sub(p, "Tus claves")
+        claves = self.cfg.claves()
+        if not claves:
+            tk.Label(p, text="Todavía no cargaste ninguna.", bg=PANEL, fg=MUTED, font=(SANS, 10), anchor="w").pack(fill="x")
+        for k in claves:
+            fila = tk.Frame(p, bg=PANEL)
+            fila.pack(fill="x", pady=3)
+            tk.Label(fila, text=k["servicio"], bg=PANEL, fg=TEXT, font=(SANS, 10, "bold"), width=28, anchor="w").pack(side="left")
+            e = self._entry(fila, 46, secreto=True)
+            e.insert(0, k["valor"])
+            e.pack(side="left", padx=6)
+            tk.Button(
+                fila,
+                text="👁",
+                bg=PANEL,
+                fg=MUTED,
+                relief="flat",
+                cursor="hand2",
+                command=lambda w=e: w.configure(show="" if w.cget("show") else "•"),
+            ).pack(side="left")
+            tk.Button(
+                fila,
+                text="guardar",
+                bg=PANEL,
+                fg=CYAN,
+                relief="flat",
+                cursor="hand2",
+                command=lambda v=k["variable"], w=e: self._editar_clave(v, w.get()),
+            ).pack(side="left", padx=4)
+            tk.Button(
+                fila,
+                text="quitar",
+                bg=PANEL,
+                fg=RED,
+                relief="flat",
+                cursor="hand2",
+                command=lambda v=k["variable"]: self._quitar_clave(v),
+            ).pack(side="left")
+            if k["reinicia"]:
+                tk.Label(fila, text="reinicia", bg=PANEL, fg=ORANGE, font=(SANS, 8)).pack(side="left", padx=4)
+
+    def _form_clave(self, zona: tk.Frame) -> None:
+        for w in zona.winfo_children():
+            w.destroy()
+        caja = tk.Frame(zona, bg=CARD)
+        caja.pack(fill="x", pady=(10, 0))
+        fila = tk.Frame(caja, bg=CARD)
+        fila.pack(fill="x", padx=12, pady=(12, 4))
+        tk.Label(fila, text="Clave", bg=CARD, fg=TEXT, font=(SANS, 9), width=10, anchor="w").pack(side="left")
+        clave = self._entry(fila, 56, secreto=True)
+        clave.pack(side="left", padx=6)
+        tk.Button(
+            fila,
+            text="👁",
+            bg=CARD,
+            fg=MUTED,
+            relief="flat",
+            cursor="hand2",
+            command=lambda: clave.configure(show="" if clave.cget("show") else "•"),
+        ).pack(side="left")
+        fila2 = tk.Frame(caja, bg=CARD)
+        fila2.pack(fill="x", padx=12, pady=4)
+        tk.Label(fila2, text="Servicio", bg=CARD, fg=TEXT, font=(SANS, 9), width=10, anchor="w").pack(side="left")
+        servicio = ttk.Combobox(fila2, values=[sv.nombre for sv in SERVICIOS], width=40)
+        servicio.pack(side="left", padx=6)
+        aviso = tk.Label(
+            caja, text="Pegá la clave y el servicio se completa solo.", bg=CARD, fg=MUTED, font=(SANS, 9), anchor="w"
+        )
+        aviso.pack(fill="x", padx=12, pady=(2, 8))
+        auto = {"nombre": ""}
+
+        def detectar(_e: object = None) -> None:
+            sv = detectar_servicio(clave.get())
+            if sv is not None:
+                if servicio.get().strip() in ("", auto["nombre"]):  # no pisa lo que escribió a mano
+                    servicio.set(sv.nombre)
+                auto["nombre"] = sv.nombre
+                aviso.configure(text=f"Reconocida: {sv.nombre} → {sv.variable}", fg=GREEN)
+            elif clave.get().strip():
+                if servicio.get().strip() == auto["nombre"]:
+                    servicio.set("")
+                auto["nombre"] = ""
+                aviso.configure(text="No la reconozco: elegí el servicio de la lista o escribí su nombre.", fg=ORANGE)
+
+        clave.bind("<KeyRelease>", detectar)
+        clave.bind("<<Paste>>", lambda e: self.after(50, detectar))
+
+        def guardar() -> None:
+            res: list[tuple[str, list[str]]] = []
+            if self._intentar(
+                lambda: res.append(self.cfg.agregar_clave(clave.get(), servicio.get())), "Clave guardada y aplicada."
+            ):
+                if res[0][1]:
+                    self.decir("Guardada. Para que tome efecto reiniciá el panel.", True)
+                self._recargar()
+
+        botones = tk.Frame(caja, bg=CARD)
+        botones.pack(fill="x", padx=12, pady=(0, 12))
+        self._boton(botones, "Guardar clave", guardar, "primary", 150).pack(side="left")
+        self._boton(botones, "Cancelar", lambda: [w.destroy() for w in zona.winfo_children()], "ghost", 110).pack(
+            side="left", padx=8
+        )
+        clave.focus_set()
+
+    def _editar_clave(self, variable: str, valor: str) -> None:
+        if self._intentar(lambda: self.cfg.aplicar({variable: valor}), "Clave actualizada."):
+            self._avisar()
+
+    def _quitar_clave(self, variable: str) -> None:
+        if self._intentar(lambda: self.cfg.aplicar(None, [variable]), "Clave quitada."):
+            self._recargar()
 
     def _s_acceso(self) -> None:
-        self._formulario("acceso", "Acceso y celular", "Dirección del celular (Tailscale) y modelo local. Las direcciones de modelos locales "
-                         "tienen que ser de esta PC. Desde la PC entrás sin clave; lo irreversible y todo lo de afuera piden clave.")
+        self._formulario(
+            "acceso",
+            "Acceso y celular",
+            "Dirección del celular (Tailscale) y modelo local. Las direcciones de modelos locales "
+            "tienen que ser de esta PC. Desde la PC entrás sin clave; lo irreversible y todo lo de afuera piden clave.",
+        )
 
     def _s_voz(self) -> None:
         self._formulario("voz", "Voz", "Escuchar (Whisper) y hablar (Piper). Sin esto Raphael anda igual por texto.")
 
     def _s_carpetas(self) -> None:
-        self._formulario("carpetas", "Carpetas y datos", "Donde Raphael puede leer, escribir y vigilar. Varias rutas se separan con ;")
+        self._formulario(
+            "carpetas", "Carpetas y datos", "Donde Raphael puede leer, escribir y vigilar. Varias rutas se separan con ;"
+        )
 
     def _elegir(self, caja: tk.Entry, nombre: str) -> None:
         ruta = filedialog.askopenfilename() if nombre.startswith(("VOICE_",)) else filedialog.askdirectory()
@@ -187,23 +362,41 @@ class ConfigView(tk.Frame):
         p = self._scroll()
         self._titulo(p, "Autonomía y aprobaciones", "Un nivel global para todo lo que se queda adentro de tu PC.")
         var = tk.StringVar(value=self.cfg.autonomia())
-        texto = {"cauteloso": "Cauteloso: te consulta casi todo antes de hacerlo.",
-                 "equilibrado": "Equilibrado: hace solo lo rutinario y reversible; consulta lo demás.",
-                 "confiado": "Confiado: hace solo todo lo reversible y te avisa después."}
+        texto = {
+            "cauteloso": "Cauteloso: te consulta casi todo antes de hacerlo.",
+            "equilibrado": "Equilibrado: hace solo lo rutinario y reversible; consulta lo demás.",
+            "confiado": "Confiado: hace solo todo lo reversible y te avisa después.",
+        }
         for n in NIVELES_AUTONOMIA:
-            tk.Radiobutton(p, text=texto[n], variable=var, value=n, bg=PANEL, fg=TEXT, selectcolor=INPUT, activebackground=PANEL,
-                           activeforeground=CYAN, font=(SANS, 10), anchor="w",
-                           command=lambda: self._intentar(lambda: (self.cfg.aplicar({"RAPHAEL_AUTONOMIA": var.get()}), None))
-                           ).pack(fill="x", pady=3)
+            tk.Radiobutton(
+                p,
+                text=texto[n],
+                variable=var,
+                value=n,
+                bg=PANEL,
+                fg=TEXT,
+                selectcolor=INPUT,
+                activebackground=PANEL,
+                activeforeground=CYAN,
+                font=(SANS, 10),
+                anchor="w",
+                command=lambda: self._intentar(lambda: (self.cfg.aplicar({"RAPHAEL_AUTONOMIA": var.get()}), None)),
+            ).pack(fill="x", pady=3)
         self._sub(p, "Esto nunca se afloja (no es configurable)")
         for s in SIEMPRE_PIDE:
-            tk.Label(p, text=f"🔒 {s}: siempre pide tu aprobación", bg=PANEL, fg=TEXT, font=(SANS, 10), anchor="w").pack(fill="x", pady=2)
+            tk.Label(p, text=f"🔒 {s}: siempre pide tu aprobación", bg=PANEL, fg=TEXT, font=(SANS, 10), anchor="w").pack(
+                fill="x", pady=2
+            )
 
     # --- Cerebro e IA ---------------------------------------------------------------------------------------------
     def _s_ia(self) -> None:
         p = self._scroll()
-        self._titulo(p, "Cerebro e IA", "Roles, escalones y proveedores. Podés apuntar cada rol, cada brigada y cada cocinero a la API y el "
-                     "modelo que quieras. Las brigadas solo-local aceptan únicamente proveedores de esta PC.")
+        self._titulo(
+            p,
+            "Cerebro e IA",
+            "Roles, escalones y proveedores. Podés apuntar cada rol, cada brigada y cada cocinero a la API y el "
+            "modelo que quieras. Las brigadas solo-local aceptan únicamente proveedores de esta PC.",
+        )
         cfg = self.cfg.modelos()
         self._sub(p, "1 · Proveedores (cualquier API compatible con OpenAI)")
         lista = tk.Frame(p, bg=PANEL)
@@ -214,18 +407,39 @@ class ConfigView(tk.Frame):
             fila.pack(fill="x", pady=2)
             marca = "PC" if sp.is_local else "nube"
             tk.Label(fila, text=f"{nombre}", bg=PANEL, fg=TEXT, font=(SANS, 10, "bold"), width=18, anchor="w").pack(side="left")
-            tk.Label(fila, text=f"{sp.model} · {sp.base_url} · {marca}", bg=PANEL, fg=MUTED, font=(SANS, 9), anchor="w").pack(side="left")
+            tk.Label(fila, text=f"{sp.model} · {sp.base_url} · {marca}", bg=PANEL, fg=MUTED, font=(SANS, 9), anchor="w").pack(
+                side="left"
+            )
             res = tk.Label(fila, text="", bg=PANEL, fg=MUTED, font=(SANS, 9))
-            tk.Button(fila, text="probar", bg=PANEL, fg=CYAN, relief="flat", cursor="hand2",
-                      command=lambda s=sp, r=res: self._probar_proveedor(s, r)).pack(side="right")
+            tk.Button(
+                fila,
+                text="probar",
+                bg=PANEL,
+                fg=CYAN,
+                relief="flat",
+                cursor="hand2",
+                command=lambda s=sp, r=res: self._probar_proveedor(s, r),
+            ).pack(side="right")
             res.pack(side="right", padx=8)
             if nombre in propios:
-                tk.Button(fila, text="quitar", bg=PANEL, fg=RED, relief="flat", cursor="hand2",
-                          command=lambda n=nombre: self._quitar_proveedor(n)).pack(side="right")
+                tk.Button(
+                    fila,
+                    text="quitar",
+                    bg=PANEL,
+                    fg=RED,
+                    relief="flat",
+                    cursor="hand2",
+                    command=lambda n=nombre: self._quitar_proveedor(n),
+                ).pack(side="right")
         self._sub(p, "Agregar o cambiar un proveedor")
         f = {}
-        for k, etiqueta, ancho in (("nombre", "Nombre (ej. groq)", 18), ("url", "Dirección (…/v1)", 44), ("modelo", "Modelo", 30),
-                                   ("clave", "Variable de la clave (ej. GROQ_API_KEY)", 26), ("escalon", "Escalón (local, gratis, pago)", 12)):
+        for k, etiqueta, ancho in (
+            ("nombre", "Nombre (ej. groq)", 18),
+            ("url", "Dirección (…/v1)", 44),
+            ("modelo", "Modelo", 30),
+            ("clave", "Variable de la clave (ej. GROQ_API_KEY)", 26),
+            ("escalon", "Escalón (local, gratis, pago)", 12),
+        ):
             fila = tk.Frame(p, bg=PANEL)
             fila.pack(fill="x", pady=2)
             tk.Label(fila, text=etiqueta, bg=PANEL, fg=TEXT, font=(SANS, 9), width=36, anchor="w").pack(side="left")
@@ -233,10 +447,18 @@ class ConfigView(tk.Frame):
             f[k].pack(side="left", padx=6)
 
         def agregar() -> None:
-            if self._intentar(lambda: self.cfg.agregar_proveedor(f["nombre"].get().strip(), f["url"].get().strip(), f["modelo"].get(),
-                                                                  f["clave"].get().strip(), escalon=f["escalon"].get().strip()),
-                              "Proveedor guardado. Pegá su clave en «Claves y cuentas» o en Avanzado."):
+            if self._intentar(
+                lambda: self.cfg.agregar_proveedor(
+                    f["nombre"].get().strip(),
+                    f["url"].get().strip(),
+                    f["modelo"].get(),
+                    f["clave"].get().strip(),
+                    escalon=f["escalon"].get().strip(),
+                ),
+                "Proveedor guardado. Pegá su clave en «Claves y cuentas» o en Avanzado.",
+            ):
                 self._recargar()
+
         self._boton(p, "Guardar proveedor", agregar, "primary", 160).pack(anchor="w", pady=(8, 0))
 
         self._sub(p, "2 · Escalones de cada rol (en orden: local, gratis, pago)")
@@ -248,8 +470,15 @@ class ConfigView(tk.Frame):
             cajas[r] = self._entry(fila, 30)
             cajas[r].insert(0, ", ".join(cfg.roles.get(r, [])))
             cajas[r].pack(side="left", padx=6)
-            tk.Button(fila, text="guardar", bg=PANEL, fg=CYAN, relief="flat", cursor="hand2",
-                      command=lambda x=r: self._guardar_rol(x, cajas[x].get())).pack(side="left")
+            tk.Button(
+                fila,
+                text="guardar",
+                bg=PANEL,
+                fg=CYAN,
+                relief="flat",
+                cursor="hand2",
+                command=lambda x=r: self._guardar_rol(x, cajas[x].get()),
+            ).pack(side="left")
 
         self._sub(p, "3 · API y modelo de UNA brigada o cocinero (pisa al rol)")
         fila = tk.Frame(p, bg=PANEL)
@@ -263,13 +492,18 @@ class ConfigView(tk.Frame):
         provs = self._entry(fila, 30)
         provs.pack(side="left", padx=6)
         tk.Label(fila, text="proveedores en orden (vacío = volver al rol)", bg=PANEL, fg=MUTED, font=(SANS, 8)).pack(side="left")
-        self._boton(p, "Aplicar a ese destino", lambda: self._poner_destino(rol.get(), dest.get().strip(), provs.get()), "primary", 190
-                    ).pack(anchor="w", pady=(6, 0))
+        self._boton(
+            p, "Aplicar a ese destino", lambda: self._poner_destino(rol.get(), dest.get().strip(), provs.get()), "primary", 190
+        ).pack(anchor="w", pady=(6, 0))
 
         self._sub(p, "Dónde apunta hoy cada cosa")
-        t = tk.Text(p, height=min(14, 3 + len(ROLES) + len(cfg.overrides)), bg=INPUT, fg=TEXT, font=(MONO, 9), relief="flat", wrap="none")
+        t = tk.Text(
+            p, height=min(14, 3 + len(ROLES) + len(cfg.overrides)), bg=INPUT, fg=TEXT, font=(MONO, 9), relief="flat", wrap="none"
+        )
         for fila in self.cfg.resumen_destinos():
-            t.insert("end", f"{fila['clave']:<34} {', '.join(fila['escalones']) or '—':<18} {' → '.join(fila['proveedores']) or '—'}\n")
+            t.insert(
+                "end", f"{fila['clave']:<34} {', '.join(fila['escalones']) or '—':<18} {' → '.join(fila['proveedores']) or '—'}\n"
+            )
         t.configure(state="disabled")
         t.pack(fill="x")
 
@@ -277,13 +511,20 @@ class ConfigView(tk.Frame):
         priv = self._entry(p, 90)
         priv.insert(0, ", ".join(cfg.private))
         priv.pack(fill="x")
-        self._boton(p, "Guardar lista solo-local", lambda: self._guardar_privadas(priv.get()), "ghost", 190).pack(anchor="w", pady=(6, 0))
+        self._boton(p, "Guardar lista solo-local", lambda: self._guardar_privadas(priv.get()), "ghost", 190).pack(
+            anchor="w", pady=(6, 0)
+        )
         self._sub(p, "5 · Tope mensual del escalón pago (USD, 0 = no se usa)")
         tope = self._entry(p, 10)
         tope.insert(0, str(cfg.paid_cap_usd_month))
         tope.pack(anchor="w")
-        self._boton(p, "Guardar tope", lambda: self._intentar(lambda: (self.cfg.tope_pago(float(tope.get().replace(",", "."))),
-                                                                       self._avisar())), "ghost", 130).pack(anchor="w", pady=(6, 0))
+        self._boton(
+            p,
+            "Guardar tope",
+            lambda: self._intentar(lambda: (self.cfg.tope_pago(float(tope.get().replace(",", "."))), self._avisar())),
+            "ghost",
+            130,
+        ).pack(anchor="w", pady=(6, 0))
 
     def _avisar(self) -> None:
         if self.on_models:
@@ -300,6 +541,7 @@ class ConfigView(tk.Frame):
         def trabajo() -> None:
             r = _probar(sp.base_url, clave)
             self.after(0, lambda: etiqueta.configure(text=r, fg=GREEN if r.startswith("responde") else RED))
+
         threading.Thread(target=trabajo, daemon=True).start()
 
     def _quitar_proveedor(self, n: str) -> None:
@@ -322,8 +564,10 @@ class ConfigView(tk.Frame):
         sacadas = sorted(set(self.cfg.privadas()) - set(nuevos))
         conf = False
         if sacadas:
-            conf = messagebox.askyesno("Sacar de solo-local", "Esto puede mandar a la nube datos de: " + ", ".join(sacadas) +
-                                       ".\n\n¿Seguro que querés sacarlas?")
+            conf = messagebox.askyesno(
+                "Sacar de solo-local",
+                "Esto puede mandar a la nube datos de: " + ", ".join(sacadas) + ".\n\n¿Seguro que querés sacarlas?",
+            )
             if not conf:
                 self.decir("No se cambió la lista.", False)
                 return
@@ -333,17 +577,37 @@ class ConfigView(tk.Frame):
     # --- brigadas -------------------------------------------------------------------------------------------------
     def _s_brigadas(self) -> None:
         p = self._scroll()
-        self._titulo(p, "Brigadas", "Prendé o apagá cada brigada y editá todas sus variables. Lo de afuera sigue pidiendo aprobación.")
+        self._titulo(
+            p, "Brigadas", "Prendé o apagá cada brigada y editá todas sus variables. Lo de afuera sigue pidiendo aprobación."
+        )
         env = self.cfg.env()
         for b in getattr(self.app, "brigades", []):
             fila = tk.Frame(p, bg=PANEL)
             fila.pack(fill="x", pady=3)
             var = tk.BooleanVar(value=bool(b.mounted))
-            tk.Checkbutton(fila, text=b.name, variable=var, bg=PANEL, fg=TEXT, selectcolor=INPUT, activebackground=PANEL, font=(SANS, 10, "bold"),
-                           width=26, anchor="w", command=lambda i=b.id, v=var: self._montar(i, v.get())).pack(side="left")
+            tk.Checkbutton(
+                fila,
+                text=b.name,
+                variable=var,
+                bg=PANEL,
+                fg=TEXT,
+                selectcolor=INPUT,
+                activebackground=PANEL,
+                font=(SANS, 10, "bold"),
+                width=26,
+                anchor="w",
+                command=lambda i=b.id, v=var: self._montar(i, v.get()),
+            ).pack(side="left")
             tk.Label(fila, text=b.state, bg=PANEL, fg=MUTED, font=(SANS, 9), width=14, anchor="w").pack(side="left")
-            tk.Button(fila, text="variables…", bg=PANEL, fg=CYAN, relief="flat", cursor="hand2",
-                      command=lambda i=b.id, n=b.name: self._variables_brigada(i, n)).pack(side="left", padx=6)
+            tk.Button(
+                fila,
+                text="variables…",
+                bg=PANEL,
+                fg=CYAN,
+                relief="flat",
+                cursor="hand2",
+                command=lambda i=b.id, n=b.name: self._variables_brigada(i, n),
+            ).pack(side="left", padx=6)
             if b.id in self.cfg.privadas():
                 tk.Label(fila, text="solo-local", bg=PANEL, fg=ORANGE, font=(SANS, 8)).pack(side="left")
         if not getattr(self.app, "brigades", []):
@@ -358,8 +622,13 @@ class ConfigView(tk.Frame):
 
     def _variables_brigada(self, bid: str, nombre: str) -> None:
         p = self._scroll()
-        self._titulo(p, f"Variables de {nombre}", "Las que empiezan con " + ", ".join(PREFIJOS.get(bid, ("(sin prefijo conocido)",))) +
-                     ". Podés agregar cualquiera: es el mismo raphael.env.")
+        self._titulo(
+            p,
+            f"Variables de {nombre}",
+            "Las que empiezan con "
+            + ", ".join(PREFIJOS.get(bid, ("(sin prefijo conocido)",)))
+            + ". Podés agregar cualquiera: es el mismo raphael.env.",
+        )
         pref = PREFIJOS.get(bid, ())
         self._editor_variables(p, lambda n: n.startswith(pref) if pref else False, pref[0] if pref else "")
         self._boton(p, "← volver a Brigadas", lambda: self.mostrar("brigadas"), "ghost", 190).pack(anchor="w", pady=(16, 0))
@@ -375,12 +644,27 @@ class ConfigView(tk.Frame):
             e.insert(0, env[n])
             e.pack(side="left", padx=6)
             if secreto:
-                tk.Button(fila, text="👁", bg=PANEL, fg=MUTED, relief="flat", cursor="hand2",
-                          command=lambda w=e: w.configure(show="" if w.cget("show") else "•")).pack(side="left")
-            tk.Button(fila, text="guardar", bg=PANEL, fg=CYAN, relief="flat", cursor="hand2",
-                      command=lambda k=n, w=e: self._poner_var(k, w.get())).pack(side="left", padx=4)
-            tk.Button(fila, text="quitar", bg=PANEL, fg=RED, relief="flat", cursor="hand2",
-                      command=lambda k=n: self._quitar_var(k)).pack(side="left")
+                tk.Button(
+                    fila,
+                    text="👁",
+                    bg=PANEL,
+                    fg=MUTED,
+                    relief="flat",
+                    cursor="hand2",
+                    command=lambda w=e: w.configure(show="" if w.cget("show") else "•"),
+                ).pack(side="left")
+            tk.Button(
+                fila,
+                text="guardar",
+                bg=PANEL,
+                fg=CYAN,
+                relief="flat",
+                cursor="hand2",
+                command=lambda k=n, w=e: self._poner_var(k, w.get()),
+            ).pack(side="left", padx=4)
+            tk.Button(
+                fila, text="quitar", bg=PANEL, fg=RED, relief="flat", cursor="hand2", command=lambda k=n: self._quitar_var(k)
+            ).pack(side="left")
         self._sub(p, "Agregar una variable")
         fila = tk.Frame(p, bg=PANEL)
         fila.pack(fill="x")
@@ -389,8 +673,15 @@ class ConfigView(tk.Frame):
         nombre.pack(side="left")
         valor = self._entry(fila, 44)
         valor.pack(side="left", padx=6)
-        tk.Button(fila, text="agregar", bg=PANEL, fg=CYAN, relief="flat", cursor="hand2",
-                  command=lambda: self._poner_var(nombre.get().strip(), valor.get())).pack(side="left")
+        tk.Button(
+            fila,
+            text="agregar",
+            bg=PANEL,
+            fg=CYAN,
+            relief="flat",
+            cursor="hand2",
+            command=lambda: self._poner_var(nombre.get().strip(), valor.get()),
+        ).pack(side="left")
 
     def _poner_var(self, n: str, v: str) -> None:
         if self._intentar(lambda: self.cfg.aplicar({n: v}), "Guardado y aplicado."):
@@ -404,11 +695,22 @@ class ConfigView(tk.Frame):
     # --- apariencia -----------------------------------------------------------------------------------------------
     def _s_apariencia(self) -> None:
         p = self._scroll()
-        self._titulo(p, "Apariencia", "Tema, color, letra, idioma y cómo te habla Raphael. Se guardan ahora; el panel los toma al reabrirse.")
+        self._titulo(
+            p,
+            "Apariencia",
+            "Tema, color, letra, idioma y cómo te habla Raphael. Se guardan ahora; el panel los toma al reabrirse.",
+        )
         a = self.cfg.apariencia()
         cajas: dict[str, tk.Widget] = {}
-        etiquetas = {"tema": "Tema", "acento": "Color de acento (#rrggbb)", "letra": "Tamaño de letra (8 a 20)", "densidad": "Densidad",
-                     "idioma": "Idioma", "nombre": "Nombre del asistente", "tono": "Tono al hablarte"}
+        etiquetas = {
+            "tema": "Tema",
+            "acento": "Color de acento (#rrggbb)",
+            "letra": "Tamaño de letra (8 a 20)",
+            "densidad": "Densidad",
+            "idioma": "Idioma",
+            "nombre": "Nombre del asistente",
+            "tono": "Tono al hablarte",
+        }
         for k, etiqueta in etiquetas.items():
             fila = tk.Frame(p, bg=PANEL)
             fila.pack(fill="x", pady=3)
@@ -425,6 +727,7 @@ class ConfigView(tk.Frame):
         def guardar() -> None:
             datos = {k: (int(w.get()) if k == "letra" and w.get().isdigit() else w.get().strip()) for k, w in cajas.items()}
             self._intentar(lambda: self.cfg.poner_apariencia(**datos), "Guardado. Se aplica al reabrir el panel.")
+
         self._boton(p, "Guardar", guardar, "primary", 130).pack(anchor="w", pady=(12, 0))
 
     # --- avanzado -------------------------------------------------------------------------------------------------
@@ -434,21 +737,35 @@ class ConfigView(tk.Frame):
         self._sub(p, "Historial de cambios (sin valores de claves)")
         caja = tk.Text(p, height=8, bg=INPUT, fg=TEXT, font=(MONO, 9), relief="flat", wrap="none")
         for e in self.cfg.historial(30):
-            caja.insert("end", f"#{e['n']:<4} {e['cuando']}  {e['area']:<10} {e['que'][:90]}{'  (deshecho)' if e['deshecho'] else ''}\n")
+            caja.insert(
+                "end", f"#{e['n']:<4} {e['cuando']}  {e['area']:<10} {e['que'][:90]}{'  (deshecho)' if e['deshecho'] else ''}\n"
+            )
         caja.configure(state="disabled")
         caja.pack(fill="x")
         fila = tk.Frame(p, bg=PANEL)
         fila.pack(fill="x", pady=(6, 0))
-        self._boton(fila, "Deshacer el último", lambda: (self.decir(self.cfg.deshacer()), self._recargar()), "ghost", 170).pack(side="left")
+        self._boton(fila, "Deshacer el último", lambda: (self.decir(self.cfg.deshacer()), self._recargar()), "ghost", 170).pack(
+            side="left"
+        )
         self._sub(p, "Perfiles (sin claves)")
         fila = tk.Frame(p, bg=PANEL)
         fila.pack(fill="x")
         nombre = ttk.Combobox(fila, values=self.cfg.perfiles(), width=24)
         nombre.pack(side="left")
-        self._boton(fila, "Guardar perfil", lambda: self._intentar(lambda: self.cfg.guardar_perfil(nombre.get().strip()), "Perfil guardado."),
-                    "ghost", 140).pack(side="left", padx=6)
-        self._boton(fila, "Cargar perfil", lambda: self._intentar(lambda: self.cfg.cargar_perfil(nombre.get().strip()), "Perfil cargado.")
-                    and self._recargar(), "ghost", 140).pack(side="left")
+        self._boton(
+            fila,
+            "Guardar perfil",
+            lambda: self._intentar(lambda: self.cfg.guardar_perfil(nombre.get().strip()), "Perfil guardado."),
+            "ghost",
+            140,
+        ).pack(side="left", padx=6)
+        self._boton(
+            fila,
+            "Cargar perfil",
+            lambda: self._intentar(lambda: self.cfg.cargar_perfil(nombre.get().strip()), "Perfil cargado.") and self._recargar(),
+            "ghost",
+            140,
+        ).pack(side="left")
         self._sub(p, "Exportar / importar (nunca incluye claves)")
         fila = tk.Frame(p, bg=PANEL)
         fila.pack(fill="x")
