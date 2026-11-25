@@ -23,7 +23,7 @@ from typing import Any
 from raphael_core.contract import ActionError
 from raphael_core.engine.reports import InternalReport
 
-from . import routing, voice
+from . import memory_event, routing, voice
 from .config import OrchestratorConfig
 from .memory import Conversation, MemorySettings
 from .ports import routing_llm, voice_llm, voice_settings
@@ -90,6 +90,7 @@ async def speak(ctx: Any, report: InternalReport, request: str, emit: Emit, cfg:
                 **msg.event(), **(extra or {})})
     if remember:
         conv.record(session, request, brigade, msg.text, when=ctx.now().isoformat(timespec="seconds"))
+        memory_event.publish_turn(ctx, cfg, session, request, brigade, msg.text)
     return Turn(msg.text, msg.via, report, route, msg.verification.to_dict(), tm)
 
 
@@ -133,6 +134,7 @@ async def run_chat(ctx: Any, request: str, emit: Emit, cfg: OrchestratorConfig, 
                 **msg.event()})
     if remember:
         conv.record(session, request, "orquestador", msg.text, when=ctx.now().isoformat(timespec="seconds"))
+        memory_event.publish_turn(ctx, cfg, session, request, "orquestador", msg.text)
     return Turn(msg.text, msg.via, None, route, None, tm)
 
 

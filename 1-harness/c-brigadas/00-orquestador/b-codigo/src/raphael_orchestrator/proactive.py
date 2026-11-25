@@ -7,6 +7,11 @@ brigadas 07 y 09). Acá corre en los ganchos del harness (`on_event` y `tick`), 
   - pendiente nuevo que resuelve una persona (o todos, según config) -> aviso;
   - el jefe de una brigada quedó caído, o su chequeo de salud la dejó sin atender -> aviso;
   - el harness propone dejar algo en automático (confianza progresiva) -> aviso;
+  - la brigada de Seguridad publica `seguridad.alerta` (vigilancia defensiva) -> aviso a Damián con regla, gravedad y arreglo;
+  - la brigada de Autorreparación publica `arreglo.aplicado`, `arreglo.revertido` o `autodiagnostico.hallazgo` -> aviso;
+  - la brigada de Ingesta publica `ingesta.fallo` (fuente, ref, título, motivo) -> aviso con qué no se pudo traer y por qué;
+  - falta el modelo de IA de un rol (sin clave, tope agotado) o el modelo LOCAL que necesitan las brigadas privadas
+    (apagado): se avisa y se sigue por reglas; lo privado nunca se manda a la nube para compensar;
   - un pendiente que lleva más de `remind_after_hours` sin resolverse -> un recordatorio (una sola vez por pendiente).
 Cada aviso se da una sola vez (se recuerda en el espacio del orquestador).
 """
@@ -19,7 +24,10 @@ from typing import Any
 from .config import OrchestratorConfig
 
 COLLECTION = "proactive"
-EVENTS = ("pendiente.creado", "brigada.jefe_caido", "brigada.salud", "confianza.propuesta")
+EVENTS = ("pendiente.creado", "brigada.jefe_caido", "brigada.salud", "confianza.propuesta", "seguridad.alerta",
+          "arreglo.aplicado", "arreglo.revertido", "autodiagnostico.hallazgo", "ingesta.fallo")
+SEVERITY = {"critical": "CRÍTICA", "critica": "CRÍTICA", "high": "alta", "alta": "alta", "medium": "media", "media": "media",
+            "low": "baja", "baja": "baja"}
 
 
 def _once(ctx: Any, key: str) -> bool:
@@ -62,6 +70,29 @@ def on_event(ctx: Any, cfg: OrchestratorConfig, event: str, data: dict) -> dict 
             return None
         return ctx.notify(f"{_name(ctx, b)} dejó de atender: su chequeo de salud dio mal. Vuelve sola cuando dé bien.",
                           kind="health", brigade=b)
+    if event == "seguridad.alerta":
+        rule = str(data.get("rule") or data.get("message") or "alerta")[:80]
+        if not _once(ctx, f"sec-{rule}-{ctx.now().date()}"):
+            return None
+        sev = SEVERITY.get(str(data.get("severity", "")).lower(), str(data.get("severity") or "sin gravedad"))
+        fix = f" Arreglo sugerido: {data['fix']}" if data.get("fix") else ""
+        return ctx.notify(f"Alerta de seguridad ({sev}): {data.get('message') or rule}.{fix}", kind="security", rule=rule,
+                          severity=data.get("severity"))
+    if event in ("arreglo.aplicado", "arreglo.revertido", "autodiagnostico.hallazgo"):
+        ident = str(data.get("id") or data.get("finding") or data.get("pattern") or data.get("summary") or "")[:80]
+        if not _once(ctx, f"self-{event}-{ident}-{ctx.now().date()}"):
+            return None
+        what = {"arreglo.aplicado": "Se aplicó un arreglo", "arreglo.revertido": "Se revirtió un arreglo",
+                "autodiagnostico.hallazgo": "Autodiagnóstico: hallazgo nuevo"}[event]
+        detail = str(data.get("summary") or data.get("message") or ident)[:200]
+        return ctx.notify(f"{what}{': ' + detail if detail else ''}.", kind="selfrepair", event=event)
+    if event == "ingesta.fallo":
+        src, ref = str(data.get("fuente") or "una fuente"), str(data.get("ref") or "")
+        if not _once(ctx, f"ing-{src}-{ref}-{ctx.now().date()}"[:200]):
+            return None
+        what = str(data.get("titulo") or ref or "un ítem")[:120]
+        return ctx.notify(f"No se pudo traer «{what}» de {src}: {data.get('motivo') or 'sin motivo'}.", kind="ingest_fail",
+                          source=src, ref=ref)
     if event == "confianza.propuesta":
         pid = data.get("id")
         if not _once(ctx, f"trust-{pid}"):
@@ -71,12 +102,34 @@ def on_event(ctx: Any, cfg: OrchestratorConfig, event: str, data: dict) -> dict 
     return None
 
 
+def no_ai_problems(ctx: Any) -> list[tuple[str, str]]:
+    """Qué falta de IA: lista de (clave, mensaje). Solo lee. Los roles que habla la persona (mando, voz, ruteo) y, si hay
+    brigadas privadas montadas, el modelo local que ellas exigen."""
+    out = [(f"role-{r}", f"No hay modelo de IA para el rol «{r}» (falta la clave o se llegó al tope): sigo por reglas.")
+           for r in ("mando", "voz", "ruteo") if not ctx.has_ai(r)]
+    private = [b.get("name") or b["id"] for b in ctx.catalog() if b.get("private") and b.get("mounted", True)]
+    if private and not ctx.has_ai("voz", private=True):
+        out.append(("local", "El modelo local (Ollama o LM Studio) no está prendido o no está configurado. "
+                             f"Lo sensible ({', '.join(private)}) sigue sin IA y NO se manda a la nube; "
+                             "prendelo para volver a usarlo."))
+    return out
+
+
+def _no_ai_notices(ctx: Any, cfg: OrchestratorConfig, now: datetime) -> list[dict]:
+    if not cfg.proactive.warn_no_ai:
+        return []
+    return [ctx.notify(msg, kind="no_ai") for key, msg in no_ai_problems(ctx)
+            if _once(ctx, f"noai-{key}-{now.date().isoformat()}")]
+
+
 def tick(ctx: Any, cfg: OrchestratorConfig, now: datetime) -> list[dict]:
     """Recordatorios de pendientes viejos. Solo lee y avisa."""
     p = cfg.proactive
-    if not p.enabled or p.remind_after_hours <= 0:
+    if not p.enabled:
         return []
-    out = []
+    out = _no_ai_notices(ctx, cfg, now)
+    if p.remind_after_hours <= 0:
+        return out
     for doc in ctx.pending():
         try:
             age = (now - datetime.fromisoformat(doc.get("created"))).total_seconds() / 3600

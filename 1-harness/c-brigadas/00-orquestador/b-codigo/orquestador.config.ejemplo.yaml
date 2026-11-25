@@ -1,0 +1,16 @@
+# Config del orquestador de Raphael personal. Va en `installation.orchestrator.config` de la instalación.
+# Todo es opcional: lo que no pongas toma el valor por defecto (config.py). Un campo desconocido falla al montar.
+mode: master               # master = Raphael personal · secretary = instalación de la clienta
+voice:
+  directives: "Respondeme corto y directo."
+routing:
+  classifier: true
+  classifier_cloud: true   # el clasificador ve solo el pedido; si querés que sea local: false
+joint: {enabled: true}     # trabajo conjunto entre brigadas (en master va prendido)
+proactive:
+  new_pending: human       # human | all | none
+  remind_after_hours: 24
+  warn_no_ai: true         # avisa si falta el modelo de un rol o el modelo LOCAL de lo sensible
+speech:
+  mode: auto               # auto | local | mock | off  (también RAPHAEL_VOZ_MODO)
+drafts: true               # /crear-brigada etc. (solo en la edición personal)
