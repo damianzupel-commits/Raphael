@@ -369,3 +369,12 @@ def test_ws_phone_sin_operaciones_instalada_cierra_con_motivo(tmp_path, monkeypa
     with TestClient(app) as c, pytest.raises(WebSocketDisconnect) as e, c.websocket_connect("/ws/phone"):
         pass
     assert e.value.code == 1013
+
+
+def test_el_codigo_trae_un_qr_si_esta_segno_y_la_pagina_deja_cargar_imagenes_data(api):
+    pytest.importorskip("segno")
+    c, rt, env_file, environ, *_ = api
+    environ["RAPHAEL_PUBLIC_URL"] = "https://pc.tail1.ts.net"
+    d = c.post("/api/v1/phone/pair").json()
+    assert "<svg" in d["qr_svg"]
+    assert "img-src data:" in c.get("/").headers["content-security-policy"]
