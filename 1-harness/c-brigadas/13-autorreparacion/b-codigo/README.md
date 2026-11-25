@@ -8,7 +8,7 @@ El código de la brigada para el harness v2, portado de `3-mando/c-referencia/se
   - `cooks/apply.py` **aplicar**: `aplicar` / `revertir` piden la acción `aplicar_arreglo` / `revertir_arreglo` (**nivel `aprobacion`, etiqueta `irreversible`**); recién con tu OK escribe.
   - `cooks/introspect.py` **introspección**: `analizar` busca patrones de falla en el registro de tool calls, `reflexionar`/`reflexiones` guardan criterio, `autoconocimiento` dice qué es y qué no.
   - `guardrail.py` líneas rojas (ruta pura, sin modelo); `fixer.py` reemplazo mecánico, diff, commit propio, verificación; `analyzer.py` patrones; `health.py` salud.
-- `autorreparacionautorreparacion.env.plantilla`: lo que tenés que completar (ver también `3-mando/a-conocimiento/LIENZO-DAMIAN.md`).
+- `autorreparacion.env.plantilla`: lo que tenés que completar (ver también `3-mando/a-conocimiento/LIENZO-DAMIAN.md`).
 
 ## Cómo se protege (todo en código, con tests)
 1. **Nada se escribe sin tu aprobación**, por propuesta. La acción lleva solo el id y una huella (sha256 de archivo+snippets): los snippets salen de la propuesta guardada, no de lo que llegue con la aprobación.
