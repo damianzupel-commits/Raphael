@@ -222,3 +222,70 @@ data class PairLink(val host: String, val code: String) {
         }
     }
 }
+
+// --- Panel (el mismo que en la PC, adaptado al celular) ----------------------------------------------------------------
+
+data class CookInfo(val id: String, val state: String)
+data class BrigadeInfo(val id: String, val name: String, val mounted: Boolean, val active: Boolean, val private: Boolean,
+                       val cooks: List<CookInfo>)
+data class PanelTask(val title: String, val brigade: String, val state: String, val who: String, val pending: Int?)
+data class EphemeralInfo(val helper: String, val brigade: String, val task: String, val time: String)
+data class ToolInfo(val name: String, val owner: String, val level: String, val enabled: Boolean)
+
+data class PanelData(val contract: String, val edition: String, val down: Int, val brigades: List<BrigadeInfo>,
+                     val tasks: List<PanelTask>, val ephemerals: List<EphemeralInfo>, val tools: List<ToolInfo>) {
+    val mounted get() = brigades.filter { it.mounted }
+    val running get() = tasks.count { it.state == "en curso" }
+    val toApprove get() = tasks.count { it.state != "en curso" }
+
+    /** Lo mismo, pero solo lo de una brigada (`id` null = el orquestador, o sea todas). */
+    fun scoped(id: String?): PanelData {
+        val b = brigades.firstOrNull { it.id == id } ?: return this
+        return copy(brigades = listOf(b), tasks = tasks.filter { it.brigade == b.name },
+            ephemerals = ephemerals.filter { it.brigade == b.name },
+            tools = tools.filter { it.owner == b.name || it.owner == "uso compartido" })
+    }
+
+    companion object {
+        fun from(o: JSONObject): PanelData {
+            fun <T> arr(key: String, f: (JSONObject) -> T): List<T> {
+                val a = o.optJSONArray(key) ?: return emptyList()
+                return (0 until a.length()).mapNotNull { a.optJSONObject(it)?.let(f) }
+            }
+            return PanelData(o.str("contract"), o.str("edition"), o.optInt("down"),
+                arr("brigades") { b ->
+                    val cs = b.optJSONArray("cooks")
+                    BrigadeInfo(b.str("id"), b.str("name"), b.optBoolean("mounted"), b.optBoolean("active", true),
+                        b.optBoolean("private"),
+                        if (cs == null) emptyList() else (0 until cs.length()).mapNotNull { cs.optJSONObject(it) }
+                            .map { CookInfo(it.str("id"), it.str("state")) })
+                },
+                arr("tasks") { PanelTask(it.str("title"), it.str("brigade"), it.str("state"), it.str("who"), it.intOrNull("pending")) },
+                arr("ephemerals") { EphemeralInfo(it.str("helper"), it.str("brigade"), it.str("task"), it.str("time")) },
+                arr("tools") { ToolInfo(it.str("name"), it.str("owner"), it.str("level"), it.optBoolean("enabled", true)) })
+        }
+    }
+}
+
+/** Ícono y color de cada brigada, los mismos que en el panel de la PC. */
+data class Look(val icon: String, val color: Long)
+
+object Looks {
+    val orchestrator = Look("◉", 0xFF35E0FF)
+    private val by = mapOf(
+        "seguridad" to Look("◈", 0xFF5AA9FF), "antimalware" to Look("☣", 0xFF3DDC97), "investigacion" to Look("⌕", 0xFFC79BFF),
+        "geolocalizacion-publica" to Look("⌖", 0xFF35E0FF), "memoria-cerebro" to Look("✺", 0xFFFF8FD0),
+        "ingesta" to Look("⇩", 0xFF7FE9FF), "trading" to Look("⇅", 0xFFFFD166), "operaciones" to Look("⚙", 0xFFA7B4CC),
+        "autorreparacion" to Look("↻", 0xFF3DDC97), "contenido" to Look("▶", 0xFFB98CFF), "raphael-empresas" to Look("▣", 0xFFFF7922),
+        "legales" to Look("⚖", 0xFFE8D28A))
+
+    /** Los ids de la instalación pueden traer el número de la carpeta o el nombre largo: se busca por contenido. */
+    fun of(id: String): Look = by[id] ?: by.entries.firstOrNull { id.contains(it.key) || it.key.contains(id) }?.value
+        ?: Look("●", 0xFF7F8DB0)
+}
+
+/** "Caídas", "mala"… Lo que el panel de la PC pinta en rojo. */
+fun isBad(state: String) = state.startsWith("caíd") || state.startsWith("mala")
+
+/** Letras con aire, como el encabezado del panel. */
+fun spaced(s: String) = s.uppercase().toList().joinToString(" ").replace("   ", "   ")

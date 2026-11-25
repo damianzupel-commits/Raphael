@@ -426,3 +426,15 @@ def test_el_deslizador_de_autonomia_llega_al_runtime(tmp_path):
     assert rt.installation.profile == "cauteloso"
     with pytest.raises(ValueError, match="no existe"):
         boot.start(INSTALACION, tmp_path / "c", dev_dirs=[], environ={"RAPHAEL_AUTONOMIA": "temerario"}, installed=False)
+
+
+def test_el_panel_del_celular_trae_brigadas_tareas_efimeros_y_herramientas(api):
+    c, rt, *_ = api
+    d = c.get("/api/v1/panel").json()
+    assert set(d) >= {"contract", "edition", "down", "brigades", "tasks", "ephemerals", "tools"}
+    assert d["edition"] == "personal"
+    assert all({"id", "name", "mounted", "private", "cooks"} <= set(b) for b in d["brigades"])
+    assert [b for b in d["brigades"] if b["mounted"]], "con las brigadas del repo montadas"
+    assert all({"name", "owner", "level", "enabled"} <= set(t) for t in d["tools"])
+    c.headers.pop("Authorization")
+    assert c.get("/api/v1/panel").status_code == 401

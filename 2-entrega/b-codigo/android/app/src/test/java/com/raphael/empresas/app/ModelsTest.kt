@@ -103,5 +103,42 @@ class ModelsTest {
             "summary":"Comprar USD/JPY","created":"x","data":{},"can":["resolve"]}"""))
         assertTrue(p.human && p.editable.isEmpty() && p.contact == null)
     }
-}
 
+    private val panelJson = """{"contract":"2.1.0","edition":"personal","down":1,
+        "brigades":[{"id":"seguridad","name":"Seguridad","mounted":true,"active":true,"private":true,
+                     "cooks":[{"id":"vigia","state":"en espera"},{"id":"salud","state":"caída"}]},
+                    {"id":"trading","name":"Trading","mounted":true,"active":true,"private":false,"cooks":[{"id":"mesa","state":"en espera"}]},
+                    {"id":"legales","name":"Legales","mounted":false,"active":true,"private":false,"cooks":[]}],
+        "tasks":[{"title":"revisar puertos","brigade":"Seguridad","state":"en curso","who":"vigia","pending":null},
+                 {"title":"Comprar USD/JPY","brigade":"Trading","state":"te toca a vos","who":"mesa","pending":7}],
+        "ephemerals":[{"helper":"h1","brigade":"Seguridad","task":"nmap","time":"3s"}],
+        "tools":[{"name":"web","owner":"uso compartido","level":"automatico","enabled":true},
+                 {"name":"orden","owner":"Trading","level":"humano","enabled":false}]}"""
+
+    @Test fun panel_como_el_de_la_pc() {
+        val p = PanelData.from(JSONObject(panelJson))
+        assertEquals(2, p.mounted.size)
+        assertEquals(1, p.running)
+        assertEquals(1, p.toApprove)
+        assertEquals(7, p.tasks.last().pending)
+        assertTrue(p.tasks.first().pending == null)
+        assertTrue(isBad(p.brigades.first().cooks.last().state))
+    }
+
+    @Test fun panel_de_una_sola_brigada() {
+        val p = PanelData.from(JSONObject(panelJson)).scoped("trading")
+        assertEquals(listOf("trading"), p.brigades.map { it.id })
+        assertEquals(listOf("Comprar USD/JPY"), p.tasks.map { it.title })
+        assertTrue(p.ephemerals.isEmpty())
+        assertEquals(listOf("web", "orden"), p.tools.map { it.name })      // lo suyo y lo de uso compartido
+        assertEquals(3, PanelData.from(JSONObject(panelJson)).scoped(null).brigades.size)
+        assertEquals(3, PanelData.from(JSONObject(panelJson)).scoped("no-existe").brigades.size)
+    }
+
+    @Test fun cada_brigada_tiene_su_icono_y_la_desconocida_uno_neutro() {
+        assertEquals("◈", Looks.of("seguridad").icon)
+        assertEquals("⌖", Looks.of("04-geolocalizacion-publica").icon)
+        assertEquals("●", Looks.of("algo-nuevo").icon)
+        assertEquals("R A P H A E L", spaced("Raphael"))
+    }
+}

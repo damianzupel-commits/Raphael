@@ -21,7 +21,7 @@ from typing import Any
 from fastapi import Depends, FastAPI, Header, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse, Response
 from pydantic import BaseModel, Field
-from raphael_core import ActionError, Runtime
+from raphael_core import CONTRACT_VERSION, ActionError, Runtime
 from raphael_core.models import ModelsConfig
 
 from raphael_empresas_api import configuracion
@@ -330,6 +330,45 @@ def create_app(rt: Runtime, *, report: dict | None = None, tick: bool = True, en
     @app.get("/api/v1/brain")
     async def brain(refresh: bool = False, s: dict = Depends(session)) -> dict:
         return cerebro.status(watch.cfg, await probe(refresh), rt.models)
+
+    @app.get("/api/v1/panel")
+    async def panel(s: dict = Depends(session)) -> dict:
+        """Lo mismo que muestra el panel de la PC (brigadas, cocineros, tareas, efímeros, herramientas), para el celular."""
+        names = {b: m.manifest.name for b, m in rt.brigades.items()}
+        inst = rt.installation
+        brigades = []
+        down = 0
+        for b in sorted(inst.brigades):
+            m = rt.brigades.get(b)
+            cooks = []
+            if m is not None:
+                for c in m.cooks:
+                    caido = rt.guard.is_down(f"{b}/{c}")
+                    down += caido
+                    cooks.append({"id": c, "state": "caído" if caido else "en espera"})
+                if m.chief:
+                    cooks.append({"id": f"jefe ({len(m.chief.spec.helpers)} efímeros)",
+                                  "state": "caído" if m.chief_down else "listo"})
+                    down += bool(m.chief_down)
+                if m.health_fn is not None and m.health["ok"] is False:
+                    cooks.append({"id": "salud", "state": "caída" if m.health["down"] else f"mala ({m.health['fails']}/3)"})
+            brigades.append({"id": b, "name": names.get(b, b), "mounted": m is not None, "active": inst.brigades[b].active,
+                             "private": b in watch.cfg.private, "cooks": cooks})
+        snap = rt.live.snapshot()
+        tasks = [{"title": e["task"] or "tarea", "brigade": e["brigade_name"], "state": "en curso", "who": e["helper"],
+                  "pending": None} for e in snap["active"]]
+        for p in rt.approvals.list():
+            tasks.append({"title": p["summary"], "brigade": names.get(p["brigade"], p["brigade"]),
+                          "state": "aprobación" if p["level"] == "aprobacion" else "te toca a vos", "who": p["cook"],
+                          "pending": p["id"]})
+        ephemerals = [{"helper": e["helper"], "brigade": e["brigade_name"], "task": e["task"], "time": f"{e['seconds']:.0f}s"}
+                      for e in snap["active"]]
+        ephemerals += [{"helper": r["helper"], "brigade": r["brigade_name"], "task": r["task"],
+                        "time": f"{r['outcome']} {r['seconds']:.0f}s"} for r in snap["recent"][:6]]
+        tools = [{"name": t["name"], "owner": names.get(t["owner"], t["owner"]) if t["owner"] else "uso compartido",
+                  "level": t["level"], "enabled": t["enabled"]} for t in rt.tools.list()]
+        return {"contract": CONTRACT_VERSION, "edition": inst.edition, "down": down, "brigades": brigades, "tasks": tasks,
+                "ephemerals": ephemerals, "tools": tools}
 
     @app.get("/api/v1/brigades")
     async def brigades(s: dict = Depends(session)) -> dict:
