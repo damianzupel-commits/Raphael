@@ -28,7 +28,7 @@ call "%~dp0arrancar-personal.bat" chequear
 echo.
 echo Dejando Raphael como servicio de fondo (arranca con Windows)...
 call "%~dp0instalar-servicio.bat"
-schtasks /Run /TN "Raphael Personal" >nul 2>&1
+schtasks /Run /TN "Raphael Personal" >nul 2>&1 || wscript.exe "%~dp0arrancar-oculto.vbs"
 echo Creando el acceso directo "Raphael" en el escritorio...
 powershell -NoProfile -Command "$s=(New-Object -ComObject WScript.Shell).CreateShortcut([Environment]::GetFolderPath('Desktop')+'\Raphael.url'); $s.TargetPath='http://127.0.0.1:8788/'; $s.Save()" 
 echo.
