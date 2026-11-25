@@ -5,18 +5,30 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
-// La estética del panel de Raphael: azul noche y cian.
-val Night = Color(0xFF0B1220)
-val NightCard = Color(0xFF131C2E)
-val Cyan = Color(0xFF22D3EE)
-val CyanSoft = Color(0xFF67E8F9)
-val Warn = Color(0xFFF59E0B)
-val Bad = Color(0xFFF87171)
+// La paleta del panel de Raphael en la PC (widgets.py): fondo azul noche, tarjetas azuladas y acentos cian.
+val Night = Color(0xFF0F1521)        // BG
+val NightPanel = Color(0xFF111A28)   // PANEL
+val NightCard = Color(0xFF162234)    // CARD
+val CardBorder = Color(0xFF283B59)
+val PanelBorder = Color(0xFF24344E)
+val ActiveBg = Color(0xFF13384C)
+val ActiveBorder = Color(0xFF1D4A60)
+val InputBg = Color(0xFF0A101A)
+val Cyan = Color(0xFF35E0FF)
+val CyanSoft = Color(0xFF7FE9FF)
+val TextMain = Color(0xFFE8F0FF)
+val Muted = Color(0xFF7F8DB0)
+val Dim = Color(0xFF59606D)
+val Warn = Color(0xFFFF7922)         // ORANGE
+val Bad = Color(0xFFFF6B7A)
+val Good = Color(0xFF3DDC97)
+val OnCyan = Color(0xFF04121A)
 
 private val Dark = darkColorScheme(
-    primary = Cyan, onPrimary = Night, secondary = CyanSoft, onSecondary = Night,
-    background = Night, onBackground = Color(0xFFE5E7EB), surface = NightCard, onSurface = Color(0xFFE5E7EB),
-    surfaceVariant = Color(0xFF1C2740), onSurfaceVariant = Color(0xFF9CA3AF), error = Bad, tertiary = Warn,
+    primary = Cyan, onPrimary = OnCyan, secondary = CyanSoft, onSecondary = OnCyan,
+    background = Night, onBackground = TextMain, surface = NightCard, onSurface = TextMain,
+    surfaceVariant = Color(0xFF1B2A42), onSurfaceVariant = Muted, error = Bad, tertiary = Warn,
+    outline = CardBorder, outlineVariant = PanelBorder,
 )
 @Composable
 fun RaphaelTheme(content: @Composable () -> Unit) {

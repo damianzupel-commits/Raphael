@@ -13,8 +13,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Notifications
@@ -106,13 +104,6 @@ fun LoginScreen(vm: AppViewModel) {
 
 private data class TabSpec(val tab: Tab, val label: String, val icon: ImageVector)
 
-private val PERSONAL_TABS = listOf(
-    TabSpec(Tab.HOY, "Hablar", Icons.Filled.Home),
-    TabSpec(Tab.PENDIENTES, "Decidir", Icons.Filled.Notifications),
-    TabSpec(Tab.CEREBRO, "Cerebro", Icons.Filled.Info),
-    TabSpec(Tab.AJUSTES, "Ajustes", Icons.Filled.Settings),
-)
-
 private val TABS = listOf(
     TabSpec(Tab.HOY, "Hoy", Icons.Filled.Home),
     TabSpec(Tab.PENDIENTES, "Decidir", Icons.Filled.Notifications),
@@ -143,6 +134,7 @@ fun MainScreen(vm: AppViewModel) {
             Tab.ENCARGOS -> vm.loadOrders()
             Tab.AGENDA -> vm.loadAgenda()
             Tab.MAS -> vm.loadMore()
+            Tab.EQUIPO -> vm.loadPanel()
             Tab.CEREBRO -> vm.loadBrain()
             Tab.AJUSTES -> vm.loadConfig()
             Tab.HOY -> Unit
@@ -150,7 +142,7 @@ fun MainScreen(vm: AppViewModel) {
     }
     Scaffold(
         topBar = {
-            TopAppBar(
+            if (!vm.personal) TopAppBar(
                 title = { Text(if (vm.personal) "Raphael" else vm.prefs.business.ifBlank { "Raphael Empresas" }) },
                 actions = {
                     IconButton(onClick = {
@@ -160,6 +152,7 @@ fun MainScreen(vm: AppViewModel) {
                             Tab.ENCARGOS -> vm.loadOrders()
                             Tab.AGENDA -> vm.loadAgenda()
                             Tab.MAS -> vm.loadMore()
+                            Tab.EQUIPO -> vm.loadPanel()
                             Tab.CEREBRO -> vm.loadBrain()
                             Tab.AJUSTES -> vm.loadConfig()
                         }
@@ -169,8 +162,8 @@ fun MainScreen(vm: AppViewModel) {
             )
         },
         bottomBar = {
-            NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
-                (if (vm.personal) PERSONAL_TABS else TABS).forEach { t ->
+            if (!vm.personal) NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
+                TABS.forEach { t ->
                     NavigationBarItem(
                         selected = vm.tab == t.tab,
                         onClick = { vm.tab = t.tab },
@@ -190,13 +183,13 @@ fun MainScreen(vm: AppViewModel) {
         snackbarHost = { SnackbarHost(snack) },
     ) { pad ->
         Box(Modifier.padding(pad).fillMaxSize()) {
-            when (vm.tab) {
+            if (vm.personal) PersonalHome(vm) else when (vm.tab) {
                 Tab.HOY -> TodayScreen(vm)
                 Tab.PENDIENTES -> PendingScreen(vm)
                 Tab.ENCARGOS -> OrdersScreen(vm)
                 Tab.AGENDA -> AgendaScreen(vm)
                 Tab.MAS -> MoreScreen(vm)
-                Tab.CEREBRO -> BrainScreen(vm)
+                Tab.EQUIPO, Tab.CEREBRO -> BrainScreen(vm)
                 Tab.AJUSTES -> SettingsScreen(vm)
             }
             if (vm.busy) LinearProgressIndicator(Modifier.fillMaxWidth().align(Alignment.TopCenter))

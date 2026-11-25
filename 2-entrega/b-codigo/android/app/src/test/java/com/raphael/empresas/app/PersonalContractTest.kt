@@ -41,6 +41,10 @@ class PersonalContractTest {
         assertTrue(b.privateBrigades.containsAll(listOf("seguridad", "investigacion", "memoria", "operaciones")))
         if (!b.localReady) assertEquals("reglas", b.privateMode)        // sin modelo local, lo privado no va a la nube
 
+        val panel = api.panel()
+        assertEquals("personal", panel.edition)
+        assertTrue(panel.mounted.isNotEmpty() && panel.tools.isNotEmpty())
+
         val c = api.config()
         assertTrue(c.fields.any { it.name == "NVIDIA_API_KEY" })
         assertTrue(c.fields.filter { it.secret }.all { it.value.isEmpty() })   // un secreto nunca vuelve entero

@@ -106,6 +106,7 @@ class Api(private val baseUrl: String, private val token: String? = null) {
     suspend fun chat(text: String, session: String = "app"): SecretaryReply =
         SecretaryReply.from(call("POST", "/api/v1/chat", JSONObject().put("text", text).put("session", session)))
 
+    suspend fun panel(): PanelData = PanelData.from(call("GET", "/api/v1/panel"))
     suspend fun brain(refresh: Boolean = false): Brain = Brain.from(call("GET", "/api/v1/brain?refresh=$refresh"))
     suspend fun config(): ConfigView = ConfigView.from(call("GET", "/api/v1/config"))
 

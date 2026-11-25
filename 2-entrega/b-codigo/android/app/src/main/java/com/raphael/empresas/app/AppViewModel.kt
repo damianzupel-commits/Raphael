@@ -14,7 +14,7 @@ import kotlinx.coroutines.launch
 data class ChatEntry(val fromOwner: Boolean, val text: String, val tasks: List<TaskItem> = emptyList(),
                      val options: List<OptionItem> = emptyList(), val suggestions: List<String> = emptyList())
 
-enum class Tab { HOY, PENDIENTES, ENCARGOS, AGENDA, MAS, CEREBRO, AJUSTES }
+enum class Tab { HOY, PENDIENTES, ENCARGOS, AGENDA, MAS, EQUIPO, CEREBRO, AJUSTES }
 
 /**
  * El estado de la app. Toda decisión (aprobar, rechazar, resolver, cambiar un estado) va al servidor, que la pasa por
@@ -39,6 +39,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     var pairCode by mutableStateOf("")
     var brain by mutableStateOf<Brain?>(null)
         private set
+    var panel by mutableStateOf<PanelData?>(null)
+        private set
+    /** Brigada elegida en la fila de chips (null = el orquestador, o sea todas). */
+    var scope by mutableStateOf<String?>(null)
     var config by mutableStateOf<ConfigView?>(null)
         private set
 
@@ -126,7 +130,12 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     // --- Raphael personal
-    fun loadBrain(refresh: Boolean = true) = run { brain = prefs.api().brain(refresh) }
+    fun loadPanel() = run { panel = prefs.api().panel() }
+    fun loadBrain(refresh: Boolean = true) = run {
+        val api = prefs.api()
+        brain = api.brain(refresh)
+        panel = api.panel()
+    }
     fun loadConfig() = run { config = prefs.api().config() }
 
     /** Pone o saca claves. Nunca se guarda ni se muestra un valor completo después: el servidor devuelve solo los últimos 4. */
@@ -151,6 +160,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun refreshAll() = run {
         val api = prefs.api()
         summary = api.summary()
+        if (personal) panel = api.panel()
         pending.replace(api.pending())
         prefs.lastNotified = maxOf(prefs.lastNotified, pending.maxOfOrNull { it.id } ?: 0)
         if (chat.isEmpty()) askNow(api, if (personal) "buen día, ¿qué tengo para decidir hoy?" else "buen día, ¿qué tareas tenemos hoy?",
@@ -173,6 +183,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 val api = prefs.api()
                 val u = api.updates()
                 unseenNotices = u.noticesUnseen
+                if (personal) panel = api.panel()
                 if (u.pending != pending.size || (u.latest != (pending.maxOfOrNull { it.id } ?: 0))) pending.replace(api.pending())
                 prefs.lastNotified = maxOf(prefs.lastNotified, u.latest)
             } catch (e: ApiError) {

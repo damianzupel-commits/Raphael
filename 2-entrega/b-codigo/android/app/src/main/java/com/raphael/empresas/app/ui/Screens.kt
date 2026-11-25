@@ -13,6 +13,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
@@ -20,7 +24,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
@@ -81,9 +84,13 @@ fun TodayScreen(vm: AppViewModel) {
         }
         Row(Modifier.fillMaxWidth().padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
             OutlinedTextField(text, { text = it }, modifier = Modifier.weight(1f), placeholder = { Text(if (vm.personal) "Decile algo a Raphael" else "Decile algo a tu secretaria") },
-                maxLines = 4)
-            IconButton(onClick = { if (text.isNotBlank()) vm.ask(text.trim()); text = "" }, enabled = !vm.busy) {
-                Icon(Icons.Filled.Send, "Mandar", tint = MaterialTheme.colorScheme.primary)
+                maxLines = 4, shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Cyan, unfocusedBorderColor = Cyan.copy(alpha = 0.5f),
+                    focusedContainerColor = InputBg, unfocusedContainerColor = InputBg, cursorColor = Cyan))
+            Spacer(Modifier.width(8.dp))
+            Button(onClick = { if (text.isNotBlank()) vm.ask(text.trim()); text = "" }, enabled = !vm.busy,
+                shape = RoundedCornerShape(12.dp), contentPadding = PaddingValues(horizontal = 16.dp, vertical = 14.dp)) {
+                Text("Enviar", fontWeight = FontWeight.Bold)
             }
         }
     }
@@ -95,8 +102,8 @@ private fun Bubble(e: ChatEntry, onAsk: (String) -> Unit) {
     Box(Modifier.fillMaxWidth(), contentAlignment = if (mine) Alignment.CenterEnd else Alignment.CenterStart) {
         Column(
             Modifier.widthIn(max = 320.dp)
-                .background(if (mine) MaterialTheme.colorScheme.primary.copy(alpha = 0.18f) else MaterialTheme.colorScheme.surface,
-                    RoundedCornerShape(14.dp))
+                .background(if (mine) ActiveBg else NightCard, RoundedCornerShape(14.dp))
+                .border(BorderStroke(1.dp, if (mine) ActiveBorder else CardBorder), RoundedCornerShape(14.dp))
                 .padding(12.dp),
         ) {
             if (e.tasks.isEmpty()) Text(e.text) else Text(e.text.substringBefore("\n1)").ifBlank { "Tareas de hoy:" })
