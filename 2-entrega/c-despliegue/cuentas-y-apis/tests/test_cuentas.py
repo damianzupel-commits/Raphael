@@ -40,7 +40,7 @@ def test_lista_de_lienzo_al_dia():
 
 
 def test_cubre_las_variables_de_la_plantilla_del_servidor():
-    srv = AQUI.parent / "raphaelcuentas.env.plantilla"
+    srv = AQUI.parent / "raphael.env.plantilla"
     if not srv.is_file():
         pytest.skip("sin plantilla del servidor")
     usadas = {k for k in entorno.parse_env(srv.read_text(encoding="utf-8").replace("# NVIDIA", "NVIDIA"))}
