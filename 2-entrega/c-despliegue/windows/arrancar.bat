@@ -15,7 +15,7 @@ if not exist "%DATOS%\raphael.env" (
     copy /y "%ROOT%\2-entrega\c-despliegue\raphael.env.plantilla" "%DATOS%\raphael.env" >nul
     echo Se creo %DATOS%\raphael.env : completalo con tus claves y volve a correr esto.
 )
-if exist "%ROOT%\.venv\Scripts\python.exe" ( set "PY=%ROOT%\.venv\Scripts\python.exe" ) else ( set "PY=py -3.12" )
+if exist "%ROOT%\.venv\Scripts\python.exe" ( set PY="%ROOT%\.venv\Scripts\python.exe" ) else ( set "PY=py -3.12" )
 set "PYTHONPATH=%ROOT%\1-harness\b-codigo\src;%ROOT%\1-harness\c-brigadas\00-orquestador\b-codigo\src;%ROOT%\1-harness\c-brigadas\15-empresas\b-codigo\src;%ROOT%\2-entrega\b-codigo\servidor\api\src"
 set "ACCION=%~1"
 if "%ACCION%"=="" (set "ACCION=servir") else shift
