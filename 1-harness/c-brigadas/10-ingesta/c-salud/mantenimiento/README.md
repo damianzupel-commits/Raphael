@@ -1,3 +1,2 @@
 # Ingesta · mantenimiento
-Tareas que se corren de vez en cuando para que la brigada siga sana: regresiones, migraciones de datos, limpieza y actualizaciones.
-Todavía vacío. Cada script nuevo va con una línea acá: qué hace, cuándo correrlo y qué toca.
+- `probar_real.py`: prueba los adaptadores reales (arXiv, web, y YouTube si le pasás `--video` y `--lista`) contra la red de verdad. No usa claves, no usa modelo y no escribe en el vault. Correrlo **una vez en la PC** al instalar, y de nuevo si YouTube empieza a fallar. Sale con 0 o 2.
