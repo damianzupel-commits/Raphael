@@ -14,6 +14,7 @@ from typing import Protocol
 
 import httpx
 
+from . import ibkr
 from .data import OANDA_HOSTS, oanda_instrument
 
 
@@ -135,9 +136,83 @@ class OandaBroker:
         return {"id": position_id, "closed": True, "raw_keys": sorted(data)}
 
 
+class IbkrBroker:
+    """Interactive Brokers por TWS/IB Gateway. La orden entra a mercado con stop y objetivo colgados (bracket)."""
+
+    name = "ibkr"
+    simulated = False
+
+    def __init__(self, session: ibkr.IbkrSession) -> None:
+        self._s = session
+        self.environment = session.settings.environment
+
+    def _wrap(self, fn, *args):
+        try:
+            return self._s.run(fn, *args)
+        except ibkr.IbkrError as exc:
+            raise BrokerError(str(exc)) from None
+
+    def place(self, order: Order, price: float | None = None) -> Fill:
+        units = int(round(order.units))
+        if units <= 0:
+            raise BrokerError("unidades inválidas")
+        api, acct = self._s.api, self._s.settings.account
+        entry_side, exit_side = ("BUY", "SELL") if order.direction == "long" else ("SELL", "BUY")
+
+        def job(ib):
+            contract = api.Forex(ibkr.pair_symbol(order.instrument))
+            ib.qualifyContracts(contract)
+            parent_id = ib.client.getReqId()
+            parent = api.MarketOrder(entry_side, units, orderId=parent_id, transmit=False, orderRef=f"raphael:{order.ref}"[:64])
+            tp = api.LimitOrder(exit_side, units, round(order.tp, 3), orderId=parent_id + 1, parentId=parent_id, transmit=False)
+            sl = api.StopOrder(exit_side, units, round(order.sl, 3), orderId=parent_id + 2, parentId=parent_id, transmit=True)
+            for o in (parent, tp, sl):
+                if acct:
+                    o.account = acct
+            trades = [ib.placeOrder(contract, o) for o in (parent, tp, sl)]
+            ib.sleep(1)
+            status = trades[0].orderStatus
+            if status.status in ("Cancelled", "ApiCancelled", "Inactive"):
+                raise ibkr.IbkrError(f"IB no aceptó la orden ({status.status})")
+            return parent_id, float(getattr(status, "avgFillPrice", 0) or 0)
+        oid, avg = self._wrap(job)
+        return Fill(str(oid), order.instrument, order.direction, float(units), avg or price or 0.0, self.name, False,
+                    raw={"environment": self.environment})
+
+    def positions(self) -> list[dict]:
+        def job(ib):
+            return [{"id": p.contract.symbol + p.contract.currency, "instrument": f"{p.contract.symbol}/{p.contract.currency}",
+                     "units": float(p.position), "avg_price": float(p.avgCost)} for p in ib.positions() if p.position]
+        return self._wrap(job)
+
+    def close(self, position_id: str) -> dict:
+        api = self._s.api
+
+        def job(ib):
+            for p in ib.positions():
+                if p.contract.symbol + p.contract.currency == position_id and p.position:
+                    side = "SELL" if p.position > 0 else "BUY"
+                    ib.placeOrder(p.contract, api.MarketOrder(side, abs(p.position)))
+                    ib.sleep(1)
+                    return True
+            return False
+        if not self._wrap(job):
+            raise BrokerError(f"no hay posición abierta {position_id}")
+        return {"id": position_id, "closed": True}
+
+
 def make_broker(adapter: str, environment: str, *, env: dict | None = None,
-                transport: httpx.BaseTransport | None = None) -> tuple[Broker, str]:
+                transport: httpx.BaseTransport | None = None, ibkr_session: ibkr.IbkrSession | None = None
+                ) -> tuple[Broker, str]:
     """El broker pedido, o el simulado con el motivo si falta algo. Devuelve (broker, nota)."""
+    if adapter == "ibkr":
+        try:
+            session = ibkr_session or ibkr.get_session(environment, env)
+            if ibkr_session is None and not ibkr.available():
+                return SimulatedBroker(), "falta instalar ib_async (pip install ib_async): uso el broker simulado"
+            return IbkrBroker(session), ""
+        except ibkr.IbkrError as exc:
+            return SimulatedBroker(), f"{exc}: uso el broker simulado"
     if adapter != "oanda":
         return SimulatedBroker(), ""
     try:

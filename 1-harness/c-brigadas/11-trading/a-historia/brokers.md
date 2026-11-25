@@ -1,5 +1,7 @@
 # Brokers para Trading (búsqueda del 25 nov 2026)
 
+> **Decisión de Damián (25 nov): Interactive Brokers.** Adaptador hecho (`ibkr.py`, con versión simulada para los tests). Pasos en `ibkr-pasos.md`.
+
 Pedido de Damián: 2 o 3 brokers con API que acepten residentes de Argentina, con cuenta demo y USD/JPY. **No se abrió ninguna cuenta.**
 Lo verificado en la página oficial va marcado ✔; lo que sale de sitios comparadores (que cobran publicidad) va marcado ~ y hay que confirmarlo con el broker antes de abrir cuenta.
 
