@@ -35,7 +35,7 @@ TICK_SECONDS = 60
 PROBE_CACHE = 10.0
 HEADERS = {"Cache-Control": "no-store", "X-Frame-Options": "DENY",
            "Content-Security-Policy": "default-src 'self'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; "
-                                      "connect-src 'self'; frame-ancestors 'none'"}
+                                      "connect-src 'self'; img-src data:; frame-ancestors 'none'"}
 
 
 SUFFIX = {"audio/wav": ".wav", "audio/x-wav": ".wav", "audio/ogg": ".ogg", "audio/mpeg": ".mp3", "audio/mp4": ".m4a"}
