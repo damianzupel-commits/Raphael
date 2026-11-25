@@ -16,6 +16,8 @@ raphael-empresas-api servir --instalacion ..\instalacion\clienta.installation.ya
 - Un candado serializa las operaciones sobre el runtime (el harness y su SQLite no están pensados para escrituras en paralelo).
 
 ## Autenticación
+**Sin clave desde la misma PC (opcional, apagado por defecto):** con `RAPHAEL_LOCAL_SIN_CLAVE=1` (lo pone `acceso-directo.bat` en Windows), un pedido hecho en `127.0.0.1` o `localhost`, sin encabezados de reenvío y no iniciado por otra página, entra sin sesión. Por el túnel, el celular u otra máquina la clave se sigue pidiendo. En el VPS no se activa.
+
 `POST /api/v1/login {"key", "device"}` → `{"token", "user", "business"}`. Después, `Authorization: Bearer <token>` en todo.
 - Token al azar de 32 bytes; se guarda solo su hash. Vence a los 90 días sin uso.
 - 5 claves malas en 5 minutos desde la misma dirección → 15 minutos bloqueada (`429`).

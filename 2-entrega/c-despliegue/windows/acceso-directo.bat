@@ -3,6 +3,8 @@ rem Doble clic (acceso directo del escritorio): abre el tunel de Tailscale si ha
 rem Cerrar esta ventana apaga el servidor. Las claves van en .data\empresas\raphael.env (ver ..\QUE-CARGAR.md).
 chcp 65001 >nul
 set PYTHONUTF8=1
+rem Desde esta PC se entra sin clave. Por el tunel o el celular la clave se sigue pidiendo.
+set RAPHAEL_LOCAL_SIN_CLAVE=1
 title Raphael Empresas
 netstat -ano | findstr /c:"127.0.0.1:8787 " | findstr LISTENING >nul
 if not errorlevel 1 (

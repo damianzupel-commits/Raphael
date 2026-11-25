@@ -16,6 +16,7 @@ from collections.abc import AsyncIterator
 from datetime import date
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlsplit
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.responses import HTMLResponse, PlainTextResponse
@@ -101,6 +102,26 @@ def hmac_eq(a: str, b: str) -> bool:
     return hmac.compare_digest(a.encode(), b.encode())
 
 
+LOCAL_NAMES = ("127.0.0.1", "localhost", "::1")
+
+
+def is_same_pc(request: Request) -> bool:
+    """Pedido hecho desde esta misma PC, directo al servidor. Un túnel (Tailscale Funnel) o un proxy (Caddy) también
+    conectan desde 127.0.0.1, así que además se exige que no traiga encabezados de reenvío y que se haya pedido a un
+    nombre local. `Origin` y `Sec-Fetch-Site` frenan a una página ajena abierta en el navegador de esta PC."""
+    h = request.headers
+    if request.client is None or request.client.host not in ("127.0.0.1", "::1"):
+        return False
+    if any(k.startswith(("x-forwarded", "forwarded", "tailscale", "x-real-ip", "via", "cf-")) for k in h):
+        return False
+    host = h.get("host", "")
+    if urlsplit("//" + host).hostname not in LOCAL_NAMES:
+        return False
+    if h.get("origin") not in (None, f"http://{host}"):
+        return False
+    return h.get("sec-fetch-site") in (None, "same-origin", "none")
+
+
 def pending_view(p: dict) -> dict:
     a = p.get("action") or {}
     kind = a.get("type") or p.get("kind")
@@ -112,10 +133,11 @@ def pending_view(p: dict) -> dict:
 
 
 def create_app(rt: Runtime, *, tick: bool = True, meta: MetaChannel | None = None, env_file: Path | None = None,
-               environ: dict[str, str] | None = None) -> FastAPI:
+               environ: dict[str, str] | None = None, local_open: bool = False) -> FastAPI:
     """`meta`: el canal de WhatsApp e Instagram (sus conectores ya tienen que estar en el runtime); None = sin webhooks.
     `env_file`: el `raphael.env` local donde la pantalla de Configuración guarda las claves (None = sin Configuración).
-    `environ`: el entorno del proceso que se cambia en caliente (por defecto `os.environ`)."""
+    `environ`: el entorno del proceso que se cambia en caliente (por defecto `os.environ`).
+    `local_open`: en la PC de la dueña, los pedidos de esa misma PC entran sin clave (ver `is_same_pc`)."""
     environ = os.environ if environ is None else environ
     auth = Auth(rt.store, rt.clock)
     lock = asyncio.Lock()
@@ -155,6 +177,8 @@ def create_app(rt: Runtime, *, tick: bool = True, meta: MetaChannel | None = Non
     def session(request: Request, authorization: str | None = Header(None)) -> dict:
         token = authorization[7:] if authorization and authorization.lower().startswith("bearer ") else None
         s = auth.check(token)
+        if s is None and local_open and is_same_pc(request):
+            s, token = {"local": True}, None
         if s is None:
             raise HTTPException(401, "sesión inválida o vencida: volvé a entrar con tu clave")
         request.state.token = token
@@ -304,7 +328,8 @@ def create_app(rt: Runtime, *, tick: bool = True, meta: MetaChannel | None = Non
 
     @app.post("/api/v1/logout")
     async def logout(request: Request, s: dict = Depends(session)) -> dict:
-        auth.logout(request.state.token)
+        if request.state.token:
+            auth.logout(request.state.token)
         return {"ok": True}
 
     @app.get("/api/v1/summary")
