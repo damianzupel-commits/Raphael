@@ -15,9 +15,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "b-codigo" / "src"))
 
-from raphael_ingesta.adapters import make  # noqa: E402
-from raphael_ingesta.adapters.youtube import video_id_of  # noqa: E402
-from raphael_ingesta.model import SourceError  # noqa: E402
+from raphael_ingesta.adapters import make
+from raphael_ingesta.adapters.youtube import video_id_of
+from raphael_ingesta.model import SourceError
 
 
 def _try(name: str, fn) -> bool:
@@ -41,7 +41,7 @@ def main() -> int:
     arxiv, web, yt = make("arxiv", "real"), make("web", "real"), make("youtube", "real")
     print("Ingesta · prueba contra la red real")
     results.append(_try("arXiv búsqueda", lambda: f"{len(arxiv.search('cat:cs.AI', 2))} papers"))
-    results.append(_try("web", lambda: (lambda it: f"«{it.title}» ({len(it.text)} caracteres)")(web.fetch(args.pagina))))
+    results.append(_try("web", lambda: _describe(web.fetch(args.pagina))))
     results.append(_try("web bloquea localhost", lambda: _must_fail(lambda: web.fetch("http://localhost:8000/"))))
     if args.lista:
         results.append(_try("YouTube lista", lambda: f"{len(yt.list_playlist(args.lista))} videos"))
@@ -52,6 +52,10 @@ def main() -> int:
         print("  (YouTube no se probó: pasá --video y --lista)")
     print("Resultado:", "todo bien" if all(results) else "hay fallas")
     return 0 if all(results) else 2
+
+
+def _describe(item) -> str:
+    return f"«{item.title}» ({len(item.text)} caracteres)"
 
 
 def _must_fail(fn) -> str:
