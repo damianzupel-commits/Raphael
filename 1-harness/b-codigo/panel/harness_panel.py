@@ -134,6 +134,19 @@ class RaphaelApp(tk.Tk):
         if aviso:
             self.pill_sample.set([aviso[:18], "…"], variant="warn")
 
+    def report_callback_exception(self, exc, val, tb) -> None:
+        """Un error dentro de un evento de la ventana no la tumba ni se pierde: queda en `errores-panel.log` (pythonw no
+        tiene consola)."""
+        import traceback
+        from datetime import datetime
+
+        try:
+            with open(HERE / "errores-panel.log", "a", encoding="utf-8") as fh:
+                fh.write(f"--- {datetime.now().isoformat(timespec='seconds')}\n")
+                fh.write("".join(traceback.format_exception(exc, val, tb)))
+        except OSError:
+            pass
+
     def _tick(self) -> None:
         """Cada minuto: tareas programadas de las brigadas y su healthcheck (que el runtime corre cada 5 min)."""
         if not self._busy:
@@ -458,6 +471,10 @@ class RaphaelApp(tk.Tk):
 
     def _render_chat(self) -> None:
         c = self.chat_canvas
+        # si la persona subió a leer, el redibujado (cada refresco o cambio de tamaño) no la manda de vuelta al final
+        lo, hi = c.yview()
+        al_final = hi >= 0.999 or getattr(self, "_chat_key", None) != (self.scope, len(self.app.chat(self.scope)))
+        self._chat_key = (self.scope, len(self.app.chat(self.scope)))
         c.delete("all")
         self._bubbles: list = []
         w = max(200, c.winfo_width())
@@ -493,7 +510,7 @@ class RaphaelApp(tk.Tk):
                           fill=DIM, font=(SANS, 8))
             y += bh + 26
         c.configure(scrollregion=(0, 0, w, y + 6))
-        c.yview_moveto(1.0)
+        c.yview_moveto(1.0 if al_final else lo)
 
     # --- estado y tareas en vivo ---------------------------------------------------------------------------------------
     def _render_status(self) -> None:

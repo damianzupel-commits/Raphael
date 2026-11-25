@@ -105,7 +105,15 @@ class ConfigView(tk.Frame):
         canvas.configure(yscrollcommand=sb.set)
         sb.pack(side="right", fill="y")
         canvas.pack(side="left", fill="both", expand=True)
-        canvas.bind_all("<MouseWheel>", lambda e: canvas.yview_scroll(-1 if e.delta > 0 else 1, "units"))
+        # la rueda solo mueve ESTA pantalla mientras el puntero está encima (un bind_all permanente la dejaba atada a un
+        # lienzo ya destruido y le robaba la rueda al chat)
+        def rueda(e: tk.Event) -> None:
+            if canvas.winfo_exists():
+                canvas.yview_scroll(-1 if e.delta > 0 else 1, "units")
+
+        canvas.bind("<Enter>", lambda e: canvas.bind_all("<MouseWheel>", rueda))
+        canvas.bind("<Leave>", lambda e: canvas.unbind_all("<MouseWheel>"))
+        canvas.bind("<Destroy>", lambda e: canvas.unbind_all("<MouseWheel>"))
         pad = tk.Frame(inner, bg=PANEL)
         pad.pack(fill="both", expand=True, padx=20, pady=16)
         return pad
