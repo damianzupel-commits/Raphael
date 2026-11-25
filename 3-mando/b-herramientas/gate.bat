@@ -1,5 +1,5 @@
 @echo off
-rem Puerta del monorepo: corre las cuatro suites y ruff. Sale con 0 si todo pasa, 2 si algo falla.
+rem Puerta del monorepo: corre todas las suites y ruff. Sale con 0 si todo pasa, 2 si algo falla.
 setlocal
 set "ROOT=%~dp0..\.."
 if exist "%ROOT%\.venv\Scripts\python.exe" (

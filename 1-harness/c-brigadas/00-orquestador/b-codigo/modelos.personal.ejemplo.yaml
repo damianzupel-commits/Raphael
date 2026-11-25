@@ -1,3 +1,5 @@
+# OJO: el archivo vigente de Raphael personal es `2-entrega/c-despliegue/personal/modelos.personal.yaml` (con los overrides de
+# Operaciones y Memoria). Este ejemplo sirve de prueba de la salud del orquestador; si cambian, cambialos juntos.
 # EJEMPLO (no se carga solo) de modelos por rol para Raphael personal: mixto, decidido por Damián el 25 nov 2026.
 #  - Lo sensible (Seguridad, Investigación, Memoria, Operaciones) corre en LOCAL (Ollama o LM Studio en su PC).
 #  - Lo demás, en la nube (NVIDIA). Cualquier rol se puede cambiar editando `roles` / `overrides`.

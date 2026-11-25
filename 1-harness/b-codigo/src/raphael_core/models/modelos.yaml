@@ -46,6 +46,10 @@ providers:
     rpm: 10
     extra:
       provider: {data_collection: deny}
+  local-ollama:                   # modelo en la PC (solo lo usa lo privado; sin Ollama prendido se saltea). Sin clave.
+    base_url: http://127.0.0.1:11434/v1
+    model: llama3.1:8b            # SUPUESTO: el que tengas bajado (`ollama list`)
+    rpm: 30
   nvidia:
     base_url: https://integrate.api.nvidia.com/v1
     model: nvidia/nemotron-3.5-super-vl-120b-a12b    # el de JarvisRemote (verificado allá el 11 nov 2026)
@@ -59,7 +63,7 @@ providers:
 tiers:
   pago:   [deepseek-flash]        # producción: tráfico real, con tope mensual en dólares (paid_cap_usd_month)
   gratis: [gratis-a, gratis-b]    # alternativa rotativa de OpenRouter, siempre con data_collection=deny
-  local:  []                      # cuando haya modelo local (Ollama o LM Studio en localhost), ponerlo acá.
+  local:  [local-ollama]          # Ollama o LM Studio en 127.0.0.1 (para LM Studio: http://127.0.0.1:1234/v1).
                                   # Lo privado solo usa locales: sin ninguno cae a reglas (se mira la dirección, no el nombre)
   # nvidia NO está en ningún escalón: es solo para desarrollo (ver arriba); para probar, agregarlo a mano a "gratis".
 
@@ -77,7 +81,7 @@ roles:
 overrides: {}
 
 # Lo privado solo usa modelos que corren en la PC (si no hay, sigue con reglas). Decisión de JarvisRemote.
-private: [memoria-cerebro, investigacion-forense]
+private: [seguridad, investigacion, memoria, operaciones, memoria-cerebro, investigacion-forense]
 
 paid_tiers: [pago]
 paid_cap_usd_month: 5      # SUPUESTO: tope de USD por mes en el escalón pago (0 = solo proveedores sin costo). Ajustar al volumen real

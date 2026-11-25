@@ -56,13 +56,13 @@ def test_lo_privado_nunca_sale_a_la_nube_aunque_el_local_este_apagado(tmp_path):
 
     def transporte(url, body, headers):
         llamadas.append(url)
-        if "localhost" in url:
+        if "127.0.0.1" in url:
             raise ConnectionError("apagado")
         return {"choices": [{"message": {"content": "respuesta de la nube"}}]}
 
     rt.models._transport = transporte
     assert rt.models.complete("cocinero", [{"role": "user", "content": "x"}], target="seguridad") is None
-    assert llamadas and all("localhost" in u for u in llamadas)          # ni un pedido salió a NVIDIA
+    assert llamadas and all("127.0.0.1" in u for u in llamadas)          # ni un pedido salió a NVIDIA
     llamadas.clear()
     assert rt.models.complete("voz", [{"role": "user", "content": "hola"}]) == "respuesta de la nube"   # lo no privado sí
     assert any("nvidia" in u for u in llamadas)

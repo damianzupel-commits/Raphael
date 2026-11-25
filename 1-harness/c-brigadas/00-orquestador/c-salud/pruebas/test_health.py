@@ -175,8 +175,10 @@ def test_memoria_turno_se_puede_apagar_y_en_la_nube_no_va(monkeypatch):
     assert got == []
 
 
-def test_sin_forma_de_publicar_el_turno_sigue_y_queda_anotado_una_vez():
+def test_sin_forma_de_publicar_el_turno_sigue_y_queda_anotado_una_vez(monkeypatch):
+    from raphael_core.context import OrchestratorContext
     from test_o5 import good_script
+    monkeypatch.delattr(OrchestratorContext, "publish")   # un harness viejo, sin `publish`
     rt = master(good_script())
     assert _talk(rt).text
     _talk(rt)

@@ -1,3 +1,6 @@
+# YA INTEGRADO (25 nov 2026): `private: [memoria]` y `cocinero.memoria: [local]` están en
+# `2-entrega/c-despliegue/personal/modelos.personal.yaml` y `private` en el `modelos.yaml` del harness. Este fragmento queda
+# solo como referencia para quien arme un `modelos.yaml` propio.
 # Lo que hay que sumar a `modelos.yaml` (harness) para que Memoria use SOLO un modelo local: Seguridad, Investigación, Memoria
 # y Operaciones de Raphael personal corren en la PC (decisión de Damián, 25 nov 2026). Es un fragmento: no se carga solo.
 # Sin clave: LM Studio y Ollama no la piden. Los nombres de modelo son los que tengas cargados (SUPUESTO: ajustalos).

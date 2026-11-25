@@ -19,7 +19,7 @@ from dataclasses import dataclass
 from datetime import date, datetime
 from typing import TYPE_CHECKING, Any
 
-from .contract import Action, ActionError, Cook, Message, Origin, Reply
+from .contract import Action, ActionError, Cook, Level, Message, Origin, Reply
 from .store import Space
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -101,6 +101,12 @@ class Context:
         models = self._rt.models
         return bool(models is not None and models.available(role, target=self.brigade))
 
+    def action_level(self, action_type: str) -> Level:
+        """El nivel de autonomía que rige HOY una acción de esta brigada (el de su manifiesto, lo fijado por la
+        instalación o lo que bajó la confianza progresiva). Solo lectura: para que una pieza se niegue a ejecutar
+        si alguien dejó en automático algo que no debe (ej. Trading)."""
+        return self._rt.policy.level(self.brigade, action_type)
+
     def record(self, what: str, **data: Any) -> None:
         self._rt.audit.record(what, who=self.piece, **data)
 
@@ -108,6 +114,7 @@ class Context:
 #: los roles de modelo que puede pedir el orquestador (los demás son de jefes, cocineros y efímeros)
 ORCHESTRATOR_ROLES = ("mando", "voz", "ruteo")
 ORCHESTRATOR_SPACE = "_orchestrator"
+ORCHESTRATOR_EVENTS = frozenset({"memoria.turno"})   # lo único que el orquestador puede publicar en el bus
 ORCHESTRATOR_TARGET = "orquestador"   # el id con el que van sus pedidos a la pasarela (overrides "mando.orquestador")
 
 
@@ -197,6 +204,19 @@ class OrchestratorContext:
     def record(self, what: str, **data: Any) -> None:
         """Deja constancia en la auditoría, a nombre del orquestador (ruteo, reparto, cortes del watchdog)."""
         self._rt.audit.record(what, who=ORCHESTRATOR_TARGET, **data)
+
+    def audit_entries(self, what: str | None = None, who: str | None = None, last: int | None = None) -> list[dict]:
+        """Lee la auditoría (solo lectura, ya sin secretos): para exportar el registro de tools a la introspección y
+        para que el orquestador explique qué pasó. Devuelve copias: no hay forma de editarla desde acá."""
+        return [dict(e) for e in self._rt.audit.entries(what=what, who=who, last=last)]
+
+    def publish(self, event: str, data: dict) -> None:
+        """Publica en el bus un evento de la lista corta `ORCHESTRATOR_EVENTS` (hoy `memoria.turno`, que Memoria
+        escucha). Cualquier otro evento se rechaza: el orquestador no puede hacerse pasar por una brigada."""
+        if event not in ORCHESTRATOR_EVENTS:
+            raise ActionError(f"el orquestador solo puede publicar {', '.join(sorted(ORCHESTRATOR_EVENTS))}; pidió '{event}'")
+        self._rt.audit.record("evento", who=ORCHESTRATOR_TARGET, evento=event)
+        self._rt.bus.publish(event, data, source=ORCHESTRATOR_TARGET)
 
     def mark_cut(self, brigade: str, reason: str) -> None:
         """Anota en el tablero de efímeros en vivo que el orquestador cortó la corrida de esa brigada, y por qué."""
