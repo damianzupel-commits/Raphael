@@ -141,3 +141,57 @@ def test_ingesta_fallo_avisa_una_vez_por_item():
     run(rt._settle())
     t = texts(rt)
     assert t[0] == "No se pudo traer «Charla sobre Rust» de youtube: el video no tiene subtítulos" and len(t) == 2
+
+
+def _talk(rt, text="buscá en la web algo de rust"):
+    from test_o5 import say
+    return say(rt, text)
+
+
+def test_al_cerrar_un_turno_publica_memoria_turno(monkeypatch):
+    from raphael_core.context import OrchestratorContext
+    from test_o5 import good_script
+    got = []
+    monkeypatch.setattr(OrchestratorContext, "publish", lambda self, ev, data: got.append((ev, data)), raising=False)
+    rt = master(good_script())
+    r = _talk(rt)
+    assert r.text and len(got) == 1
+    ev, data = got[0]
+    assert ev == "memoria.turno" and data["conv_id"] == "app" and data["dominio"] == "osint"
+    assert data["history"][0] == {"role": "user", "content": "buscá en la web algo de rust"}
+    assert data["history"][1]["role"] == "assistant" and data["history"][1]["content"] == r.text
+
+
+def test_memoria_turno_se_puede_apagar_y_en_la_nube_no_va(monkeypatch):
+    from raphael_core.context import OrchestratorContext
+    from test_o5 import good_script
+    got = []
+    monkeypatch.setattr(OrchestratorContext, "publish", lambda self, ev, data: got.append(ev), raising=False)
+    rt = master(good_script(), cfg={"memory": {"publish_turns": False}, "watchdog": {"poll_seconds": 0.01},
+                                    "routing": {"classifier": False}})
+    _talk(rt)
+    rt2 = master(good_script(), edition="cloud")
+    _talk(rt2)
+    assert got == []
+
+
+def test_sin_forma_de_publicar_el_turno_sigue_y_queda_anotado_una_vez():
+    from test_o5 import good_script
+    rt = master(good_script())
+    assert _talk(rt).text
+    _talk(rt)
+    notes = [e for e in rt.audit.entries() if e["what"] == "memoria_turno_no_publicado"]
+    assert len(notes) == 1
+
+
+def test_si_publicar_falla_no_rompe_el_turno(monkeypatch):
+    from raphael_core.context import OrchestratorContext
+    from test_o5 import good_script
+
+    def boom(self, ev, data):
+        raise RuntimeError("bus caído")
+
+    monkeypatch.setattr(OrchestratorContext, "publish", boom, raising=False)
+    rt = master(good_script())
+    assert _talk(rt).text
+    assert any(e["what"] == "memoria_turno_fallido" for e in rt.audit.entries())

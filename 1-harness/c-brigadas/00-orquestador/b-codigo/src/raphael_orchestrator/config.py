@@ -46,6 +46,7 @@ class MemoryConfig(_Base):
     max_summary: int = Field(12, ge=0, le=100)
     max_request: int = Field(300, ge=40, le=4000)
     max_message: int = Field(500, ge=40, le=4000)
+    publish_turns: bool | None = None   # publicar `memoria.turno` al cerrar cada turno; None = solo en la edición personal
 
 
 class RoutingConfig(_Base):
