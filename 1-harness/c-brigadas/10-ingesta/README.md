@@ -25,7 +25,7 @@ PC hoy; al VPS sin dependencias de Windows.
 - Cada acción declara su nivel de autonomía (automatico, aprobacion, humano) en el manifiesto.
 
 ## Estado
-Existe en JarvisRemote. Estado de validación: sin relevar.
+Portada al harness v2 (2.0.0, 25 nov 2026): 3 cocineros, adaptadores real y simulado, 73 tests y suite de contrato en verde en la nube. **Sin probar contra YouTube, arXiv ni páginas reales** (la nube no tiene red de salida): falta correr `c-salud/mantenimiento/probar_real.py` en la PC. Sin modelo resume por reglas y lo dice.
 
 ## Criterios de aceptación (mínimos)
 - Pasa la suite de contrato del harness v2 (manifiesto válido, healthcheck, montar y desmontar).
