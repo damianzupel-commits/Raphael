@@ -745,6 +745,7 @@ class RaphaelApp(tk.Tk):
             return
         self.chat_note.configure(
             text=f"ejecutando #{self._approving_pid}… {int(time.monotonic() - self._approving)} s (podés seguir usando el panel)")
+        self._render_status()        # «Estado y tareas» se redibuja: el pendiente pasa a «en curso»
         self.after(1000, self._tick_running)
 
     # --- vista de una brigada -------------------------------------------------------------------------------------------
@@ -1086,8 +1087,9 @@ class RaphaelApp(tk.Tk):
         name = "Orquestador" if self.scope == ORCHESTRATOR else (self.app.brigade(self.scope).name
                                                                  if self.app.brigade(self.scope) else self.scope)
         self.chat_title.configure(text=spaced(f"Chat · {name}"))
-        self.chat_note.configure(text="modo muestra: no se guarda" if self.app.sample else
-                                 f"modelo: {st.get('models', '—')}")
+        if not self._approving:
+            self.chat_note.configure(text="modo muestra: no se guarda" if self.app.sample else
+                                     f"modelo: {st.get('models', '—')}")
         self.chat_entry.configure(state="disabled" if self.app.sample else "normal")
         self.chat_send.set(enabled=not self.app.sample)
         self._render_chat()

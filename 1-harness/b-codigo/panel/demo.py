@@ -584,7 +584,10 @@ class PanelState:
             return out
         snap = self.runtime.live.snapshot(None if scope == ORCHESTRATOR else scope)
         out = [(e["task"] or "tarea", e["brigade_name"], "en curso", e["helper"]) for e in snap["active"]]
+        corriendo = {e["task"].split()[0] for e in snap["active"] if (e["task"] or "").startswith("#")}
         for p in self.runtime.approvals.list(brigade=None if scope == ORCHESTRATOR else scope):
+            if f"#{p['id']}" in corriendo:      # ya aprobado y ejecutándose: figura «en curso», no «por aprobar»
+                continue
             state = "aprobación" if p["level"] == "aprobacion" else "te toca a vos"
             out.append((f"#{p['id']} {p['summary']}", self._name(p["brigade"]), state, p["cook"]))
         return out
