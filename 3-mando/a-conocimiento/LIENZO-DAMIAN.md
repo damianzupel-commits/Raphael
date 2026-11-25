@@ -7,7 +7,7 @@ Raphael está construido y probado con adaptadores simulados. Lo que sigue es lo
 - **Autonomía** (☰ Configuración > Autonomía, variable `RAPHAEL_AUTONOMIA`): `cauteloso` (todo pide aprobación y la confianza progresiva no baja nada), `equilibrado` (el de siempre, **por defecto**) o `confiado` (la confianza baja con la mitad de aprobaciones seguidas). **No cambia la regla general**: publicar, pagar, mandar mensajes, borrar, operar en trading y el pentest activo piden tu aprobación en los tres.
 - Cada pieza tiene su plantilla `*.env.plantilla` con todas las variables (rutas abajo). Todo lo que quede vacío no rompe nada: esa parte cae a reglas o a un simulado y lo avisa.
 - Para chequear lo cargado: `cuentas chequear` (formato, sin mostrar secretos) y `cuentas probar <cuenta>` (una consulta de solo lectura). Lista de cuentas en `2-entrega/c-despliegue/cuentas-y-apis/ENTRADAS-LIENZO.md`.
-- Los nombres correctos son `MP_*` (no `MERCADOPAGO_*`), `NVIDIA_API_KEY` para la IA en la nube de Personal y `OPENROUTER_API_KEY` para Empresas.
+- Los nombres correctos son `MP_*` (no `MERCADOPAGO_*`), `OPENROUTER_API_KEY` para la IA en la nube de **las dos ediciones** (NVIDIA quedó descartado por decisión tuya).
 - Lo que **no** está probado contra el servicio real figura en la última sección: se prueba al cargar la clave.
 
 Reglas que no se tocan: Trading nunca ejecuta sin tu aprobación, ni en demo. El pentest activo solo corre en tu PC. Publicar, pagar, mandar mensajes o borrar siempre piden aprobación.
@@ -19,12 +19,11 @@ Reglas que no se tocan: Trading nunca ejecuta sin tu aprobación, ni en demo. El
 | # | Qué hace falta | Dónde se saca | Dónde se pega | Qué se prueba después |
 | --- | --- | --- | --- | --- |
 | 1 | **Instalar Raphael personal** | Nada que sacar: doble clic en `2-entrega\c-despliegue\personal\instalar-personal.bat` | (crea `.venv`, la tarea "Raphael Personal" y `Raphael.url`) | Abrir `http://127.0.0.1:8788/`: entra sin clave desde la PC; la clave de la app queda en `.data\personal\clave-inicial.txt` |
-| 2 | `NVIDIA_API_KEY` (IA en la nube de lo no sensible) | build.nvidia.com > iniciar sesión > un modelo > Get API Key (`nvapi-…`). Gratis para uso personal tuyo | Configuración (`raphael.env`) | `cuentas probar nvidia`; charlar con Raphael y ver en la pestaña Cerebro que `mando` responde |
+| 2 | `OPENROUTER_API_KEY` (IA en la nube de lo no sensible en Personal, y de Empresas) | openrouter.ai > Keys (`sk-or-…`); cargá saldo. En ☰ Configuración: «Agregar API key» | Configuración (`raphael.env`); para Empresas, el `raphael.env` de Empresas y el VPS cuando exista | `cuentas probar openrouter` (clave y saldo); charlar con Raphael y ver en la pestaña Cerebro que `mando` responde. **Tope de gasto: USD 5 por mes es un supuesto, confirmalo o cambialo** en Configuración (`RAPHAEL_TOPE_PAGO_USD`; 0 = no gasta nada). Sin clave o sin saldo, cae al modelo local |
 | 3 | **Modelo local** (Ollama o LM Studio, prendido, con un modelo de chat bajado) | ollama.com o lmstudio.ai | Configuración: `OLLAMA_MODEL` o `LMSTUDIO_MODEL` (el de `ollama list` / el cargado) y, si cambia el puerto, `LOCAL_LLM_URL` + `LOCAL_LLM_KIND` (`ollama` o `lmstudio`). Solo direcciones de esta PC | `cuentas probar local_llm`; pestaña Cerebro: "modelo local responde". **Sin esto, Seguridad, Investigación, Memoria y Operaciones siguen por reglas y avisan: nada sensible sale a la nube** |
 | 4 | **Modelo de embeddings** para Memoria | En LM Studio `text-embedding-nomic-embed-text-v1.5`; en Ollama `ollama pull nomic-embed-text` | `MEMORIA_EMBEDDINGS_BASE_URL` y `MEMORIA_EMBEDDINGS_MODEL` (plantilla de Memoria) | Memoria: guardar una nota y buscarla por significado (sin esto busca por palabra clave) |
-| 5 | `OPENROUTER_API_KEY` (IA de Empresas) | openrouter.ai > Keys (`sk-or-…`). El saldo ya lo cargaste | `raphael.env` de Empresas (o Configuración) y en el VPS cuando exista | `cuentas probar openrouter` (clave y saldo) |
 
-Roles y modelos se cambian **sin tocar código**: `RAPHAEL_ROL_MANDO`, `_VOZ`, `_JEFE`, `_RUTEO`, `_COCINERO`, `_EFIMERO` (escalones en orden: `local`, `gratis`, `pago`), `RAPHAEL_PRIVADAS=trading,legales` (brigadas extra solo-local). Config base: `2-entrega/c-despliegue/personal/modelos.personal.yaml`. Plantilla: `2-entrega/c-despliegue/personal/personal.env.plantilla`.
+Roles y modelos se cambian **sin tocar código**: `RAPHAEL_ROL_MANDO`, `_VOZ`, `_JEFE`, `_RUTEO`, `_COCINERO`, `_EFIMERO` (escalones en orden: `local`, `gratis`, `pago`; la nube de Personal es `pago` = OpenRouter), `RAPHAEL_PRIVADAS=trading,legales` (brigadas extra solo-local). Config base: `2-entrega/c-despliegue/personal/modelos.personal.yaml`. Plantilla: `2-entrega/c-despliegue/personal/personal.env.plantilla`.
 
 ## 2. Celular y acceso remoto (Raphael personal)
 
@@ -76,7 +75,7 @@ Roles y modelos se cambian **sin tocar código**: `RAPHAEL_ROL_MANDO`, `_VOZ`, `
 | Ingesta: `RAPHAEL_VAULT_DIR` (tu vault de Obsidian; vacío = las notas quedan en el almacén) | Tu PC | plantilla `10-ingesta/b-codigo/ingesta.env.plantilla` | Ingerir un video de YouTube, una web y un paper de arXiv con `c-salud/mantenimiento/probar_real.py` |
 | YouTube (solo si pide "confirmar que no sos un bot"): `YT_COOKIES_FILE` (cookies.txt exportado) o `YT_COOKIES_BROWSER=firefox` | Tu navegador | ídem | Ingerir un video |
 
-La IA que resume en Ingesta sale del rol `cocinero` (NVIDIA en Personal): sin clave resume por reglas y la nota lo dice.
+La IA que resume en Ingesta sale del rol `cocinero` (OpenRouter, o el modelo local): sin clave resume por reglas y la nota lo dice.
 
 ## 6. Memoria (09), Autorreparación (13), Operaciones (12)
 
@@ -84,7 +83,7 @@ La IA que resume en Ingesta sale del rol `cocinero` (NVIDIA en Personal): sin cl
 | --- | --- | --- | --- |
 | `MEMORIA_VAULT_PATH` (opc.; si no, usa `RAPHAEL_VAULT_DIR`, así Ingesta y Memoria comparten carpeta) | Tu PC | plantilla `09-memoria/b-codigo/memoria.env.plantilla` | Guardar y recordar una nota; `exportar_vault` y `consolidar`/`olvidar` piden aprobación |
 | `RAPHAEL_REPAIR_ROOT` (la carpeta del repo de Raphael en tu PC) | Tu PC | `raphael.env` (plantilla `13-autorreparacion/b-codigo/autorreparacion.env.plantilla`) | `proponer` (en seco, con diff). `aplicar_arreglo` y `revertir_arreglo` piden aprobación y nunca bajan a automático |
-| `verify_command` (ej. `["python","-m","pytest","-q"]`), `git_commit: true`, `ai_private: true` (opc.), `audit_log_path` y `analyze_every_minutes` (opc.) | Tu criterio | `installation.yaml` > brigades > autorreparacion > config | Aplicar un arreglo de prueba: si el verificador falla, se deshace solo. `redactar` usa el rol `cocinero` (NVIDIA o local) |
+| `verify_command` (ej. `["python","-m","pytest","-q"]`), `git_commit: true`, `ai_private: true` (opc.), `audit_log_path` y `analyze_every_minutes` (opc.) | Tu criterio | `installation.yaml` > brigades > autorreparacion > config | Aplicar un arreglo de prueba: si el verificador falla, se deshace solo. `redactar` usa el rol `cocinero` (OpenRouter o local) |
 | Operaciones: **empieza simulada** (`OPERACIONES_ADAPTADORES=simulado`, no toca nada). Pasarla a `real` es decisión tuya | — | plantilla `12-operaciones/b-codigo/operaciones.env.plantilla` | Con `real`, cada acción igual pide aprobación |
 | Interruptores del modo real, todos apagados: `OPERACIONES_PC_SHELL`, `OPERACIONES_ESCRITORIO`, `OPERACIONES_CELULAR_SHELL`, `OPERACIONES_CELULAR_CAMARA` (`si`/`no`) | — | ídem | Prender de a uno y probar en tu PC (Windows) |
 | Carpetas: `OPERACIONES_CARPETA_SEGURA`, `OPERACIONES_FS_RAICES`, `OPERACIONES_FS_SUPERVISADO`, `OPERACIONES_FS_PROHIBIDAS`, `OPERACIONES_FS_PERMITIR_BORRAR=no` | Tu PC | ídem | Que una tool no pueda salir de las carpetas permitidas |
@@ -125,8 +124,8 @@ No probado: todo el trato con IB real (se verificó contra un `ib_async` falso).
 ## Qué no está probado contra el servicio real
 Todo lo de arriba se probó con adaptadores simulados o transportes falsos. Se prueba **al cargar cada clave**:
 - **Windows:** los `.bat`, la tarea programada, `icacls` de los permisos, Tailscale y el acceso directo; el escritorio real de Operaciones (pyautogui/pywinauto), Playwright, Scrapling y el celular real.
-- **IA:** NVIDIA, OpenRouter, Ollama y LM Studio reales; la voz real.
+- **IA:** OpenRouter, Ollama y LM Studio reales; la voz real.
 - **Cuentas:** Meta (webhook, WhatsApp, Instagram), Mercado Pago (el texto firmado del webhook y los campos de la preferencia están marcados como **supuestos** en `pay/mercadopago.py`), Brave/SearXNG, Shodan y demás fuentes, YouTube/arXiv/páginas reales, ClamAV, VirusTotal, Sysmon, nmap, ZAP, sqlmap, OSV, Instagram, Meta Ads, ComfyUI.
 - **Endpoints y variables nuevas** de Cuentas y APIs marcados como supuestos en `catalogo.py` (confirmar en cada documentación).
 - **Slugs y precios** de modelos en `modelos.yaml` (supuestos a verificar en openrouter.ai/models).
-- **Legal:** los términos de NVIDIA para uso personal (CONTEXT §6) y la cesión de datos de clientes a un tercero (Ley 25.326, verificar fuente vigente).
+- **Legal:** la cesión de datos de clientes a un tercero (Ley 25.326, verificar fuente vigente).
