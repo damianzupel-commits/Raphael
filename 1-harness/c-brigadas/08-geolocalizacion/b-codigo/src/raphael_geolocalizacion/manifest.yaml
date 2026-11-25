@@ -1,0 +1,44 @@
+# Brigada Geolocalización pública (pieza 08): la ÚNICA fuente de verdad de lo que la brigada puede hacer.
+# Solo fuentes públicas, solo infraestructura (nada de ubicar personas). Cada acción con efecto declara su nivel y sus
+# etiquetas: external = sale al mundo · irreversible = no tiene vuelta atrás · spend = gasta plata o cupo de una cuenta.
+# Las consultas de lectura (IP, cripto, capas) no son acciones: son comandos de lectura que el orquestador puede correr.
+id: geolocalizacion
+name: Geolocalización pública
+version: 1.0.0
+contract: ">=2.1,<3"
+description: OSINT de infraestructura con fuentes públicas. Geolocaliza IPs y dominios, rastrea direcciones cripto y arma las capas del globo (terremotos, vuelos, barcos, satélites). Cada resultado lleva su fuente. Sin clave o sin red avisa y no inventa.
+editions: [personal]
+cooks:
+  - {id: ip-infra, entry: "raphael_geolocalizacion.cooks.ip_infra:IpInfra", blocking: true}
+  - {id: cripto, entry: "raphael_geolocalizacion.cooks.cripto:Cripto", blocking: true}
+  - {id: capas, entry: "raphael_geolocalizacion.cooks.capas:Capas", blocking: true}
+actions:
+  buscar_shodan: {level: aprobacion, tags: [external, spend], description: "buscar hosts expuestos en Shodan (gasta cupo de la cuenta de Damián)"}
+  borrar_pines: {level: aprobacion, tags: [irreversible], description: "borrar los pines guardados del globo"}
+events:
+  publishes: [pin.agregado]
+  consumes: []
+commands:
+  ip: {read: true, description: "geolocalizar una IP o dominio público {'target': '8.8.8.8'}; deja el pin en el globo"}
+  fuentes: {read: true, description: "modo (real o simulado) y qué claves están cargadas, sin mostrarlas"}
+  cripto: {read: true, description: "rastrear una dirección BTC o ETH {'address': '0x…'}"}
+  capa: {read: true, description: "datos de una capa del globo {'name': 'terremotos'}"}
+  capas: {read: true, description: "las capas disponibles y si necesitan clave"}
+  pines: {read: true, description: "los pines guardados {'kind': 'ip', 'limit': 100}"}
+routing:
+  signals:
+    - {pattern: "\\bgeolocaliz\\w+|\\bshodan\\b|\\bterremotos?\\b|\\bsismos?\\b|\\bvuelos?\\b|\\bbarcos?\\b|\\bsatelites?\\b|\\bglobo\\b|\\bpines\\b", weight: 2}
+    - {pattern: "\\b(?:\\d{1,3}\\.){3}\\d{1,3}\\b|\\b0x[0-9a-fA-F]{40}\\b|\\bbc1[0-9a-z]{20,}\\b|\\bcable submarino\\b|\\bdata ?centers?\\b|\\bdirecci[oó]n (?:de )?(?:bitcoin|btc|eth|cripto)\\b", weight: 2}
+store:
+  space: geolocalizacion
+uninstall:
+  export: [pines]
+  delete: [pines]
+setup: "raphael_geolocalizacion.health:validate"
+health: "raphael_geolocalizacion.health:check"
+config_schema:
+  type: object
+  additionalProperties: false
+  properties:
+    modo: {type: string, enum: [real, simulado]}
+    pines_max: {type: integer, minimum: 10, maximum: 5000}

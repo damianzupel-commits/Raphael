@@ -1,6 +1,5 @@
 # Geolocalización pública · monitoreo
-Cómo se sabe si la brigada anda bien mientras corre.
-- Healthcheck: la función que declara `health` en `b-codigo/manifest.yaml`. Todavía no existe.
-- Métricas: qué se mide (latencia, errores, aprobaciones pendientes) y dónde se mira (panel del harness).
-- Alertas: qué dispara un aviso al dueño y por qué canal.
-Anotá acá cada chequeo nuevo con qué mira y qué hacer si falla.
+- Healthcheck: `raphael_geolocalizacion.health:check` (declarado en el manifiesto). Da mal solo con config inválida (`modo`, `pines_max`). Que falte una clave o que una fuente no responda NO es salud mala: el cocinero avisa y sigue. En modo simulado el detalle lo dice ("SIMULADO").
+- Comando `fuentes`: modo y qué claves están cargadas (sin valores).
+- Alertas: un pendiente de `buscar_shodan` o `borrar_pines` espera a Damián en el panel.
+- Si una capa sale vacía con aviso "No pude leer…": la fuente pública cayó o limitó (OpenSky anónimo y ip-api tienen límites). Se reintenta sola al pedir de nuevo (caché 10 s a 1 día según la capa).
