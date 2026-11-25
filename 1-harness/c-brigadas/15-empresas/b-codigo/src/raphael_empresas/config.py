@@ -52,8 +52,8 @@ class MercadoPagoCfg(_Base):
     `mode`: off (sin Mercado Pago) · mock (simulado, sin cuenta) · real (con el access token de la dueña)."""
 
     mode: Literal["off", "mock", "real"] = "off"
-    token_env: str = Field("MERCADOPAGO_ACCESS_TOKEN", pattern=r"^[A-Z][A-Z0-9_]{0,59}$")
-    secret_env: str = Field("MERCADOPAGO_WEBHOOK_SECRET", pattern=r"^[A-Z][A-Z0-9_]{0,59}$")
+    token_env: str = Field("MP_ACCESS_TOKEN", pattern=r"^[A-Z][A-Z0-9_]{0,59}$")
+    secret_env: str = Field("MP_WEBHOOK_SECRET", pattern=r"^[A-Z][A-Z0-9_]{0,59}$")
     notification_url: str = ""                               # https://<servidor>/webhook/mercadopago
     back_url: str = ""                                       # a dónde vuelve el cliente después de pagar
     expires_hours: int = Field(48, ge=1, le=24 * 30)

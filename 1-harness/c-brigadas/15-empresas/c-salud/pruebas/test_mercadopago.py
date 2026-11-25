@@ -108,7 +108,7 @@ def test_modo_real_sin_clave_cae_a_transferencia_y_lo_avisa():
     quote(x)
     assert x.pending() == []
     st = x.cmd("cobros", "mp_estado")
-    assert st["mode"] == "real" and st["con_clave"] is False and "MERCADOPAGO_ACCESS_TOKEN" in st["error"]
+    assert st["mode"] == "real" and st["con_clave"] is False and "MP_ACCESS_TOKEN" in st["error"]
 
 
 def test_adaptador_real_crea_preferencia_y_lee_pago():
@@ -175,4 +175,6 @@ def test_provider_from_respeta_el_modo():
     assert provider_from(p("off")) is None
     assert isinstance(provider_from(p("mock")), MockProvider)
     assert provider_from(p("real"), env={}) is None
-    assert isinstance(provider_from(p("real"), env={"MERCADOPAGO_ACCESS_TOKEN": "t"}), MercadoPago)
+    assert isinstance(provider_from(p("real"), env={"MP_ACCESS_TOKEN": "t"}), MercadoPago)
+    old = provider_from(p("real"), env={"MERCADOPAGO_ACCESS_TOKEN": "t", "MERCADOPAGO_WEBHOOK_SECRET": "s"})
+    assert isinstance(old, MercadoPago) and old._secret == "s"          # el alias viejo sigue andando

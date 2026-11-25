@@ -45,7 +45,7 @@ class MercadoPago:
     def __init__(self, access_token: str, webhook_secret: str = "", *, notification_url: str = "", back_url: str = "",
                  expires_hours: int = 48, http: Http | None = None) -> None:
         if not access_token:
-            raise PayError("falta el access token de Mercado Pago (MERCADOPAGO_ACCESS_TOKEN)")
+            raise PayError("falta el access token de Mercado Pago (MP_ACCESS_TOKEN)")
         self._token = access_token
         self._secret = webhook_secret
         self.notification_url = notification_url
