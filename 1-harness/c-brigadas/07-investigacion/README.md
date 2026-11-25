@@ -28,7 +28,7 @@ Forense y Scout: PC hoy; al VPS con adaptadores (DPAPI y Sysmon son de Windows).
 - Cada acción declara su nivel de autonomía (automatico, aprobacion, humano) en el manifiesto.
 
 ## Estado
-Existe en JarvisRemote. Scout quedó sin validar porque necesita BRAVE_SEARCH_API_KEY.
+Portada al harness v2 (25 nov 2026): contrato en verde, 68 tests con adaptadores simulados. Sin probar con Brave/SearXNG reales ni con un modelo local real (necesita BRAVE_SEARCH_API_KEY o SEARXNG_URL y Ollama o LM Studio).
 
 ## Criterios de aceptación (mínimos)
 - Pasa la suite de contrato del harness v2 (manifiesto válido, healthcheck, montar y desmontar).
