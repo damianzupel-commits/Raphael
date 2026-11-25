@@ -539,12 +539,18 @@ class Runtime:
         if tool is None:
             return {"state": "error", "error": f"la tool {name} ya no está cargada"}
         conv = p["data"].get("conv_id")
+        m = self.brigades.get(p["brigade"])        # lo aprobado también se ve «en curso» mientras corre (puede tardar minutos)
+        args = ", ".join(f"{k}={v}" for k, v in list(action.data.items())[:3])
+        token = self.live.start(p["brigade"], m.manifest.name if m else p["brigade"], f"tool:{name}", "tool", "",
+                                f"#{p['id']} {name} {args}".strip())
         try:
             result = await tool.run(dict(action.data))
         except Exception as exc:  # noqa: BLE001 - la falla vuelve como resultado; el pendiente sigue abierto
+            self.live.finish(token, "error", str(exc)[:160])
             self.audit.record("tool_fallida", who=p["brigade"], tool=name, error=repr(exc)[:200],
                               arguments=dict(action.data), conv_id=conv)
             return {"state": "error", "error": str(exc) or type(exc).__name__}
+        self.live.finish(token, "ok")
         self.audit.record("tool", who=p["brigade"], tool=name, arguments=dict(action.data), conv_id=conv)
         await self.bus.apublish("tool.ejecutada", {"id": p["id"], "tool": name, "brigade": p["brigade"]}, source="harness")
         return {"state": "executed", "result": result}

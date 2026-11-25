@@ -135,6 +135,8 @@ def test_una_tool_con_aprobacion_no_se_ejecuta_queda_pendiente_y_corre_al_aproba
     res = rt.run(rt.approve(p["id"], {"body": "hola, corregido"}))
     assert res["state"] == "executed" and SENT == [{"to": "x@y.z", "body": "hola, corregido"}]
     assert rt.approvals.list() == [] and any(ev == "tool.ejecutada" for ev, _ in rt.bus.history)
+    snap = rt.live.snapshot()        # lo aprobado se vio «en curso» mientras corría y quedó en lo reciente
+    assert snap["active"] == [] and snap["recent"][0]["helper"] == "tool:send_mail" and snap["recent"][0]["outcome"] == "ok"
 
 
 def test_rechazar_una_tool_sube_el_nivel_por_confianza():
