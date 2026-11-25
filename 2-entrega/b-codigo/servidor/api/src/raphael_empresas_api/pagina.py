@@ -39,6 +39,7 @@ function say(t,ok){const m=$("msg");m.textContent=t;m.className=ok?"g":"e";clear
 async function api(p,o={}){const h={"Content-Type":"application/json"};if(tok)h.Authorization="Bearer "+tok;
  const r=await fetch(p,{...o,headers:h});let d={};try{d=await r.json()}catch(e){}
  if(r.status===401&&tok){tok=null;try{sessionStorage.removeItem("t")}catch(e){}show(false)}
+ if(r.status===403){show(false);$("k").focus()}
  if(!r.ok)throw new Error(d.detail||("Error "+r.status));return d}
 function show(on){$("login").classList.toggle("hide",on);$("app").classList.toggle("hide",!on)}
 function el(t,a,...k){const e=document.createElement(t);Object.assign(e,a||{});k.forEach(x=>e.append(x));return e}

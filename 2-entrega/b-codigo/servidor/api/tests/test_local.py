@@ -24,6 +24,27 @@ def test_desde_la_pc_entra_sin_clave(tmp_path):
     assert c.post("/api/v1/logout").status_code == 200
 
 
+@pytest.mark.parametrize("method,path,body", [
+    ("post", "/api/v1/pending/1/approve", {}),
+    ("post", "/api/v1/pending/1/reject", {}),
+    ("post", "/api/v1/pending/1/resolve", {}),
+    ("post", "/api/v1/orders/1/status", {"status": "listo"}),
+    ("post", "/api/v1/secretary", {"text": "aprobá la 1"}),
+    ("put", "/api/v1/config", {"set": {}}),
+    ("post", "/api/v1/config/clave", {"key": "otra-clave-larga"}),
+])
+def test_desde_la_pc_lo_que_ejecuta_pide_clave(tmp_path, method, path, body):
+    assert client(tmp_path).request(method, path, json=body).status_code == 403
+
+
+def test_con_la_clave_se_puede(tmp_path):
+    c = client(tmp_path)
+    c.app.state.auth.set_key("clave-segura")
+    tok = c.post("/api/v1/login", json={"key": "clave-segura", "device": "t"}).json()["token"]
+    r = c.post("/api/v1/secretary", json={"text": "hola"}, headers={"Authorization": f"Bearer {tok}"})
+    assert r.status_code == 200
+
+
 def test_apagado_por_defecto(tmp_path):
     assert client(tmp_path, local_open=False).get("/api/v1/config").status_code == 401
 
