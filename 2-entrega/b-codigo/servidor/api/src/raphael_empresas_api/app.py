@@ -23,7 +23,7 @@ from fastapi.responses import HTMLResponse, PlainTextResponse
 from pydantic import BaseModel, Field
 from raphael_core import ActionError, Runtime
 
-from . import API_VERSION, __version__, configuracion
+from . import API_VERSION, __version__, configuracion, puentes
 from .auth import Auth
 from .entorno import check
 from .meta import MetaChannel, parse_webhook, verify_signature
@@ -213,6 +213,8 @@ def create_app(rt: Runtime, *, tick: bool = True, meta: MetaChannel | None = Non
             raise HTTPException(429, "demasiados intentos: esperá unos minutos")
         token = auth.login(body.key, who, body.device)
         if token is None:
+            rt.bus.publish("acceso.fallido", {"source": who, "device": body.device[:40], "locked": auth.locked(who)},
+                           source="servidor")       # lo escucha Seguridad (nunca lleva la clave probada)
             raise HTTPException(429 if auth.locked(who) else 401, "clave incorrecta")
         rt.audit.record("app_login", who=owner, dispositivo=body.device[:40])
         return {"token": token, "user": owner, "business": _business_name()}
@@ -258,6 +260,36 @@ def create_app(rt: Runtime, *, tick: bool = True, meta: MetaChannel | None = Non
             except Exception as exc:  # noqa: BLE001 - un mensaje que rompe no frena a los demás
                 rt.audit.record("webhook_fallido", who="api", canal=m.channel, error=type(exc).__name__)
 
+    # --- webhook de Mercado Pago (sin sesión: lo firma Mercado Pago; la firma la verifica la brigada de Cobros)
+    @app.post("/webhook/mercadopago")
+    async def mp_webhook(request: Request) -> dict:
+        """Mercado Pago avisa que hay un pago. Se contesta enseguida y se procesa atrás: la brigada verifica la firma
+        (sin MP_WEBHOOK_SECRET no acepta nada), lee el pago y deja la confirmación PENDIENTE para la dueña. Nunca confirma."""
+        try:
+            payload = json.loads((await request.body()) or b"{}")
+        except ValueError:
+            payload = {}
+        if not isinstance(payload, dict):
+            payload = {}
+        q = dict(request.query_params)
+        kind = str(q.get("type") or q.get("topic") or payload.get("type") or "payment")
+        pid = str(q.get("data.id") or q.get("id") or (payload.get("data") or {}).get("id") or "")
+        if kind != "payment" or not re.fullmatch(r"\d{1,20}", pid):
+            return {"received": 0}
+        q["data.id"] = pid
+        data = {"payment_id": pid, "headers": dict(request.headers), "query": q}
+        task = asyncio.create_task(_mp_process(data))
+        background.add(task)
+        task.add_done_callback(background.discard)
+        return {"received": 1}
+
+    async def _mp_process(data: dict) -> None:
+        try:
+            async with lock:
+                await rt.command(BRIGADE, "cobros", "mp_aviso", data, who="mercadopago")
+        except Exception as exc:  # noqa: BLE001 - un aviso que rompe no tumba el servidor
+            rt.audit.record("webhook_mp_fallido", who="api", error=type(exc).__name__)
+
     app.state.process_pending = lambda: asyncio.gather(*background)
 
     # --- con sesión
@@ -302,6 +334,9 @@ def create_app(rt: Runtime, *, tick: bool = True, meta: MetaChannel | None = Non
         try:
             async with lock:
                 restart = configuracion.apply(env_file, environ, body.set, body.clear)
+                for shown in {*body.clear} & set(puentes.ALIASES.values()):   # sacar MP_* saca también su nombre de la brigada
+                    environ.pop(next(k for k, v in puentes.ALIASES.items() if v == shown), None)
+                puentes.apply_aliases(environ)
                 if rt.models is not None:
                     rt.models.set_env(dict(environ))
                 if meta is not None:

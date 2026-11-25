@@ -122,6 +122,20 @@ def check(*, env: Mapping[str, str], installation: Any, models: Any, meta: Any, 
     else:
         add("Meta", "info", "RAPHAEL_PUBLIC_URL sin definir: ahí iría la URL pública (túnel o dominio) para el webhook")
 
+    # --- Cobros ---
+    mp_tok, mp_mode = env.get("MP_ACCESS_TOKEN", ""), env.get("MP_MODE", "").lower()
+    if mp_mode == "mock":
+        add("Cobros", "info", "Mercado Pago simulado (MP_MODE=mock): no cobra nada")
+    elif mp_tok and not env.get("MP_WEBHOOK_SECRET"):
+        add("Cobros", "aviso", "Mercado Pago sin MP_WEBHOOK_SECRET: no se acepta ningún aviso", "cargarla en Configuración")
+    elif mp_tok:
+        add("Cobros", "ok", "Mercado Pago con credenciales" + ("" if public_url else " (falta RAPHAEL_PUBLIC_URL para el aviso)"))
+    else:
+        add("Cobros", "info", "sin Mercado Pago: la seña va solo por transferencia")
+    tr = [v for v in ("TRANSFER_TITULAR", "TRANSFER_CBU_CVU", "TRANSFER_ALIAS") if env.get(v)]
+    add("Cobros", "ok" if tr else "info", "datos de transferencia cargados" if tr else
+        "sin datos de transferencia cargados (TRANSFER_*): se usan los de la instalación")
+
     # --- Tienda ---
     src = _store_source(installation)
     if src is not None and src.kind in ("tiendanube", "shopify", "woocommerce"):

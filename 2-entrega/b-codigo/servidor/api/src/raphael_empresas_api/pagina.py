@@ -33,7 +33,7 @@ button.sec{background:transparent;color:var(--fg);border:1px solid var(--bd)}but
 <button id="chk" class="sec">Cambiar clave</button></section>
 <p><button id="out" class="sec">Salir</button></p></div>
 <script>
-const T={ia:"Inteligencia artificial",meta:"WhatsApp e Instagram (Meta)",red:"Dirección pública",tienda:"Tienda de la clienta (opcional)"};
+const T={ia:"Inteligencia artificial",meta:"WhatsApp e Instagram (Meta)",red:"Dirección pública y cuentas",cobros:"Cobros (Mercado Pago y transferencia)",tienda:"Tienda de la clienta (opcional)"};
 const $=id=>document.getElementById(id);let tok=null;try{tok=sessionStorage.getItem("t")}catch(e){}
 function say(t,ok){const m=$("msg");m.textContent=t;m.className=ok?"g":"e";clearTimeout(say.t);say.t=setTimeout(()=>m.className="",6000)}
 async function api(p,o={}){const h={"Content-Type":"application/json"};if(tok)h.Authorization="Bearer "+tok;
@@ -49,10 +49,10 @@ function render(d){
  for(const k of Object.keys(T)){const fs=d.fields.filter(f=>f.group===k);if(!fs.length)continue;
   const s=el("section",{className:"card"},el("h2",{},T[k]));
   for(const f of fs){const id="f_"+f.name;s.append(el("label",{htmlFor:id},f.label+" ",el("small",{},f.help||"")));
-   let inp;if(f.name==="META_MODE"){inp=el("select",{id});["mock","real"].forEach(v=>inp.append(el("option",{value:v,textContent:v})));inp.value=f.value||"mock"}
+   let inp;if(f.name==="META_MODE"||f.name==="MP_MODE"){inp=el("select",{id});(f.name==="MP_MODE"?["off","mock","real"]:["mock","real"]).forEach(v=>inp.append(el("option",{value:v,textContent:v})));inp.value=f.value||"mock"}
    else{inp=el("input",{id,type:f.secret?"password":"text",autocomplete:"off",placeholder:f.set?(f.secret?"cargada "+f.hint+" · escribí para reemplazarla":""):"sin cargar"});if(!f.secret&&f.value)inp.value=f.value}
    inp.dataset.name=f.name;inp.dataset.was=f.value||"";const row=el("div",{className:"row"},inp);
-   if(f.set&&f.name!=="META_MODE"){const b=el("button",{className:"sec mini",textContent:"Quitar"});b.onclick=()=>save({},[f.name]);row.append(b)}
+   if(f.set&&f.name!=="META_MODE"&&f.name!=="MP_MODE"){const b=el("button",{className:"sec mini",textContent:"Quitar"});b.onclick=()=>save({},[f.name]);row.append(b)}
    s.append(row)}
   const b=el("button",{textContent:"Guardar",style:"margin-top:14px"});b.onclick=()=>{const set={};
    s.querySelectorAll("input,select").forEach(i=>{const v=i.value.trim();if(v&&v!==i.dataset.was)set[i.dataset.name]=v});save(set,[])};
