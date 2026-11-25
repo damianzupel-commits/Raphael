@@ -22,3 +22,15 @@ Una entrada por sesión: fecha y "Resumen de cierre" de 3 a 6 líneas (qué se h
 - Revisión de alcance de Tienda (INTERVIEW §9): se mantiene solo lectura; se supone que no tiene tienda web (`kind: none`) hasta que responda 6.1; los tres adaptadores de plataforma siguen sin probarse contra tiendas reales.
 - No se ajustó ningún módulo: sin respuestas serían inventos. Los ajustes posibles y de qué pregunta dependen están en INTERVIEW §10.
 - Pendiente: que Damián haga la entrevista y anote las respuestas; después, cargar el perfil real y ajustar módulos. Tema para Legales (16): factura/monotributo y qué datos de clientas se guardan (Ley 25.326, a verificar con fuente vigente).
+
+## 25 nov 2026 · Resumen de cierre · cobros (Mercado Pago y transferencia)
+- Nuevo `pay/` (proveedor de pagos con adaptador real de Mercado Pago y uno simulado) y cobros con dos vías: transferencia (alias, CBU, titular y banco en la config; la dueña confirma a mano) y Mercado Pago (`payments.mercadopago.mode`: off, mock o real). Con Mercado Pago activo, al enviarse el presupuesto se crea el link y la dueña aprueba mandarlo (`enviar_link_pago`, nueva acción `aprobacion`); cuando Mercado Pago avisa el pago (`mp_aviso`) se verifica la firma, se lee el pago y se deja `confirmar_pago` pendiente: nunca se confirma solo.
+- Sin token en modo real cae a transferencia y lo dice (`mp_estado`). El token nunca se loguea. 13 tests nuevos: brigada 137, puerta 863 en verde, ruff limpio.
+- **Sin verificar contra la documentación (no se pudo leer):** el texto que se firma en el webhook, los campos exactos de la preferencia (`init_point`, `back_urls`, etc.). Están marcados en `pay/mercadopago.py` y hay que probarlos con una cuenta de prueba antes de cobrar.
+- IA de Empresas: sigue por OpenRouter vía el harness (sin cambios); sin clave, reglas.
+- Pendiente para 03: el endpoint `/webhook/mercadopago` en la API y las claves nuevas en el chequeo. Lo que va al lienzo y a ESTADO está en `APORTE-LIENZO.md`.
+
+## 25 nov 2026 · Resumen de cierre · eventos hacia Legales (pedido del coordinador, pieza 16)
+- Nuevo `legal.py` y tres eventos publicados (declarados en el manifiesto, sin importar ninguna brigada): `revision.pedida` {text, ref} antes de mandar presupuesto, cancelación, link de pago, aviso de estado y respuestas de la dueña; `consentimiento.recibido` {contact, purpose, channel, evidence} cuando un cliente acepta recibir avisos; `baja.solicitada` {contact, channel} cuando pide la baja.
+- La baja le gana a cualquier conversación abierta (encargo, turno): los cocineros se la pasan a Atención. La revisión es solo un aviso, no frena el envío. Las frases de alta y baja son reglas simples (`legal.py`): hay que revisarlas con la clienta. Brigada 141 tests, puerta 867 en verde.
+- 25 nov (misma sesión): las claves de Mercado Pago pasan a `MP_ACCESS_TOKEN` y `MP_WEBHOOK_SECRET` (el nombre del catálogo de cuentas y del servidor, para que Damián cargue uno solo); `MERCADOPAGO_*` sigue andando como alias.

@@ -29,6 +29,7 @@ from raphael_core.text_es import (
 )
 
 from .. import config as C
+from .. import legal
 from ..pricing import suggest
 from ..signals import ATTENTION, complaint
 
@@ -343,10 +344,14 @@ class Orders(Cook):
             ctx.publish("encargo.presupuesto_enviado", {"number": o["number"], "contact": o["contact"], "client": o["client"],
                                                          "price": o["price"], "deposit": o["deposit"],
                                                          "description": o["description"]})
-            return self._quote_message(o, ctx)
+            text = self._quote_message(o, ctx)
+            legal.review(ctx, text, f"presupuesto-{o['number']}")
+            return text
         if action.type == "cancelar_pedido":
             o = self._set_status(number_from(action.data), "cancelado", ctx)
-            return f"Tu encargo #{o['number']} quedó cancelado. Cualquier cosa nos escribís 😊"
+            text = f"Tu encargo #{o['number']} quedó cancelado. Cualquier cosa nos escribís 😊"
+            legal.review(ctx, text, f"cancelacion-{o['number']}")
+            return text
         raise ActionError(f"encargos no ejecuta '{action.type}'")
 
     @staticmethod
@@ -359,6 +364,10 @@ class Orders(Cook):
             out += f"Para confirmarlo se pide una seña del {c.deposit_pct:g}% ({money(o['deposit'])})"
             if c.alias:
                 out += f" por transferencia al alias {c.alias}" + (f" (a nombre de {c.holder})" if c.holder else "")
+            elif c.cbu:
+                out += " por transferencia" + (f" a nombre de {c.holder}" if c.holder else "")
+            if c.cbu:
+                out += f" (CBU/CVU {c.cbu}" + (f", {c.bank}" if c.bank else "") + ")"
             out += ".\n"
         if o.get("estimated_days"):
             out += f"Estaría listo en unos {o['estimated_days']} días desde que se confirma. "
