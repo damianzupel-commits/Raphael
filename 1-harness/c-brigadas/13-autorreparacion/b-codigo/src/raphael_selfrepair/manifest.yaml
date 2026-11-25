@@ -1,0 +1,59 @@
+# Brigada Autorreparación (pieza 13): la ÚNICA fuente de verdad de lo que la brigada puede hacer.
+# Corre solo en la PC de Damián (edición personal): editar el propio código no tiene sentido en la nube.
+# Cada acción con efecto declara su nivel (automatico | aprobacion | humano) y sus etiquetas:
+#   external = sale al mundo · irreversible = no tiene vuelta atrás · spend = gasta plata.
+# Escribir en el código es `irreversible` a propósito: la confianza progresiva del harness nunca lo baja solo a automático.
+id: autorreparacion
+name: Autorreparación
+version: 2.0.0
+contract: ">=2.1,<3"
+description: Propone arreglos al propio código en seco y los aplica solo con tu aprobación, con líneas rojas, verificación y vuelta atrás. También detecta patrones de falla en el comportamiento del agente.
+editions: [personal]
+cooks:
+  - {id: proponer, entry: "raphael_selfrepair.cooks.propose:Propose"}
+  - {id: aplicar, entry: "raphael_selfrepair.cooks.apply:Apply"}
+  - {id: introspeccion, entry: "raphael_selfrepair.cooks.introspect:Introspect"}
+actions:
+  aplicar_arreglo: {level: aprobacion, tags: [irreversible], description: "escribir en el código una propuesta de arreglo (con diff, línea roja y verificación)"}
+  revertir_arreglo: {level: aprobacion, tags: [irreversible], description: "deshacer en el código un arreglo ya aplicado"}
+events:
+  publishes: [arreglo.aplicado, arreglo.revertido, autodiagnostico.hallazgo]
+  consumes: [pendiente.rechazado]
+commands:
+  proponer: {read: false, description: "guarda una propuesta de arreglo en seco {'file', 'old_snippet', 'new_snippet', 'rationale', 'commit_message'?}; no escribe en el proyecto"}
+  redactar: {read: false, description: "le pide a la IA un arreglo {'file', 'problem'} y lo guarda como propuesta (el archivo sale al modelo)"}
+  propuestas: {read: true, description: "lista las propuestas {'status'?}"}
+  ver_propuesta: {read: true, description: "una propuesta con su diff {'proposal_id'}"}
+  descartar: {read: false, description: "descarta una propuesta pendiente {'proposal_id'}"}
+  aplicar: {read: false, description: "pide aprobación para aplicar una propuesta {'proposal_id'}"}
+  revertir: {read: false, description: "pide aprobación para deshacer una propuesta aplicada {'proposal_id'}"}
+  analizar: {read: false, description: "busca patrones de falla en el registro de tool calls {'entries'?, 'explicar'?}"}
+  hallazgos: {read: true, description: "los hallazgos del autodiagnóstico {'status'?}"}
+  reflexionar: {read: false, description: "guarda una reflexión {'insight', 'tipo'?, 'contexto'?}"}
+  reflexiones: {read: true, description: "busca reflexiones guardadas {'topic', 'tipo'?, 'contexto'?, 'vigente'?, 'limit'?}"}
+  retractar_reflexion: {read: false, description: "marca una reflexión como no vigente {'n'}"}
+  autoconocimiento: {read: true, description: "qué es y qué no es esta brigada"}
+routing:
+  signals:
+    - {pattern: "\\bautorrepar\\w+|\\barregl\\w+ (de )?(tu|su|mi) c[oó]digo|\\bauto-?fix\\b|\\bprop[oó]n\\w+ (un )?(arreglo|fix)", weight: 2}
+    - {pattern: "\\bbug\\b|\\bfix\\b|\\bintrospecci[oó]n\\b|\\bautodiagn[oó]stico\\b|\\brevertir (el )?arreglo", weight: 1}
+store:
+  space: autorreparacion
+uninstall:
+  export: [proposals, findings, reflections]
+  delete: ["*"]
+setup: "raphael_selfrepair.health:validate"
+health: "raphael_selfrepair.health:check"
+config_schema:
+  type: object
+  additionalProperties: false
+  properties:
+    root: {type: string}
+    extra_protected: {type: array, items: {type: string}}
+    git_commit: {type: boolean}
+    verify_command: {type: array, items: {type: string}}
+    verify_timeout_seconds: {type: integer, minimum: 1, maximum: 3600}
+    ai_private: {type: boolean}
+    audit_log_path: {type: string}
+    analyze_every_minutes: {type: integer, minimum: 0, maximum: 10080}
+    min_repeats: {type: integer, minimum: 2, maximum: 100}

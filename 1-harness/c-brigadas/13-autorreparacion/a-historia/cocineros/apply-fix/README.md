@@ -4,6 +4,9 @@
 - **Tipo:** existente
 - **Qué hace:** Aplica arreglos con compuerta y guardarraíl.
 
+## Código nuevo (harness v2, 25 nov 2026)
+`b-codigo/src/raphael_selfrepair/cooks/apply.py` (cocinero `aplicar`), `guardrail.py`, `fixer.py`. Tests en `c-salud/pruebas/`. Lo de abajo es el origen portado.
+
 ## Dónde está el código actual
 Rutas relativas a `3-mando/c-referencia/self-repair/` (ver abajo) (JarvisRemote: `jarvisremote/backend/`; Empresas: `raphael-empresas/`):
 - `app/selfrepair/gate.py`
