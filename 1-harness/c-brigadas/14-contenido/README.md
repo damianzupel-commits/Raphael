@@ -30,7 +30,7 @@ Edición y publicación: PC hoy, VPS con un trabajo de video a la vez. La grabac
 - Cada acción declara su nivel de autonomía (automatico, aprobacion, humano) en el manifiesto.
 
 ## Estado
-El video (ffmpeg, Whisper, tools video_*) existe y estaba en construcción. Publicación a Instagram probada solo con cliente simulado. En el Centro de Mando la brigada figura como futura.
+Portada al harness v2 (25 nov 2026): seis cocineros (video, instagram, imagen, contenido, campañas, analítica), manifiesto con el nivel de cada acción, adaptadores real/simulado/sin clave y suite de contrato en verde en las dos ediciones. Probada solo con adaptadores simulados y HTTP falso: **falta probar contra Instagram, Meta Ads y ComfyUI reales**. Ver `b-codigo/README.md`.
 
 ## Criterios de aceptación (mínimos)
 - Pasa la suite de contrato del harness v2 (manifiesto válido, healthcheck, montar y desmontar).

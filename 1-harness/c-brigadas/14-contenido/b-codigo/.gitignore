@@ -1,0 +1,2 @@
+# las plantillas de claves (sin valores) sí van a git, aunque la raíz ignore .env.*
+!.env.plantilla
