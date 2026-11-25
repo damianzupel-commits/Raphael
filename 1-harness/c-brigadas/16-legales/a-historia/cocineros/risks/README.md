@@ -6,10 +6,10 @@
 
 ## Dónde está el código actual
 Rutas relativas a `3-mando/c-referencia/legal/` (ver abajo) (JarvisRemote: `jarvisremote/backend/`; Empresas: `raphael-empresas/`):
-- (sin código previo)
+- Sin código previo (brigada nueva). Código nuevo en `b-codigo/` (`riesgos`: `cooks/risks.py`, reglas en `risks.py`.)
 
 ## Notas
-Nuevo.
+Construido el 25 nov 2026. Detalle en `b-codigo/README.md`.
 
 ## Cómo debe funcionar
 - Es un cocinero permanente de la brigada: se declara en el `manifest.yaml` y atiende los pedidos que le llegan por el harness.

@@ -6,7 +6,7 @@ Rama `1-harness/c-brigadas/16-legales/` de Raphael. Este archivo explica qué es
 Preparar y revisar documentos y riesgos para un pyme argentino. No da asesoramiento legal ni reemplaza a un abogado.
 
 ## Dónde corre
-Nube (VPS). Brigada nueva, sin código previo.
+Nube (VPS). Brigada nueva, sin código previo; también monta en la edición personal.
 
 ## Cocineros
 
@@ -29,7 +29,7 @@ Nube (VPS). Brigada nueva, sin código previo.
 - Cada acción declara su nivel de autonomía (automatico, aprobacion, humano) en el manifiesto.
 
 ## Estado
-No construida. Brigada nueva del spec (sección 9).
+Construida (25 nov 2026): 4 cocineros, 7 acciones, 54 tests, contrato en verde. Ver `b-codigo/README.md`. Falta probar con fuentes reales desde el VPS y con un modelo real.
 
 ## Criterios de aceptación (mínimos)
 - Pasa la suite de contrato del harness v2 (manifiesto válido, healthcheck, montar y desmontar).
