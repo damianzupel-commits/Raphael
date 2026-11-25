@@ -1,0 +1,15 @@
+# Lo que hay que sumar a `modelos.yaml` (harness) para que Memoria use SOLO un modelo local: Seguridad, Investigación, Memoria
+# y Operaciones de Raphael personal corren en la PC (decisión de Damián, 25 nov 2026). Es un fragmento: no se carga solo.
+# Sin clave: LM Studio y Ollama no la piden. Los nombres de modelo son los que tengas cargados (SUPUESTO: ajustalos).
+providers:
+  local-memoria:
+    base_url: http://localhost:1234/v1      # LM Studio. Ollama: http://localhost:11434/v1
+    model: qwen2.5-7b-instruct              # SUPUESTO: poné el modelo de chat que tengas cargado
+    usd_per_million_in: 0
+    usd_per_million_out: 0
+tiers:
+  local: [local-memoria]
+overrides:
+  cocinero.memoria: [local]                 # los cocineros de Memoria usan solo el escalón local
+private: [memoria]                          # reemplaza al viejo `memoria-cerebro`: pedido privado = solo modelos en localhost
+# Si el modelo local no está prendido, Memoria no manda nada a la nube: cae a reglas y avisa (evento memoria.degradada).
