@@ -8,3 +8,8 @@ Una entrada por sesión: fecha y "Resumen de cierre" de 3 a 6 líneas (qué se h
 - Nada se ejecuta sin aprobación de Damián, ni en demo: `ejecutar_orden` y `cerrar_posicion` son `aprobacion`+`spend`+`irreversible`; `execute` revalida y se niega si alguien las pone en automático.
 - Brokers: propuesta en `a-historia/brokers.md`. OANDA parece NO aceptar Argentina (su página oficial); IBKR sí figura. Decide Damián; falta escribir el adaptador del elegido.
 - Pendiente para el harness: exponer el nivel vigente en `Context` (hoy `engine-watch` lee `ctx._rt.policy`). Pendiente para el coordinador: sumar la suite `trading` a `gate.py`, ESTADO y `LIENZO-DAMIAN.md`.
+
+## 25 nov 2026 · Resumen de cierre (IBKR)
+- Damián eligió Interactive Brokers. Se escribió `ibkr.py` + `IbkrBroker` (orden a mercado con stop y objetivo colgados, posiciones, cierre) y lectura de velas, contra TWS/IB Gateway con `ib_async` (opcional). Se niega si la sesión trae una cuenta que no es paper (`DU`); la real exige `TRADING_ALLOW_LIVE=1`.
+- 59 tests y ruff en verde, con un `ib_async` falso. **No probado contra un IB real** (no hay cuenta aún): pasos y puntos a mirar en `ibkr-pasos.md`.
+- Sin `ib_async` o sin TWS abierto, datos y broker caen al simulado y lo avisan; una orden sin conexión da error claro, nunca cae a simulado en silencio.

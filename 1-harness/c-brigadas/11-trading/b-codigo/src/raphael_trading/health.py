@@ -8,6 +8,7 @@ import os
 from pydantic import ValidationError
 from raphael_core import Health
 
+from . import ibkr
 from .config import trading_config
 
 
@@ -17,6 +18,8 @@ def _modes(cfg) -> str:
         notes.append("datos: falta OANDA_API_TOKEN, simulados")
     if cfg.broker.adapter == "oanda" and not (os.environ.get("OANDA_API_TOKEN") and os.environ.get("OANDA_ACCOUNT_ID")):
         notes.append("broker: faltan claves de OANDA, simulado")
+    if "ibkr" in (cfg.data.adapter, cfg.broker.adapter) and not ibkr.available():
+        notes.append("IBKR: falta instalar ib_async, simulado")
     return " (" + "; ".join(notes) + ")" if notes else ""
 
 

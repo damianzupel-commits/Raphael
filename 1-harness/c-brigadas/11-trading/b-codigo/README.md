@@ -3,8 +3,9 @@ Brigada Trading para el harness v2 (paquete `raphael_trading`, `src/`). `manifes
 
 ## Qué tiene
 - `engine.py`, `signals.py`, `backtest.py`: el método Smart Money (IFVG) portado de JarvisRemote, sin dependencias.
-- `data.py`: adaptadores de datos: `simulado` (por defecto), `csv` y `oanda` (solo lectura).
-- `broker.py`: `SimulatedBroker` (por defecto) y `OandaBroker` (v20, cuenta `practice`; la `live` pide además `TRADING_ALLOW_LIVE=1`). Para sumar otro broker: una clase con `place/positions/close` y su rama en `make_broker`.
+- `data.py`: adaptadores de datos: `simulado` (por defecto), `csv`, `ibkr` (el elegido) y `oanda` (solo lectura, descartado).
+- `ibkr.py`: conexión a TWS/IB Gateway con `ib_async` (opcional) en un hilo propio; solo cuenta paper salvo `TRADING_ALLOW_LIVE=1`.
+- `broker.py`: `SimulatedBroker` (por defecto), `IbkrBroker` (mercado + stop + objetivo colgados) y `OandaBroker` (v20, cuenta `practice`; la `live` pide además `TRADING_ALLOW_LIVE=1`). Para sumar otro broker: una clase con `place/positions/close` y su rama en `make_broker`.
 - `cooks/`: `signals` (analiza), `backtest` (prueba), `engine-watch` (vigila, avisa y ejecuta SOLO lo aprobado).
 - `config.py`: config validada (riesgo, datos, broker, vigilancia). `health.py`: salud y validación al montar.
 
