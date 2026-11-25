@@ -32,10 +32,11 @@ def voice_llm(ctx: Any, cfg: OrchestratorConfig, *, private: bool = False) -> LL
 
 
 def routing_llm(ctx: Any, cfg: OrchestratorConfig) -> LLM | None:
-    """El clasificador del ruteo, o None si está apagado. `classifier_cloud=False`: solo modelos locales."""
+    """El clasificador del ruteo, o None si está apagado. `classifier_cloud=False`: solo modelos locales.
+    Lleva margen (1024 tokens): un modelo que razona gasta tokens pensando antes de dar el id y con 256 se cortaba."""
     if not cfg.routing.classifier:
         return None
-    return role_llm(ctx, "ruteo", private=not cfg.routing.classifier_cloud, temperature=0.0, max_tokens=256)
+    return role_llm(ctx, "ruteo", private=not cfg.routing.classifier_cloud, temperature=0.0, max_tokens=1024)
 
 
 def voice_settings(ctx: Any, cfg: OrchestratorConfig, *, directives: str | None = None) -> VoiceSettings:

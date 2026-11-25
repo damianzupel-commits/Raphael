@@ -180,6 +180,11 @@ def pick(answer: str | None, ids: list[str]) -> str | None:
     """El id que devolvió el modelo, validado contra las candidatas (el más largo que aparece como palabra)."""
     if not answer:
         return None
+    # los modelos que razonan (Qwen3, DeepSeek R1…) escriben <think>…</think> antes de contestar: se mira solo lo de después, y
+    # si el razonamiento quedó cortado (sin cierre) no hay respuesta que validar
+    answer = re.sub(r"<think>.*?</think>", " ", answer, flags=re.DOTALL | re.IGNORECASE)
+    if re.search(r"<think>", answer, re.IGNORECASE):
+        return None
     t = normalize(answer)
     hit = [i for i in ids if re.search(rf"(?<![a-z0-9-]){re.escape(i)}(?![a-z0-9-])", t)]
     return max(hit, key=len) if hit else None
