@@ -57,12 +57,24 @@ def load(path: str | Path | None = None, environ: Mapping[str, str] | None = Non
     if any(not _ID.match(b) for b in extra):
         raise ValueError("RAPHAEL_PRIVADAS: ids de brigada en minúsculas, separados por comas")
     data["private"] = sorted({*data.get("private", []), *extra})
+    if env.get("RAPHAEL_TOPE_PAGO_USD", "").strip():      # gastar es decisión de Damián: sin esto el tope queda en 0
+        data["paid_cap_usd_month"] = parse_cap(env["RAPHAEL_TOPE_PAGO_USD"])
     cfg = models_from(data)
     for name in ("ollama", "lmstudio"):   # lo privado depende de que "local" sea de verdad local
         spec = cfg.providers.get(name)
         if spec is not None and (urlparse(spec.base_url).hostname or "") not in LOOPBACK:
             raise ValueError(f"{name}: el modelo local tiene que estar en localhost (no en {urlparse(spec.base_url).hostname})")
     return cfg
+
+
+def parse_cap(value: str) -> float:
+    try:
+        cap = float(value.strip().replace(",", "."))
+    except ValueError:
+        cap = -1.0
+    if not 0 <= cap <= 1000:
+        raise ValueError("el tope de gasto es un número de dólares por mes, de 0 a 1000")
+    return cap
 
 
 def check_field(name: str, value: str) -> str:
@@ -74,6 +86,8 @@ def check_field(name: str, value: str) -> str:
         if p.scheme not in ("http", "https") or (p.hostname or "") not in LOOPBACK:
             raise ValueError("la dirección del modelo local es de esta PC: http://localhost:<puerto>/v1")
         return value
+    if name == "RAPHAEL_TOPE_PAGO_USD":
+        return f"{parse_cap(value):g}"
     if name.startswith("RAPHAEL_ROL_"):
         chain = [t.strip() for t in value.split(",") if t.strip()]
         if not chain or any(t not in ("local", "gratis", "pago") for t in chain):

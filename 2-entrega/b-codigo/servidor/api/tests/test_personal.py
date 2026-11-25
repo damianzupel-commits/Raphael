@@ -369,3 +369,17 @@ def test_ws_phone_sin_operaciones_instalada_cierra_con_motivo(tmp_path, monkeypa
     with TestClient(app) as c, pytest.raises(WebSocketDisconnect) as e, c.websocket_connect("/ws/phone"):
         pass
     assert e.value.code == 1013
+
+
+def test_el_tope_de_gasto_es_cero_salvo_que_se_pida():
+    from raphael_personal_api import cerebro
+
+    assert cerebro.load(environ={}).paid_cap_usd_month == 0
+    assert cerebro.load(environ={"RAPHAEL_TOPE_PAGO_USD": "5"}).paid_cap_usd_month == 5
+    assert cerebro.check_field("RAPHAEL_TOPE_PAGO_USD", "2,5") == "2.5"
+    for mal in ("-1", "mucho", "5000"):
+        try:
+            cerebro.check_field("RAPHAEL_TOPE_PAGO_USD", mal)
+        except ValueError:
+            continue
+        raise AssertionError(mal)

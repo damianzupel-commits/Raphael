@@ -17,6 +17,8 @@ from . import cerebro
 FIELDS: tuple[Field, ...] = (
     Field("NVIDIA_API_KEY", "ia", "Clave de NVIDIA (la nube)", help="build.nvidia.com → Get API Key (empieza con nvapi-)"),
     Field("OPENROUTER_API_KEY", "ia", "Clave de OpenRouter (opcional)", help="Solo si activás el escalón pago (tope en USD)"),
+    Field("RAPHAEL_TOPE_PAGO_USD", "ia", "Tope de gasto en IA paga (USD por mes)", secret=False,
+          help="0 o vacío = OpenRouter no se usa. Además el rol tiene que incluir el escalón pago"),
     Field("LOCAL_LLM_URL", "local", "Modelo local: dirección", secret=False, help="Ollama http://127.0.0.1:11434 · LM Studio :1234"),
     Field("LOCAL_LLM_KIND", "local", "Modelo local: programa", secret=False, help="ollama o lmstudio"),
     Field("OLLAMA_URL", "local", "Ollama: dirección", secret=False, help="Por defecto http://127.0.0.1:11434/v1 (esta PC)"),

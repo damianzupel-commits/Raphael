@@ -9,6 +9,7 @@ Las "pruebas en vivo" del Núcleo siguen usando un bus y un Guard aparte, para n
 
 from __future__ import annotations
 
+import importlib
 import json
 import os
 import platform
@@ -257,7 +258,13 @@ def build_gateway(store: Store, installation) -> ModelGateway | None:
     personal) y las claves del entorno. Nunca las lee de archivos."""
     try:
         path = os.environ.get("RAPHAEL_PANEL_MODELS")
-        return ModelGateway(load_models(path) if path else load_models(),
+        loader = os.environ.get("RAPHAEL_PANEL_MODELS_LOADER")       # "modulo:funcion" (ruta, entorno) -> config
+        if loader:
+            module, _, fn = loader.partition(":")
+            config = getattr(importlib.import_module(module), fn)(path, dict(os.environ))
+        else:
+            config = load_models(path) if path else load_models()
+        return ModelGateway(config,
                             Usage(store.space("_uso"), installation.limits.messages_month, datetime.now),
                             plan=installation.plan, edition=installation.edition, env=dict(os.environ))
     except Exception:  # noqa: BLE001 - sin modelos el panel anda igual: el jefe degrada y lo dice
