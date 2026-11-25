@@ -81,3 +81,12 @@ def test_el_orquestador_no_corre_comandos_de_escritura(cmd):
 def test_todos_los_comandos_de_los_cocineros_estan_declarados():
     for cid, cook in System().rt.brigades["seguridad"].cooks.items():
         assert set(cook.commands) <= set(MANIFEST.commands), cid
+
+
+def test_el_jefe_ruta_la_red_al_efimero_de_red():
+    from raphael_seguridad.spec import SPEC
+
+    assert SPEC.routing.classify("revisa mi wifi") == "red"
+    assert SPEC.routing.classify("auditá el repo") == "auditor"
+    assert SPEC.routing.classify("probá zap en mi sitio web") == "web"
+    assert {h.mode for h in SPEC.helpers} == {"auditor", "red", "web"}

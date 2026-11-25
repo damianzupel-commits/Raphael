@@ -8,6 +8,7 @@ version: 2.0.0
 contract: ">=2.1,<3"
 description: Audita código propio (secretos, dependencias, configuración), hace pentest activo solo en la PC de Damián con su aprobación por corrida y vigila la propia instalación. Nunca explota nada.
 editions: [personal, cloud]
+chief: "raphael_seguridad.spec:SPEC"
 cooks:
   - {id: auditor, entry: "raphael_seguridad.cooks:Auditor"}
   - {id: pentest, entry: "raphael_seguridad.cooks:Pentest"}
