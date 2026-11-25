@@ -17,7 +17,7 @@ import json
 import os
 import re
 import tempfile
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
@@ -240,6 +240,9 @@ class Configuracion:
     panel_file: Path
     modelos_base: Path = DEFAULT_PATH
     environ: dict[str, str] = field(default_factory=lambda: os.environ)  # el entorno del proceso (se aplica en caliente)
+    #: (ruta del yaml, entorno) -> ModelsConfig. Si el panel arranca con un cargador propio (el de Raphael personal, que suma
+    #: OLLAMA_MODEL, LMSTUDIO_MODEL, RAPHAEL_ROL_*, RAPHAEL_PRIVADAS y el tope del entorno), tus cambios pasan por el mismo.
+    cargador: Callable[[str, dict], ModelsConfig] | None = None
 
     # --- variables y claves ---------------------------------------------------------------------------------------
     def env(self) -> dict[str, str]:
@@ -365,19 +368,26 @@ class Configuracion:
         return yaml.safe_load(Path(self.modelos_base).read_text(encoding="utf-8")) or {}
 
     def modelos_datos(self, usuario: dict | None = None) -> dict:
-        """El yaml efectivo: la base con tus cambios encima (proveedores y overrides se suman o pisan por nombre;
-        roles y privadas se reemplazan si las tocaste)."""
+        """El yaml efectivo: la base con tus cambios encima (proveedores, escalones, roles y overrides se pisan por nombre).
+        La lista solo-local NUNCA se reemplaza: lo tuyo se suma (`private_extra`) y solo se saca lo que confirmaste
+        (`private_quitadas`). Un `private` suelto de versiones anteriores se ignora."""
         base, u = self._base(), (self._usuario() if usuario is None else usuario)
         out = json.loads(json.dumps(base))
         for k in ("providers", "tiers", "roles", "overrides"):
             out.setdefault(k, {}).update(u.get(k, {}))
-        for k in ("private", "paid_cap_usd_month"):
-            if k in u:
-                out[k] = u[k]
+        quitadas = set(u.get("private_quitadas", []))
+        out["private"] = sorted(({*out.get("private", []), *u.get("private_extra", [])}) - quitadas)
+        if "paid_cap_usd_month" in u:
+            out["paid_cap_usd_month"] = u["paid_cap_usd_month"]
         return out
 
     def modelos(self) -> ModelsConfig:
-        return models_from(self.modelos_datos())
+        datos = self.modelos_datos()
+        if self.cargador is None:
+            return models_from(datos)
+        efectivo = self.usuario_file.with_name("modelos.efectivo.yaml")  # la base más tus cambios, para que el cargador la lea
+        _escribir_atomico(efectivo, yaml.safe_dump(datos, allow_unicode=True, sort_keys=True), privado=False)
+        return self.cargador(str(efectivo), dict(self.environ))
 
     def _guardar_modelos(self, usuario: dict, *, quien: str, que: str) -> ModelsConfig:
         cfg = models_from(self.modelos_datos(usuario))  # valida referencias antes de guardar nada
@@ -497,8 +507,12 @@ class Configuracion:
             if not re.fullmatch(r"[a-z0-9][a-z0-9_-]*", i):
                 raise ValueError(f"id inválido: {i}")
         u = self._usuario()
-        u["private"] = list(dict.fromkeys(ids))
-        return self._guardar_modelos(u, quien="panel", que=f"solo-local: {','.join(ids)}")
+        base = set(self._base().get("private", []))
+        pedidas = set(ids)
+        u["private_extra"] = sorted(pedidas - base)
+        u["private_quitadas"] = sorted(base - pedidas)
+        u.pop("private", None)  # formato viejo: pisaba la lista del proyecto
+        return self._guardar_modelos(u, quien="panel", que=f"solo-local: {','.join(sorted(pedidas))}")
 
     def tope_pago(self, usd: float) -> ModelsConfig:
         if usd < 0:

@@ -68,7 +68,7 @@ def test_sacar_de_solo_local_pide_confirmar_y_agregar_es_libre(cfg):
     cfg.poner_privadas(["seguridad", "memoria", "trading"])
     with pytest.raises(PermissionError):
         cfg.poner_privadas(["seguridad"])
-    assert cfg.privadas() == ["seguridad", "memoria", "trading"]
+    assert cfg.privadas() == ["memoria", "seguridad", "trading"]
     cfg.poner_privadas(["seguridad"], confirmar_nube=True)
     assert cfg.privadas() == ["seguridad"]
 
@@ -136,3 +136,36 @@ def test_el_boton_recargar_relee_el_env_y_aplica_los_modelos(tmp_path, monkeypat
     (tmp_path / "raphael.env").write_text("OPENROUTER_API_KEY=sk-or-nueva-1234\n", encoding="utf-8")
     assert st.reload() == ""
     assert __import__("os").environ["OPENROUTER_API_KEY"] == "sk-or-nueva-1234"
+
+
+def test_un_private_vacio_de_versiones_viejas_no_pisa_la_lista_del_proyecto(cfg):
+    cfg.usuario_file.write_text("private: []\n", encoding="utf-8")
+    assert cfg.privadas() == ["memoria", "seguridad"]
+
+
+def test_la_lista_solo_local_solo_suma_y_saca_lo_confirmado(cfg):
+    cfg.poner_privadas(["seguridad", "memoria", "trading"])
+    assert cfg.privadas() == ["memoria", "seguridad", "trading"]
+    with pytest.raises(PermissionError):
+        cfg.poner_privadas([])  # vaciarla pide confirmar
+    cfg.poner_privadas(["seguridad"], confirmar_nube=True)
+    assert cfg.privadas() == ["seguridad"]
+    cfg.poner_privadas(["seguridad", "memoria"])  # volver a sumar es libre
+    assert cfg.privadas() == ["memoria", "seguridad"]
+
+
+def test_con_un_cargador_propio_tus_cambios_pasan_por_el(cfg):
+    import yaml as _yaml
+
+    from raphael_core.models.config import models_from
+
+    def cargador(ruta, env):
+        datos = _yaml.safe_load(open(ruta, encoding="utf-8").read())
+        datos["providers"]["ollama"]["model"] = env.get("OLLAMA_MODEL", "x")  # lo que hace cerebro.load con el entorno
+        return models_from(datos)
+
+    cfg.cargador = cargador
+    cfg.environ["OLLAMA_MODEL"] = "qwen3:8b"
+    cfg.poner_rol("mando", ["local"])
+    c = cfg.modelos()
+    assert c.providers["ollama"].model == "qwen3:8b" and c.roles["mando"] == ["local"]

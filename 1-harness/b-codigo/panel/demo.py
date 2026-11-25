@@ -254,15 +254,24 @@ DEFAULT_INSTALLATION = {"id": "pc-damian", "edition": "personal", "plan": "priva
 PANEL_CONTACT = "damian"
 
 
+def models_loader():
+    """El cargador de modelos que pida RAPHAEL_PANEL_MODELS_LOADER ("modulo:funcion", recibe (ruta, entorno) y devuelve la
+    config), o None para usar `load_models`. Lo usan la pasarela y la pantalla de Configuración, así los dos ven lo mismo."""
+    loader = os.environ.get("RAPHAEL_PANEL_MODELS_LOADER")
+    if not loader:
+        return None
+    module, _, fn = loader.partition(":")
+    return getattr(importlib.import_module(module), fn)
+
+
 def build_gateway(store: Store, installation) -> ModelGateway | None:
     """La pasarela con `modelos.yaml` del paquete (o el que diga RAPHAEL_PANEL_MODELS, por ejemplo el de Raphael
     personal) y las claves del entorno. Nunca las lee de archivos."""
     try:
         path = os.environ.get("RAPHAEL_PANEL_MODELS")
-        loader = os.environ.get("RAPHAEL_PANEL_MODELS_LOADER")       # "modulo:funcion" (ruta, entorno) -> config
-        if loader:
-            module, _, fn = loader.partition(":")
-            config = getattr(importlib.import_module(module), fn)(path, dict(os.environ))
+        cargador = models_loader()
+        if cargador is not None:
+            config = cargador(path, dict(os.environ))
         else:
             config = load_models(path) if path else load_models()
         return ModelGateway(config,
@@ -320,7 +329,11 @@ class PanelState:
         self.project_root = project_root if project_root is not None else find_project_root()
         # Configuración desde el panel (claves, modelos por brigada, apariencia): raphael.env + modelos.usuario.yaml
         cfg_dir = Path(tempfile.mkdtemp(prefix="raphael-config-")) if memory else Path(data_dir)
-        self.config = Configuracion(**rutas_por_defecto(cfg_dir, None if memory else self.project_root))
+        try:
+            cargador = models_loader()
+        except Exception:  # noqa: BLE001 - sin el cargador propio se usa el yaml solo
+            cargador = None
+        self.config = Configuracion(**rutas_por_defecto(cfg_dir, None if memory else self.project_root), cargador=cargador)
         if not memory:
             for k, v in self.config.env().items():
                 os.environ.setdefault(k, v)          # lo que ya esté en el entorno de verdad manda

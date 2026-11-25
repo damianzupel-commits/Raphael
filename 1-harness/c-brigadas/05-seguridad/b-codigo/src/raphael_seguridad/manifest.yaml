@@ -38,6 +38,8 @@ routing:
   signals:
     - {pattern: "\\bseguridad\\b|\\bpentest\\b|\\bvulnerabilidad\\w*|\\bauditor\\w*|\\bsecretos expuestos\\b|\\bnmap\\b|\\bsqlmap\\b", weight: 2}
     - {pattern: "\\bescane\\w+|\\bcertificado\\b|\\bbackups?\\b|\\balertas?\\b|\\bintentos de acceso\\b", weight: 1}
+    - {pattern: "\\bwi-?fi\\b|\\bmi red\\b|\\bred (?:local|interna|domestica|de casa)\\b|\\bpuertos? abiertos?\\b|\\bfirewall\\b|\\brouter\\b", weight: 2}
+    - {pattern: "\\bred(?:es)?\\b|\\bpuertos?\\b|\\bdispositivos conectados\\b", weight: 1}
 store:
   space: seguridad
 uninstall:

@@ -24,7 +24,7 @@ from raphael_core.testing import Clock
 
 from raphael_orchestrator import config_from
 from raphael_orchestrator.ports import routing_llm
-from raphael_orchestrator.routing import by_rules, candidates, order_cooks, route
+from raphael_orchestrator.routing import by_rules, candidates, order_cooks, pick, route
 
 CANDS = candidates(JR_CATALOG)
 
@@ -328,3 +328,32 @@ def test_el_feed_y_la_auditoria_dicen_por_que_se_ruteo():
     run(run_route(ctx, r, emitter(evs), config_from({})))
     assert evs[0] == {"type": "route", "kind": "brigade", "via": "rules", "reason": r.reason, "brigade": "web"}
     assert any(e["what"] == "ruteo" and e["who"] == "orquestador" for e in rt.audit.entries())
+
+
+# --- "revisa mi red wifi" (25 nov 2026): con el manifiesto REAL de Seguridad tiene que ir a Seguridad --------------------------
+def _seguridad_real():
+    from pathlib import Path
+
+    import yaml
+
+    ruta = Path(__file__).resolve().parents[3] / "05-seguridad" / "b-codigo" / "manifest.yaml"
+    m = yaml.safe_load(ruta.read_text(encoding="utf-8"))
+    return catalog_entry("seguridad", m["routing"])
+
+
+@pytest.mark.parametrize(
+    "texto", ["revisa mi red wifi", "revisa mi wifi", "¿qué puertos abiertos tiene mi red?", "revisá el firewall del router"]
+)
+def test_los_pedidos_de_red_van_a_seguridad_sin_consultar_a_un_modelo(texto):
+    r = run(route(texto, [_seguridad_real(), catalog_entry("memoria-cerebro", {"safe_default": True})], llm=None))
+    assert (r.brigade, r.via) == ("seguridad", "rules"), (r.reason, r.scores)
+
+
+@pytest.mark.parametrize("answer", ["<think>veamos, es un tema de red…</think>\nseguridad", "  <think>\n…\n</think> seguridad."])
+def test_un_modelo_que_razona_se_lee_despues_del_pensamiento(answer):
+    assert pick(answer, ["seguridad", "memoria-cerebro"]) == "seguridad"
+
+
+def test_un_razonamiento_cortado_no_es_una_respuesta():
+    cortado = "<think>Veamos: el pedido habla de seguridad y de memoria-cerebro, así que"
+    assert pick(cortado, ["seguridad", "memoria-cerebro"]) is None
