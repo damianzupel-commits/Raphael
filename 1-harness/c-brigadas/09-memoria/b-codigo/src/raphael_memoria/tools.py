@@ -53,13 +53,15 @@ def make_tools(ctx) -> dict:
 
     def memoria_buscar(query: str, limit: int = 10, author: str = "") -> dict:
         """Búsqueda híbrida de notas (semántica si hay embeddings, si no por palabra clave)."""
-        ranked, diag = _brain().search(str(query).strip(), author=author or None, limit=min(max(int(limit), 1), 30))
-        return {**diag, "resultados": [{**n.summary(), "score": s} for n, s in ranked]}
+        brain = _brain()
+        ranked, diag = brain.search(str(query).strip(), author=author or None, limit=min(max(int(limit), 1), 30))
+        return {**diag, "resultados": [{**n.summary(), "score": s, "sensible": brain.is_sensitive(n.id)} for n, s in ranked]}
 
     def memoria_leer_nota(id: str) -> dict:
         """Una nota entera por su id."""
         try:
-            return _brain().vault.read(str(id)).to_dict()
+            brain = _brain()
+            return {**brain.vault.read(str(id)).to_dict(), "sensible": brain.is_sensitive(str(id))}
         except (FileNotFoundError, ValueError) as exc:
             return {"ok": False, "motivo": str(exc)}
 

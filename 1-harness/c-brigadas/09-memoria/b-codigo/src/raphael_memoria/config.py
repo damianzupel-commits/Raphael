@@ -22,8 +22,11 @@ class _Base(BaseModel):
 
 class VaultConfig(_Base):
     path: str = ""                                   # "" = MEMORIA_VAULT_PATH o <datos>/memoria/vault
-    sensitive_dirs: list[str] = Field(default_factory=list)   # carpetas cuyo contenido nunca sale de la PC (ni a un `:free`)
-    excluded_dirs: list[str] = Field(default_factory=list)    # carpetas que no se leen (además de las que empiezan con . o _)
+    # carpetas MARCADAS como sensibles (vacío = MEMORIA_SENSITIVE_DIRS, separadas por coma). Marcar NO bloquea: las notas se
+    # leen igual y llevan `sensible: true`; solo se filtran si quien pregunta lo pide (`sin_sensibles`).
+    sensitive_dirs: list[str] = Field(default_factory=list)
+    # carpetas que no se leen (vacío = MEMORIA_EXCLUDED_DIRS; además de las que empiezan con . o _)
+    excluded_dirs: list[str] = Field(default_factory=list)
 
 
 class EmbeddingsConfig(_Base):
@@ -63,8 +66,21 @@ class MemoriaConfig(_Base):
     episodes: EpisodesConfig = EpisodesConfig()
 
 
-def memoria_config(raw: Mapping | None) -> MemoriaConfig:
-    return MemoriaConfig.model_validate(dict(raw or {}))
+def _names(value: str | None) -> list[str]:
+    return [p.strip() for p in (value or "").split(",") if p.strip()]
+
+
+def memoria_config(raw: Mapping | None, env: Mapping[str, str] | None = None) -> MemoriaConfig:
+    """La config de la instalación; las listas de carpetas que queden vacías se completan con MEMORIA_SENSITIVE_DIRS y
+    MEMORIA_EXCLUDED_DIRS (nombres de carpeta separados por coma), así se pueden poner en `raphael.env` sin tocar el yaml."""
+    env = os.environ if env is None else env
+    cfg = MemoriaConfig.model_validate(dict(raw or {}))
+    fill = {}
+    if not cfg.vault.sensitive_dirs and _names(env.get("MEMORIA_SENSITIVE_DIRS")):
+        fill["sensitive_dirs"] = _names(env.get("MEMORIA_SENSITIVE_DIRS"))
+    if not cfg.vault.excluded_dirs and _names(env.get("MEMORIA_EXCLUDED_DIRS")):
+        fill["excluded_dirs"] = _names(env.get("MEMORIA_EXCLUDED_DIRS"))
+    return cfg.model_copy(update={"vault": cfg.vault.model_copy(update=fill)}) if fill else cfg
 
 
 def is_local_url(url: str) -> bool:
