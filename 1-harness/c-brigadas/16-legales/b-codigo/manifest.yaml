@@ -1,0 +1,62 @@
+# Brigada Legales (pieza 16): la ÚNICA fuente de verdad de lo que la brigada puede hacer.
+# Cada acción declara su nivel (automatico | aprobacion | humano) y sus etiquetas:
+#   external = sale al mundo · irreversible = no tiene vuelta atrás · spend = gasta plata.
+# La brigada NUNCA firma, envía ni presenta nada: no hay acción que lo haga. Lo que produce son borradores y avisos.
+id: legales
+name: Legales
+version: 2.0.0
+contract: ">=2.1,<3"
+description: Prepara borradores y revisa riesgos para un pyme argentino (documentos, cumplimiento, riesgos y archivo). No da asesoramiento legal ni reemplaza a un abogado; cita fuente oficial y fecha de consulta.
+editions: [personal, cloud]
+cooks:
+  - {id: documentos, entry: "raphael_legales.cooks.documents:Documents"}
+  - {id: cumplimiento, entry: "raphael_legales.cooks.compliance:Compliance"}
+  - {id: riesgos, entry: "raphael_legales.cooks.risks:Risks"}
+  - {id: archivo, entry: "raphael_legales.cooks.archive:Archive"}
+actions:
+  generar_borrador: {level: automatico, description: "armar un borrador desde una plantilla y dejarlo en el archivo (no sale a ningún lado)"}
+  verificar_norma: {level: automatico, description: "consultar la fuente oficial pública de una norma y anotar cuándo se hizo"}
+  revisar_texto: {level: automatico, description: "revisar un texto antes de publicarlo y marcar riesgos"}
+  registrar_consentimiento: {level: automatico, description: "anotar un consentimiento que un contacto dio"}
+  registrar_baja: {level: automatico, description: "anotar la baja de un contacto y respetarla al instante"}
+  emitir_documento: {level: aprobacion, tags: [irreversible], description: "dar un borrador por bueno: queda una versión emitida e inmutable (no se envía ni se firma)"}
+  borrar_registro: {level: aprobacion, tags: [irreversible], description: "borrar un documento o un consentimiento del archivo"}
+events:
+  publishes: [documento.borrador_creado, documento.emitido, consentimiento.registrado, consentimiento.revocado,
+              norma.verificada, norma.sin_verificar, norma.cambio_detectado, revision.lista, riesgo.detectado]
+  consumes: [revision.pedida, consentimiento.recibido, baja.solicitada]
+commands:
+  plantillas: {read: true, description: "plantillas de documentos y las variables que piden"}
+  borrador: {read: false, description: "crear un borrador {'kind': 'politica_privacidad'|'terminos_condiciones'|'presupuesto'|'contrato_servicio'|'carta', 'values': {...}}"}
+  checklist: {read: true, description: "checklist de cumplimiento con el estado de cada ítem y de su fuente"}
+  normas: {read: true, description: "normas de partida y cuándo se consultó cada fuente oficial"}
+  verificar_normas: {read: false, description: "consultar ahora las fuentes oficiales {'ids': [opcional]}"}
+  revisar: {read: false, description: "revisar un texto antes de publicarlo {'text': ..., 'ref': opcional}"}
+  revisiones: {read: true, description: "últimas revisiones de riesgos"}
+  documentos: {read: true, description: "documentos del archivo {'kind', 'state'}"}
+  ver: {read: true, description: "un documento completo {'doc_id'}"}
+  emitir: {read: false, description: "emitir un documento {'doc_id', 'text' opcional} (pide aprobación)"}
+  consentimientos: {read: true, description: "consentimientos activos ({'all': true} incluye bajas)"}
+  consentimiento: {read: false, description: "registrar un consentimiento {'contact', 'purpose', 'channel', 'evidence'}"}
+  baja: {read: false, description: "registrar una baja {'contact', 'purpose' opcional}"}
+  borrar: {read: false, description: "borrar un registro del archivo {'collection', 'key'} (pide aprobación)"}
+routing:
+  signals:
+    - {pattern: "\\blegal(es)?\\b|\\bterminos\\b|\\bcondiciones\\b|\\bprivacidad\\b|\\bcontrato\\b|\\bconsentimiento\\b|\\bdefensa del consumidor\\b|\\bley \\d", weight: 2}
+    - {pattern: "\\bcumplimiento\\b|\\briesgo\\w*\\b|\\bdocumento\\w*\\b|\\bdatos personales\\b|\\barca\\b|\\bfactura\\w*\\b", weight: 1}
+store:
+  space: legales
+uninstall:
+  export: [documents, consents, reviews, norm_checks]
+  delete: ["*"]
+setup: "raphael_legales.health:validate"
+health: "raphael_legales.health:check"
+config_schema:
+  type: object
+  additionalProperties: false
+  properties:
+    negocio: {type: object}
+    fuentes: {type: object}
+    checklist: {type: object}
+    riesgos: {type: object}
+    proveedor_ia: {type: string}
