@@ -184,6 +184,13 @@ def create_app(rt: Runtime, *, tick: bool = True, meta: MetaChannel | None = Non
         request.state.token = token
         return s
 
+    def with_key(s: dict = Depends(session)) -> dict:
+        """Modo mixto: lo que manda, ejecuta o cambia claves pide la clave aunque se esté en la misma PC. La Secretaria
+        entra acá porque por chat también aprueba."""
+        if s.get("local"):
+            raise HTTPException(403, "para esto hace falta la clave: entrá con tu clave y repetilo")
+        return s
+
     async def cmd(cook: str, name: str, data: dict | None = None) -> Any:
         try:
             async with lock:
@@ -296,7 +303,7 @@ def create_app(rt: Runtime, *, tick: bool = True, meta: MetaChannel | None = Non
         return _config_view()
 
     @app.put("/api/v1/config")
-    async def config_put(body: ConfigIn, s: dict = Depends(session)) -> dict:
+    async def config_put(body: ConfigIn, s: dict = Depends(with_key)) -> dict:
         if env_file is None:
             raise HTTPException(404, "este servidor no tiene pantalla de Configuración")
         try:
@@ -314,7 +321,7 @@ def create_app(rt: Runtime, *, tick: bool = True, meta: MetaChannel | None = Non
         return _config_view(restart)
 
     @app.post("/api/v1/config/clave")
-    async def config_key(body: NewKeyIn, request: Request, s: dict = Depends(session)) -> dict:
+    async def config_key(body: NewKeyIn, request: Request, s: dict = Depends(with_key)) -> dict:
         """Cambia la clave de la app. Cierra todas las sesiones: la app entra de nuevo con la clave nueva."""
         try:
             auth.set_key(body.key)
@@ -365,7 +372,7 @@ def create_app(rt: Runtime, *, tick: bool = True, meta: MetaChannel | None = Non
         return {"items": [pending_view(p) for p in rt.approvals.list()]}
 
     @app.post("/api/v1/pending/{pid}/approve")
-    async def approve(pid: int, body: ApproveIn, s: dict = Depends(session)) -> dict:
+    async def approve(pid: int, body: ApproveIn, s: dict = Depends(with_key)) -> dict:
         p = _open(pid)
         if p["level"] == "humano":
             raise HTTPException(409, "esto lo resolvés vos: usá 'resolver' con tu respuesta")
@@ -385,14 +392,14 @@ def create_app(rt: Runtime, *, tick: bool = True, meta: MetaChannel | None = Non
         return {"state": r["state"], "text": r.get("text")}
 
     @app.post("/api/v1/pending/{pid}/reject")
-    async def reject(pid: int, body: RejectIn, s: dict = Depends(session)) -> dict:
+    async def reject(pid: int, body: RejectIn, s: dict = Depends(with_key)) -> dict:
         _open(pid)
         async with lock:
             r = await rt.reject(pid, body.reason, who=owner)
         return {"state": r["state"]}
 
     @app.post("/api/v1/pending/{pid}/resolve")
-    async def resolve(pid: int, body: ResolveIn, s: dict = Depends(session)) -> dict:
+    async def resolve(pid: int, body: ResolveIn, s: dict = Depends(with_key)) -> dict:
         p = _open(pid)
         if p["level"] != "humano":
             raise HTTPException(409, "esto se aprueba o se rechaza")
@@ -401,7 +408,7 @@ def create_app(rt: Runtime, *, tick: bool = True, meta: MetaChannel | None = Non
         return {"state": r["state"]}
 
     @app.post("/api/v1/secretary")
-    async def secretary(body: SecretaryIn, s: dict = Depends(session)) -> dict:
+    async def secretary(body: SecretaryIn, s: dict = Depends(with_key)) -> dict:
         async with lock:
             r = await rt.talk_to_owner(body.text, session=f"app-{body.session}", channel="app")
         d = r.to_dict()
@@ -418,7 +425,7 @@ def create_app(rt: Runtime, *, tick: bool = True, meta: MetaChannel | None = Non
         return await cmd("encargos", "ver", {"number": num})
 
     @app.post("/api/v1/orders/{num}/status")
-    async def order_status(num: int, body: StatusIn, s: dict = Depends(session)) -> dict:
+    async def order_status(num: int, body: StatusIn, s: dict = Depends(with_key)) -> dict:
         if body.status not in STATUSES:
             raise HTTPException(422, f"estado inválido; válidos: {', '.join(STATUSES)}")
         return await cmd("encargos", "estado", {"number": num, "status": body.status})
