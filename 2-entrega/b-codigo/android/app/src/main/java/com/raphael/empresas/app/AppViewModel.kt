@@ -14,7 +14,7 @@ import kotlinx.coroutines.launch
 data class ChatEntry(val fromOwner: Boolean, val text: String, val tasks: List<TaskItem> = emptyList(),
                      val options: List<OptionItem> = emptyList(), val suggestions: List<String> = emptyList())
 
-enum class Tab { HOY, PENDIENTES, ENCARGOS, AGENDA, MAS }
+enum class Tab { HOY, PENDIENTES, ENCARGOS, AGENDA, MAS, CEREBRO, AJUSTES }
 
 /**
  * El estado de la app. Toda decisión (aprobar, rechazar, resolver, cambiar un estado) va al servidor, que la pasa por
@@ -29,6 +29,18 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         private set
     var message by mutableStateOf<String?>(null)
     var tab by mutableStateOf(Tab.HOY)
+
+    /** "empresas" o "personal": cambia las pestañas y a qué endpoint se le habla. */
+    var edition by mutableStateOf(prefs.edition)
+        private set
+    val personal get() = edition == "personal"
+    /** Lo que trajo el QR (o se escribió a mano) para emparejar: la pantalla de entrada lo muestra ya cargado. */
+    var pairHost by mutableStateOf("")
+    var pairCode by mutableStateOf("")
+    var brain by mutableStateOf<Brain?>(null)
+        private set
+    var config by mutableStateOf<ConfigView?>(null)
+        private set
 
     var summary by mutableStateOf<Summary?>(null)
         private set
@@ -73,16 +85,54 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         if (url.isBlank()) throw ApiError("Poné la dirección del servidor", 0)
         val api = Api(url)
         val h = api.health()
-        if (!h.optBoolean("ok")) throw ApiError("Ese servidor no tiene Raphael Empresas funcionando", 0)
-        val device = "${Build.MANUFACTURER} ${Build.MODEL}".take(80)
-        val s = api.login(key, device)
+        if (!h.optBoolean("ok")) throw ApiError("Ese servidor no tiene Raphael funcionando", 0)
+        val s = api.login(key, deviceName())
+        startSession(url, h.optString("edition"), s)
+    }
+
+    /** Emparejar con el código del QR (sin clave). Desde afuera de casa el servidor sigue pidiendo clave o código: nunca entra solo. */
+    fun pair(server: String, code: String) = run {
+        val url = normalizeServer(server)
+        if (url.isBlank()) throw ApiError("Poné la dirección del servidor", 0)
+        val api = Api(url)
+        val h = api.health()
+        if (!h.optBoolean("ok")) throw ApiError("Ese servidor no tiene Raphael funcionando", 0)
+        val s = api.redeem(code.trim(), deviceName())
+        pairCode = ""
+        startSession(url, h.optString("edition"), s)
+    }
+
+    /** Un enlace `raphael://pair?host=…&code=…` (el QR escaneado con la cámara). Solo carga los datos: emparejar lo confirma la persona. */
+    fun onPairLink(raw: String?) {
+        val l = PairLink.parse(raw) ?: return
+        if (l.host.isNotBlank()) pairHost = l.host
+        pairCode = l.code
+    }
+
+    private fun deviceName() = "${Build.MANUFACTURER} ${Build.MODEL}".take(80)
+
+    private suspend fun startSession(url: String, edition: String, s: Session) {
         prefs.server = url
         prefs.token = s.token
         prefs.user = s.user
         prefs.business = s.business
+        prefs.edition = edition.ifBlank { "empresas" }
+        this.edition = prefs.edition
+        tab = Tab.HOY
+        chat.clear()
         loggedIn = true
         PendingWorker.schedule(getApplication())
         refreshAll()
+    }
+
+    // --- Raphael personal
+    fun loadBrain(refresh: Boolean = true) = run { brain = prefs.api().brain(refresh) }
+    fun loadConfig() = run { config = prefs.api().config() }
+
+    /** Pone o saca claves. Nunca se guarda ni se muestra un valor completo después: el servidor devuelve solo los últimos 4. */
+    fun saveConfig(set: Map<String, String>, clear: List<String> = emptyList()) = run {
+        config = prefs.api().saveConfig(set, clear)
+        message = if (clear.isNotEmpty()) "Quitado" else "Guardado. Ya está aplicado."
     }
 
     fun logout() = run {
@@ -103,7 +153,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         summary = api.summary()
         pending.replace(api.pending())
         prefs.lastNotified = maxOf(prefs.lastNotified, pending.maxOfOrNull { it.id } ?: 0)
-        if (chat.isEmpty()) askNow(api, "buen día, ¿qué tareas tenemos hoy?", showOwner = false)
+        if (chat.isEmpty()) askNow(api, if (personal) "buen día, ¿qué tengo para decidir hoy?" else "buen día, ¿qué tareas tenemos hoy?",
+            showOwner = false)
     }
 
     fun loadPending() = run {
@@ -183,7 +234,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     private suspend fun askNow(api: Api, text: String, showOwner: Boolean) {
         if (showOwner) chat.add(ChatEntry(true, text))
-        val r = api.secretary(text)
+        val r = if (personal) api.chat(text) else api.secretary(text)
         chat.add(ChatEntry(false, r.text, r.tasks, r.options, r.suggestions))
         if (r.text.contains("Aprobada") || r.text.contains("Rechazada") || r.text.contains("resuelta") || r.text.contains("Hecho")) {
             pending.replace(api.pending())

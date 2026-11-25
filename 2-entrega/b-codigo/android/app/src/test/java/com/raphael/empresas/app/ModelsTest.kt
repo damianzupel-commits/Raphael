@@ -60,4 +60,48 @@ class ModelsTest {
         assertEquals(false, c.real)
         assertEquals(2, c.channels.size)
     }
+
+    // --- Raphael personal
+    @Test fun enlace_del_qr_de_emparejamiento() {
+        val l = PairLink.parse("raphael://pair?host=https://pc.tail1.ts.net&code=abcd2345")!!
+        assertEquals("https://pc.tail1.ts.net", l.host)
+        assertEquals("ABCD2345", l.code)
+        assertEquals("", PairLink.parse("raphael://pair?code=ZZZZ9999")!!.host)
+    }
+
+    @Test fun enlaces_que_no_son_de_emparejamiento_se_ignoran() {
+        assertNull(PairLink.parse(null))
+        assertNull(PairLink.parse("https://pair?code=ABCD2345"))
+        assertNull(PairLink.parse("raphael://pair?host=https://x"))
+        assertNull(PairLink.parse("raphael://pair?code=<script>"))
+    }
+
+    @Test fun configuracion_no_trae_secretos_completos() {
+        val v = ConfigView.from(JSONObject("""{"fields":[
+            {"name":"NVIDIA_API_KEY","group":"ia","label":"Clave de NVIDIA","secret":true,"help":"","set":true,"hint":"…9876","live":true},
+            {"name":"OLLAMA_MODEL","group":"local","label":"Ollama: modelo","secret":false,"set":true,"value":"llama3.1:8b","live":true}],
+            "checks":[{"area":"IA local","status":"aviso","text":"no hay modelo local prendido"}],"restart_needed":["MP_MODE"]}"""))
+        assertEquals(2, v.fields.size)
+        assertTrue(v.fields[0].secret && v.fields[0].hint == "…9876" && v.fields[0].value.isEmpty())
+        assertEquals("llama3.1:8b", v.fields[1].value)
+        assertEquals("aviso", v.checks[0].status)
+        assertEquals(listOf("MP_MODE"), v.restartNeeded)
+    }
+
+    @Test fun cerebro_dice_si_el_local_esta_prendido() {
+        val b = Brain.from(JSONObject("""{"local":{"ready":false,"hints":["ollama no responde"]},
+            "private":["seguridad","memoria"],"private_mode":"reglas",
+            "roles":{"mando":{"tiers":["gratis","local"],"now":"nvidia"},"ruteo":{"tiers":["local","gratis"],"now":""}}}"""))
+        assertTrue(!b.localReady)
+        assertEquals("reglas", b.privateMode)
+        assertEquals(listOf("seguridad", "memoria"), b.privateBrigades)
+        assertEquals(listOf("local", "gratis"), b.roles.first { it.role == "ruteo" }.tiers)
+    }
+
+    @Test fun pendiente_de_raphael_personal_sin_campos_de_empresas() {
+        val p = Pending.from(JSONObject("""{"id":3,"type":"ejecutar_orden","brigade":"trading","level":"humano",
+            "summary":"Comprar USD/JPY","created":"x","data":{},"can":["resolve"]}"""))
+        assertTrue(p.human && p.editable.isEmpty() && p.contact == null)
+    }
 }
+

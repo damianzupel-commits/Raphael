@@ -35,6 +35,8 @@ from raphael_core.manifest import manifest_from
 from raphael_core.models import ModelGateway, Usage, load_models
 from raphael_core.store import Store
 
+from config_modelo import Configuracion, rutas_por_defecto
+
 PACKAGE_ROOT = Path(__file__).resolve().parents[1]
 
 STAGES = [
@@ -317,6 +319,13 @@ class PanelState:
         self.received: list[str] = []
         self.bus.subscribe("panel.ping", lambda e, d: self.received.append(d.get("n", "")), owner="eco-panel")
         self.project_root = project_root if project_root is not None else find_project_root()
+        # Configuración desde el panel (claves, modelos por brigada, apariencia): raphael.env + modelos.usuario.yaml
+        cfg_dir = Path(tempfile.mkdtemp(prefix="raphael-config-")) if memory else Path(data_dir)
+        self.config = Configuracion(**rutas_por_defecto(cfg_dir, None if memory else self.project_root))
+        if not memory:
+            for k, v in self.config.env().items():
+                os.environ.setdefault(k, v)          # lo que ya esté en el entorno de verdad manda
+            self.reload_models()
         if dev_dirs is None:
             dev_dirs = [d for d in ((brigades_dir(self.project_root)) if self.project_root else None,
                                     PACKAGE_ROOT / "ejemplos") if d is not None and d.is_dir()]
@@ -333,6 +342,18 @@ class PanelState:
         self.audit.record("inicio", who="panel", why="se abrió el panel", core=raphael_core.__version__,
                           brigadas_encontradas=len(self.brigades), montadas=self.mount_report["mounted"],
                           errores=self.mount_report["errors"])
+
+    def reload_models(self) -> str:
+        """Aplica en caliente la configuración de modelos y claves (sin reiniciar). Devuelve un aviso si no se pudo."""
+        gw = self.runtime.models
+        if gw is None:
+            return "sin modelos configurados"
+        try:
+            gw.config = self.config.modelos()
+            gw.set_env(dict(os.environ))
+        except Exception as e:  # noqa: BLE001 - una configuración rota no tumba el panel: queda la anterior
+            return f"no se pudo aplicar la configuración de modelos: {e}"
+        return ""
 
     def _rebuild(self) -> None:
         """Junta lo que hay en `brigadas/` (README, cocineros) con lo que el cargador encontró por manifiesto."""
