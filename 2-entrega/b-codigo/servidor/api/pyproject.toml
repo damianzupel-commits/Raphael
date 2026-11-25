@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "raphael-empresas-api"
 dynamic = ["version"]
-description = "API HTTP de la brigada Empresas para la app del celular de la dueña (sobre el harness v2)."
+description = "Servidores HTTP: la API de Empresas (app de la dueña) y la de Raphael personal (cliente-servidor), sobre el harness v2."
 readme = "API.md"
 requires-python = ">=3.11"
 dependencies = ["raphael-core>=2.0.0rc3", "raphael-empresas>=2.0", "raphael-orchestrator", "fastapi>=0.110", "uvicorn>=0.29"]
@@ -15,6 +15,7 @@ dev = ["pytest>=8", "httpx>=0.27"]
 
 [project.scripts]
 raphael-empresas-api = "raphael_empresas_api.__main__:main"
+raphael-personal-api = "raphael_personal_api.__main__:main"
 
 [tool.setuptools.dynamic]
 version = {attr = "raphael_empresas_api.__version__"}
@@ -34,6 +35,9 @@ select = ["E", "F", "W", "I", "B", "UP", "BLE"]
 
 [tool.ruff.lint.per-file-ignores]
 "src/raphael_empresas_api/pagina.py" = ["E501"]   # HTML y JS en una cadena
+"src/raphael_personal_api/pagina.py" = ["E501"]
+"src/raphael_*_api/configuracion.py" = ["E501"]   # tabla de campos
+"src/raphael_personal_api/campos.py" = ["E501"]
 
 [tool.ruff.lint.flake8-bugbear]
 extend-immutable-calls = ["fastapi.Depends", "fastapi.Header"]

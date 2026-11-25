@@ -1,0 +1,39 @@
+# Instalación de Raphael PERSONAL (la PC de Damián): harness + orquestador maestro + las brigadas que estén instaladas.
+# La usa `python -m raphael_personal_api` (servidor cliente-servidor). Se copia a .data\personal\installation.yaml la
+# primera vez; después lo que cambies ahí manda (el panel y la app activan o apagan brigadas).
+#
+# Una brigada listada que todavía no existe en el repo NO rompe el arranque: el servidor la marca "no instalada" y
+# sigue. Los niveles de autonomía salen del manifiesto de cada brigada; acá solo se cambian (bajar a automático algo
+# irreversible o con gasto exige confirmed_by). Reglas que no se tocan: Trading no ejecuta nada sin tu aprobación (ni en
+# demo); el pentest activo solo corre en esta PC; publicar, pagar, mandar mensajes o borrar siempre piden aprobación.
+id: raphael-personal
+edition: personal
+plan: personal
+identity:
+  assistant: Raphael
+  user: Damián
+timezone: America/Argentina/Buenos_Aires
+limits:
+  messages_month: 1000000       # sin tope práctico: es tu PC
+orchestrator:
+  entry: raphael_orchestrator.orchestrator:RaphaelOrchestrator
+  config:
+    mode: master
+    routing:
+      classifier_cloud: false   # lo que dice tu pedido no sale a la nube para decidir a qué brigada va
+brigades:
+  seguridad: {active: true}
+  antimalware: {active: true}
+  investigacion: {active: true}
+  geolocalizacion: {active: true}
+  memoria: {active: true}
+  ingesta: {active: true}
+  trading: {active: true}
+  operaciones: {active: true}
+  autorreparacion: {active: true}
+  contenido: {active: true}
+  legales: {active: true}
+  empresas: {active: false}     # necesita el perfil de una clienta; se prende desde el panel cuando haya
+trust:
+  enabled: true
+  approvals_to_step_down: 10

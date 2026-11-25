@@ -1,0 +1,59 @@
+# Cerebro mixto de Raphael personal (decisión de Damián, 25 nov 2026).
+#   - Lo sensible corre en LOCAL (Ollama o LM Studio en tu PC): Seguridad, Investigación, Memoria y Operaciones
+#     (lista `private`). Un pedido privado NUNCA sale a un proveedor que no corra en localhost: si el modelo local no
+#     está prendido, esa brigada sigue por reglas, el servidor te avisa y no manda nada a la nube.
+#   - El resto va a la nube con NVIDIA (build.nvidia.com): para uso personal tuyo alcanza el acceso gratis. Si Raphael
+#     llegara a servir a terceros, sus términos lo consideran producción (ver CONTEXT §6).
+#   - Cualquier rol se cambia SIN tocar este archivo, con variables en raphael.env (o la pantalla de Configuración):
+#       RAPHAEL_ROL_MANDO=local,gratis      (escalones en orden: local, gratis, pago)
+#       OLLAMA_MODEL=llama3.1:8b            LMSTUDIO_MODEL=...      OLLAMA_URL / LMSTUDIO_URL (solo localhost)
+#       RAPHAEL_PRIVADAS=trading,legales    (brigadas extra que quedan solo en local)
+# Las claves NUNCA van acá: NVIDIA_API_KEY y OPENROUTER_API_KEY se leen del entorno (raphael.env).
+
+providers:
+  ollama:
+    base_url: http://localhost:11434/v1
+    model: llama3.1:8b          # SUPUESTO: poné el que tengas bajado (`ollama list`) en OLLAMA_MODEL
+    rpm: 30
+  lmstudio:
+    base_url: http://localhost:1234/v1
+    model: local-model          # SUPUESTO: el identificador que muestra LM Studio, en LMSTUDIO_MODEL
+    rpm: 30
+  nvidia:
+    base_url: https://integrate.api.nvidia.com/v1
+    model: nvidia/nemotron-3.5-super-vl-120b-a12b    # el de JarvisRemote (verificado allá el 11 nov 2026)
+    api_key_env: NVIDIA_API_KEY
+    rpm: 40
+    extra:
+      chat_template_kwargs: {enable_thinking: false}
+  deepseek-flash:                # opcional y apagado: paid_cap_usd_month 0 = el escalón pago no se usa nunca
+    base_url: https://openrouter.ai/api/v1
+    model: deepseek/deepseek-v4-flash         # SUPUESTO: verificar en openrouter.ai/models
+    api_key_env: OPENROUTER_API_KEY
+    usd_per_million_in: 0.30
+    usd_per_million_out: 1.20
+    rpm: 60
+    extra:
+      provider: {data_collection: deny}
+
+tiers:
+  local:  [ollama, lmstudio]     # el que esté prendido; si ninguno responde, se saltea
+  gratis: [nvidia]
+  pago:   [deepseek-flash]
+
+paid_cap_usd_month: 0            # subilo (ej. 5) solo si querés que algún rol use el escalón pago
+
+# Quién usa qué. Lo que le habla a Damián y planifica va a la nube; lo que decide qué hacer con TU pedido (ruteo)
+# y el trabajo de las brigadas va primero a local. Para lo privado el filtro de abajo manda igual.
+roles:
+  mando:    [gratis, local]
+  voz:      [gratis, local]
+  jefe:     [gratis, local]
+  ruteo:    [local, gratis]
+  cocinero: [local, gratis]
+  efimero:  [local, gratis]
+
+# Solo modelos locales. Ids de brigada (o ayudante). Seguridad, Investigación, Memoria y Operaciones, con los ids
+# probables de cada una y los de JarvisRemote; el test de la pieza 3 avisa si el manifiesto de una de esas brigadas
+# trae otro id y no está acá.
+private: [seguridad, investigacion, memoria, operaciones, memoria-cerebro, investigacion-forense, scout, forense]
