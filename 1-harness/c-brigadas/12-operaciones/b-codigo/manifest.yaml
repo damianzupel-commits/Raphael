@@ -1,0 +1,112 @@
+# Brigada Operaciones (pieza 12): la ÚNICA fuente de verdad de lo que la brigada puede hacer.
+# Las manos de Raphael: PC, celular y navegador de Damián. SOLO edición personal: nunca corre en el VPS.
+# Cada acción y cada tool declara su nivel (automatico | aprobacion | humano) y sus etiquetas:
+#   external = sale al mundo · irreversible = no tiene vuelta atrás · spend = gasta plata.
+# Lo que lee dentro del sandbox o de la web es automatico; todo lo que actúa (comandos, clics, tipeo, escribir, mover,
+# borrar, cámara, pantalla, iniciar sesión) pide aprobación. La confianza progresiva nunca baja sola a automático una
+# `irreversible`: la propone y Damián confirma.
+# Esta copia (b-codigo/manifest.yaml) la encuentra el cargador; la del paquete (src/raphael_operaciones/manifest.yaml) es
+# la fuente. `scripts/sync_manifest.py` la copia y un test falla si quedan distintas.
+id: operaciones
+name: Operaciones
+version: 1.0.0
+contract: ">=2.1,<3"
+description: Las manos de Raphael en la PC, el celular y el navegador de Damián. Todo lo que actúa pide aprobación; el modelo es local.
+editions: [personal]
+cooks:
+  - {id: pc, entry: "raphael_operaciones.cooks.pc:PcCook"}
+  - {id: phone, entry: "raphael_operaciones.cooks.phone:PhoneCook"}
+  - {id: browser-web, entry: "raphael_operaciones.cooks.browser_web:BrowserWebCook"}
+  - {id: supervisor, entry: "raphael_operaciones.cooks.supervisor:SupervisorCook"}
+chief: "raphael_operaciones.spec:SPEC"
+actions:
+  abrir_app: {level: aprobacion, tags: [irreversible], description: "abrir un programa en la PC"}
+  ejecutar_comando: {level: aprobacion, tags: [irreversible], description: "ejecutar un comando de shell en la PC"}
+  capturar_pantalla: {level: aprobacion, description: "sacar una captura de la pantalla de la PC"}
+  celular_abrir_app: {level: aprobacion, tags: [irreversible], description: "abrir una app en el celular"}
+  leer_pantalla_celular: {level: aprobacion, description: "leer la pantalla del celular (puede mostrar datos sensibles)"}
+  sacar_foto: {level: aprobacion, description: "sacar una foto en silencio con la cámara del celular"}
+  abrir_url: {level: aprobacion, description: "abrir una URL en el navegador automatizado"}
+tools:
+  - {name: fs_list_dir, level: automatico, description: "Lista los archivos y subcarpetas de una carpeta de la PC (dentro de las carpetas permitidas)"}
+  - {name: fs_read_file, level: automatico, description: "Lee un archivo de texto de la PC (dentro de las carpetas permitidas)"}
+  - {name: fs_write_file, level: aprobacion, tags: [irreversible], description: "Crea o sobreescribe un archivo de texto en la PC (crea las carpetas que falten)"}
+  - {name: fs_create_dir, level: aprobacion, description: "Crea una carpeta en la PC"}
+  - {name: fs_move_path, level: aprobacion, tags: [irreversible], description: "Mueve o renombra un archivo o carpeta, sin pisar un destino que ya exista"}
+  - {name: fs_delete_path, level: aprobacion, tags: [irreversible], dangerous: true, description: "Borra un archivo o carpeta (recursivo)"}
+  - {name: pc_run_command, level: aprobacion, tags: [irreversible], dangerous: true, description: "Ejecuta un comando de shell REAL en la PC (cmd en Windows)"}
+  - {name: desktop_screenshot, level: aprobacion, dangerous: true, description: "Captura el escritorio completo y la guarda como PNG dentro de las carpetas permitidas"}
+  - {name: desktop_list_windows, level: automatico, description: "Lista las ventanas visibles (título, proceso y pid)"}
+  - {name: desktop_focus_window, level: aprobacion, dangerous: true, description: "Trae una ventana al frente por pid exacto (mejor) o por parte del título"}
+  - {name: desktop_click, level: aprobacion, tags: [irreversible], dangerous: true, description: "Hace clic en coordenadas de pantalla (píxeles, origen arriba a la izquierda)"}
+  - {name: desktop_click_element, level: aprobacion, tags: [irreversible], dangerous: true, description: "Hace clic en un control de una ventana por su nombre visible (UI Automation)"}
+  - {name: desktop_type_text, level: aprobacion, tags: [irreversible], dangerous: true, description: "Escribe texto donde esté el foco del teclado en la PC"}
+  - {name: desktop_press_key, level: aprobacion, tags: [irreversible], dangerous: true, description: "Presiona una tecla o combinación (enter, ctrl+s, alt+tab)"}
+  - {name: desktop_move_mouse, level: aprobacion, dangerous: true, description: "Mueve el cursor sin hacer clic"}
+  - {name: desktop_scroll, level: aprobacion, dangerous: true, description: "Gira la rueda del mouse (positivo arriba, negativo abajo)"}
+  - {name: desktop_launch_app, level: aprobacion, tags: [irreversible], dangerous: true, description: "Lanza un programa, documento o URL en la PC y lo deja al frente"}
+  - {name: phone_open_app, level: aprobacion, tags: [irreversible], dangerous: true, description: "Abre una app del CELULAR por su package name (ej"}
+  - {name: phone_list_dir, level: automatico, description: "Lista una carpeta del celular (la que Damián eligió en la app)"}
+  - {name: phone_read_file, level: automatico, description: "Lee un archivo de texto de la carpeta elegida del celular"}
+  - {name: phone_write_file, level: aprobacion, tags: [irreversible], dangerous: true, description: "Crea o sobreescribe un archivo en la carpeta elegida del celular"}
+  - {name: phone_tap, level: aprobacion, tags: [irreversible], dangerous: true, description: "Toca la pantalla del celular en una coordenada"}
+  - {name: phone_swipe, level: aprobacion, tags: [irreversible], dangerous: true, description: "Desliza el dedo en el celular de un punto a otro"}
+  - {name: phone_type_text, level: aprobacion, tags: [irreversible], dangerous: true, description: "Escribe texto en el campo con foco del celular"}
+  - {name: phone_read_screen, level: aprobacion, dangerous: true, description: "Lee lo que hay en la pantalla del celular (puede incluir datos sensibles)"}
+  - {name: phone_global_action, level: aprobacion, tags: [irreversible], dangerous: true, description: "Acción global del celular: atrás, inicio, recientes o notificaciones"}
+  - {name: phone_run_command, level: aprobacion, tags: [irreversible], dangerous: true, description: "Ejecuta un comando REAL en el celular (Termux)"}
+  - {name: phone_take_photo, level: aprobacion, dangerous: true, description: "Saca una foto en silencio con la cámara del celular"}
+  - {name: phone_record_video, level: aprobacion, dangerous: true, description: "Graba un clip corto en silencio con la cámara del celular"}
+  - {name: browser_open, level: aprobacion, description: "Abre una URL en el navegador automatizado de la PC (para navegar; no abre apps)"}
+  - {name: browser_click, level: aprobacion, description: "Hace clic en el primer elemento que coincida con un selector CSS"}
+  - {name: browser_type, level: aprobacion, description: "Escribe en un campo del navegador (selector CSS); opcionalmente aprieta Enter"}
+  - {name: browser_select_option, level: aprobacion, description: "Elige una opción de un desplegable <select> (por value o por texto visible)"}
+  - {name: browser_get_text, level: automatico, description: "Devuelve el texto visible de la página abierta o de un elemento"}
+  - {name: browser_screenshot, level: automatico, description: "Captura la página abierta del navegador y la guarda como PNG"}
+  - {name: browser_close, level: automatico, description: "Cierra el navegador automatizado"}
+  - {name: web_get, level: automatico, description: "Trae una página web como texto limpio más una lista corta de elementos interactivos"}
+  - {name: web_credential_list, level: automatico, description: "Lista en qué sitios hay credencial cargada (sitio y usuario, nunca la contraseña)"}
+  - {name: web_login, level: aprobacion, tags: [external], description: "Inicia sesión en un sitio de la lista permitida con la credencial que Damián cargó (vos nunca la ves)"}
+commands:
+  estado: {read: true, description: "cómo está Operaciones: modo, adaptadores, interruptores, celular y carpetas"}
+  registro: {read: true, description: "las últimas acciones que hizo Operaciones ({'n': cuántas})"}
+  modo: {read: false, description: "cambia el modo de operación {'modo': 'supervisado'|'autonomo'} (solo la persona)"}
+  conectado: {read: true, description: "si hay un celular conectado ahora"}
+  sitios: {read: true, description: "sitios donde hay credencial cargada (sin contraseñas)"}
+routing:
+  signals:
+    - {pattern: "\\bcelular\\b|\\btelefono\\b|\\bandroid\\b|\\btermux\\b|\\bcomando\\b|\\bcaptura\\b|\\bpantalla\\b|\\bescritorio\\b|\\bnavegador\\b|\\bpagina web\\b", weight: 2}
+    - {pattern: "\\babri\\b|\\babre\\b|\\bejecuta\\b|\\bcorre\\b|\\barchivos?\\b|\\bcarpetas?\\b|\\bventana\\b|\\bclic\\b|\\bclick\\b|\\bfoto\\b|\\bhttps?://", weight: 1}
+store:
+  space: operaciones
+uninstall:
+  export: [registro]
+  delete: ["*"]
+setup: "raphael_operaciones.setup:register"
+health: "raphael_operaciones.health:check"
+config_schema:
+  type: object
+  additionalProperties: false
+  properties:
+    adaptadores: {enum: [real, simulado]}
+    modo: {type: string}
+    carpeta_segura: {type: string}
+    fs_raices: {type: [array, string], items: {type: string}}
+    fs_supervisado: {type: [array, string], items: {type: string}}
+    fs_prohibidas: {type: [array, string], items: {type: string}}
+    fs_permitir_borrar: {type: [boolean, string]}
+    pc_shell: {type: [boolean, string]}
+    escritorio: {type: [boolean, string]}
+    celular_shell: {type: [boolean, string]}
+    celular_camara: {type: [boolean, string]}
+    celular_timeout: {type: number, minimum: 1, maximum: 300}
+    navegador_headless: {type: [boolean, string]}
+    navegador_canal: {type: string}
+    web_vetados: {type: [array, string], items: {type: string}}
+    web_login_permitidos: {type: [array, string], items: {type: string}}
+    web_proxies: {type: [array, string], items: {type: string}}
+    web_red_local: {type: [boolean, string]}
+    web_cache_carpeta: {type: string}
+    web_cache_versiones: {type: integer, minimum: 1, maximum: 50}
+    web_cache_dias: {type: integer, minimum: 1, maximum: 365}
+    supervisor: {type: [boolean, string]}
