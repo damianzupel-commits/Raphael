@@ -12,9 +12,12 @@ PC de Damián (pins en el globo del Centro de Mando).
 
 | Cocinero | Tipo | Qué hace |
 | --- | --- | --- |
-| IP e infraestructura | existente | Geolocaliza IPs y busca hosts (Shodan). |
-| Rastreo de direcciones cripto | existente | Traza direcciones de criptomonedas. |
-| Barcos y capas del globo | existente | Capas del mapa y seguimiento de barcos. |
+| IP e infraestructura (`ip-infra`) | portado | Geolocaliza IPs y dominios públicos (ip-api.com) y busca hosts en Shodan (`buscar_shodan`, aprobación). Rechaza IPs privadas. |
+| Rastreo de direcciones cripto (`cripto`) | portado | Balance y actividad de direcciones BTC (blockchain.info) y ETH (blockchair). |
+| Barcos y capas del globo (`capas`) | portado | Terremotos, noticias, ISS, satélites, datacenters, cables, vuelos (libres) y barcos, incendios, cámaras públicas, clima y antenas (con clave); lista y borra pines (`borrar_pines`, aprobación). |
+
+## Fuentes y claves
+Cada resultado lleva su fuente. Modo `real` (por defecto) o `simulado` (config `modo` o variable `RAPHAEL_GEO_MODO`). Las claves salen solo de variables de entorno (`b-codigo/geolocalizacion.env.plantilla`); sin clave la capa dice cuál falta y devuelve vacío. Los pines nuevos se publican como evento `pin.agregado` para el globo del Centro de Mando. Las consultas de lectura son comandos (`ip`, `cripto`, `capa`, `capas`, `pines`, `fuentes`) que el orquestador puede correr. ip-api.com gratis solo habla HTTP (la IP consultada viaja sin cifrar): decisión de Damián si prefiere otro proveedor.
 
 ## Reglas
 - Solo fuentes públicas.
@@ -26,7 +29,7 @@ PC de Damián (pins en el globo del Centro de Mando).
 - Cada acción declara su nivel de autonomía (automatico, aprobacion, humano) en el manifiesto.
 
 ## Estado
-Existe en JarvisRemote. Estado de validación: sin relevar.
+Portada al harness v2 (25 nov 2026, brigada `geolocalizacion` 1.0.0, solo edición personal): 3 cocineros, 2 acciones con aprobación, 6 comandos de lectura, 88 tests y suite de contrato en verde, todo sin red. Las fuentes son enchufables: real (internet) y simulada (datos de muestra marcados como tales). **No probada con internet ni con claves reales.** Lo que falta cargar está en `b-codigo/geolocalizacion.env.plantilla` y en `a-historia/lienzo-aporte.md`.
 
 ## Criterios de aceptación (mínimos)
 - Pasa la suite de contrato del harness v2 (manifiesto válido, healthcheck, montar y desmontar).
