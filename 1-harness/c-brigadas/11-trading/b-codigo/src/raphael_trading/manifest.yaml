@@ -1,0 +1,55 @@
+# Brigada Trading (pieza 11): la ÚNICA fuente de verdad de lo que la brigada puede hacer.
+# Regla de Damián (21 nov): NADA se ejecuta sin su aprobación, ni en demo. Por eso `ejecutar_orden` y `cerrar_posicion`
+# son `aprobacion` con `spend` e `irreversible`: la confianza progresiva nunca las baja sola a automático.
+# Solo corre en la PC de Damián (edición personal).
+id: trading
+name: Trading
+version: 2.0.0
+contract: ">=2.1,<3"
+description: Analiza mercados (USD/JPY de entrada), genera señales con riesgo calculado, prueba la estrategia sobre histórico y vigila. Solo ejecuta una orden si Damián la aprueba, también en demo.
+editions: [personal]
+cooks:
+  - {id: signals, entry: "raphael_trading.cooks.signals:Signals"}
+  - {id: backtest, entry: "raphael_trading.cooks.backtest:Backtest"}
+  - {id: engine-watch, entry: "raphael_trading.cooks.engine_watch:EngineWatch"}
+actions:
+  avisar_senal: {level: automatico, description: "avisarle a Damián que apareció una señal (solo aviso, no opera)"}
+  ejecutar_orden: {level: aprobacion, tags: [spend, irreversible, external], description: "mandar una orden al broker (demo o real)"}
+  cerrar_posicion: {level: aprobacion, tags: [spend, irreversible, external], description: "cerrar una posición abierta en el broker"}
+events:
+  publishes: [trading.senal_nueva, trading.orden_ejecutada, trading.orden_rechazada]
+  consumes: []
+commands:
+  analizar: {read: true, description: "analiza un instrumento ahora {'instrument': 'USD/JPY'}"}
+  senales: {read: true, description: "señales guardadas por la vigilancia"}
+  backtest: {read: true, description: "backtest de un instrumento {'instrument': 'USD/JPY', 'candles': 500}"}
+  estado: {read: true, description: "adaptadores en uso, pausa y órdenes de hoy"}
+  vigilados: {read: true, description: "instrumentos vigilados"}
+  ordenes: {read: true, description: "órdenes ejecutadas"}
+  posiciones: {read: true, description: "posiciones abiertas en el broker"}
+  agregar: {read: false, description: "vigilar un instrumento {'instrument': 'USD/JPY', 'timeframe': '1h'}"}
+  quitar: {read: false, description: "dejar de vigilar un instrumento"}
+  escanear: {read: false, description: "escanear ahora y guardar las señales nuevas"}
+  proponer: {read: false, description: "pedir la aprobación para ejecutar una señal {'signal_id': '...'}"}
+  cerrar: {read: false, description: "pedir la aprobación para cerrar una posición {'position_id': '...'}"}
+  pausar: {read: false, description: "pausa total: no se ejecuta nada hasta reanudar"}
+  reanudar: {read: false, description: "salir de la pausa"}
+routing:
+  signals:
+    - {pattern: "\\btrading\\b|\\bse[nñ]ales?\\b|\\busd/?jpy\\b|\\bbacktest\\b|\\bbroker\\b|\\bforex\\b", weight: 2}
+    - {pattern: "\\boperar\\b|\\bmercados?\\b|\\bposici[oó]n\\b|\\bstop\\b", weight: 1}
+store:
+  space: trading
+uninstall:
+  export: [signals, orders]
+  delete: ["*"]
+setup: "raphael_trading.health:validate"
+health: "raphael_trading.health:check"
+config_schema:
+  type: object
+  additionalProperties: false
+  properties:
+    risk: {type: object}
+    data: {type: object}
+    broker: {type: object}
+    watch: {type: object}
