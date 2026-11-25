@@ -10,6 +10,8 @@ from __future__ import annotations
 from raphael_core import Action, ActionError, Cook
 from raphael_core.text_es import first_name
 
+from .. import legal
+
 CHANNELS = ("whatsapp", "instagram", "prueba")
 TEXTS = {
     "confirmado": ("¡Hola {c}! Recibimos tu seña, ya queda confirmado tu {p} (encargo #{n}). "
@@ -49,8 +51,10 @@ class Notices(Cook):
         template = TEXTS.get(d.get("status"))
         if not template:
             return None
-        return template.format(c=first_name(d.get("client", "")) or "", p=d.get("description", "pedido"),
+        text = template.format(c=first_name(d.get("client", "")) or "", p=d.get("description", "pedido"),
                                n=d.get("number")).replace("¡Hola !", "¡Hola!").replace("¡Gracias !", "¡Gracias!")
+        legal.review(ctx, text, f"aviso-{d.get('number')}-{d.get('status')}")
+        return text
 
     def command(self, name, data, ctx):
         if name == "enviados":

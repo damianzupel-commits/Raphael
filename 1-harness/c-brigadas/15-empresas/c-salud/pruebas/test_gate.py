@@ -78,7 +78,7 @@ def test_lo_que_sale_al_mundo_esta_etiquetado():
     tags = {a: set(s.tags) for a, s in MANIFEST.actions.items()}
     assert {"irreversible"} <= tags["confirmar_pago"]
     assert {"external", "irreversible"} <= tags["enviar_presupuesto"] and {"external", "irreversible"} <= tags["cancelar_pedido"]
-    for a in ("responder_duda", "confirmar_turno", "enviar_recordatorio", "avisar_estado"):
+    for a in ("responder_duda", "enviar_link_pago", "confirmar_turno", "enviar_recordatorio", "avisar_estado"):
         assert "external" in tags[a], a
 
 
@@ -100,6 +100,10 @@ def _trigger(kind: str) -> System:
         x.publish("encargo.presupuesto_enviado", {"number": 1, "contact": "whatsapp:549341", "client": "Lu",
                                                   "price": 1000, "deposit": 500})
         x.receive("ya te transferí la seña")
+    elif kind == "enviar_link_pago":
+        x = System({**SHORT, "payments": {"deposit_pct": 50, "mercadopago": {"mode": "mock"}}})
+        x.publish("encargo.presupuesto_enviado", {"number": 1, "contact": "whatsapp:549341", "client": "Lu",
+                                                  "price": 1000, "deposit": 500})
     elif kind == "cancelar_pedido":
         x.chat("quiero un vestido a medida", "Lu")
         x.ctx("encargos").request(Action("cancelar_pedido", {"number": 1}, "Cancelar el encargo #1", "whatsapp:549341"))
@@ -121,7 +125,7 @@ def test_ninguna_accion_no_automatica_se_ejecuta_sin_ok(kind):
 
 def test_cubre_todas_las_no_automaticas():
     assert set(NOT_AUTO) == {"responder_duda", "derivar_humano", "confirmar_turno", "enviar_presupuesto", "confirmar_pago",
-                             "cancelar_pedido"}
+                             "cancelar_pedido", "enviar_link_pago"}
 
 
 # --- (c) comandos de escritura -----------------------------------------------------------------------------------------

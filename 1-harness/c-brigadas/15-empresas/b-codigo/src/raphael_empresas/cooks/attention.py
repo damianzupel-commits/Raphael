@@ -17,6 +17,7 @@ from raphael_core import Action, ActionError, Cook, Reply
 from raphael_core.text_es import clean, is_question, normalize
 
 from .. import config as C
+from .. import legal
 from ..signals import R_COMPLAINT
 
 R_GREETING = re.compile(r"^\s*(hola|holis|buenas|buen dia|buenos dias|buenas tardes|buenas noches|que tal)\W*$")
@@ -59,8 +60,12 @@ class Attention(Cook):
 
     def interest(self, msg, ctx):
         t = normalize(msg.text)
+        if legal.optout(msg.text):
+            return 0.97                               # una baja se respeta antes que cualquier otra conversación
         if R_COMPLAINT.search(t):
             return 0.95
+        if legal.optin(msg.text):
+            return 0.9
         if self.known_answer(t, ctx):
             return 0.6
         return 0.3 if is_question(msg.text) else 0.1
@@ -69,6 +74,14 @@ class Attention(Cook):
     def handle(self, msg, ctx):
         t = normalize(msg.text)
         who = C.decider(ctx)
+        if legal.optout(msg.text):
+            ctx.publish("baja.solicitada", {"contact": msg.contact, "channel": msg.channel})
+            return Reply("Listo, te damos de baja: no te mandamos más avisos ni novedades. "
+                         "Si es por un encargo en curso, igual te escribimos solo lo necesario sobre ese pedido 🙏")
+        if legal.optin(msg.text):
+            ctx.publish("consentimiento.recibido", {"contact": msg.contact, "purpose": legal.PURPOSE, "channel": msg.channel,
+                                                    "evidence": clean(msg.text, 300)})
+            return Reply("¡Gracias! 😊 Te vamos a mandar avisos y novedades. Cuando quieras dejar de recibirlos, escribí «baja».")
         if R_COMPLAINT.search(t):
             ctx.publish("conversacion.derivada", {"contact": msg.contact, "reason": "reclamo"})
             return Reply(
@@ -99,9 +112,12 @@ class Attention(Cook):
             q = ctx.shared.get("questions", n) if n else None
             if q:
                 ctx.shared.put("questions", n, {**q, "status": "respondida", "reply": reply})
+            legal.review(ctx, str(reply), f"duda-{n}")
             return reply
         if action.type == "derivar_humano":
-            return action.data.get("reply")
+            reply = action.data.get("reply")
+            legal.review(ctx, str(reply or ""), "derivacion")
+            return reply
         raise ActionError(f"atención no ejecuta '{action.type}'")
 
     def command(self, name, data, ctx):
