@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "raphael-seguridad"
+dynamic = ["version"]
+description = "Brigada Seguridad de Raphael (harness v2): auditor de código, pentest activo (solo PC) y vigilancia defensiva."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = ["raphael-core>=2.0.0rc3", "pyyaml>=6", "httpx>=0.27"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[project.entry-points."raphael.brigades"]
+seguridad = "raphael_seguridad"
+
+[tool.setuptools.dynamic]
+version = {attr = "raphael_seguridad.__version__"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+raphael_seguridad = ["manifest.yaml"]
+
+[tool.pytest.ini_options]
+testpaths = ["../c-salud/pruebas"]
+
+[tool.ruff]
+line-length = 130
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "BLE"]
+ignore = ["E501"]   # líneas largas permitidas: los mensajes en español y las tablas de reglas no se parten bien

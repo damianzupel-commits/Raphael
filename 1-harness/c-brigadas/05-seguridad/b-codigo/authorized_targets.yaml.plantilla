@@ -1,0 +1,8 @@
+# Objetivos autorizados para el pentest activo, más allá de lo que ya se permite solo (redes privadas 10/8, 172.16/12,
+# 192.168/16, loopback y Tailscale 100.64/10). La editás VOS a mano, fuera del chat. Ninguna tool ni ningún modelo puede
+# agregar una entrada, y decir "sí" en el chat no autoriza nada: la brigada solo lee este archivo.
+# Escanear sistemas que no son tuyos o sin permiso del dueño puede ser delito (Ley 26.388): solo cosas tuyas.
+# Copialo como authorized_targets.yaml (fuera de git) y apuntá SEGURIDAD_TARGETS_FILE a esa ruta.
+targets: []
+# targets:
+#   - {target: "203.0.113.10", label: "VM de laboratorio propia", added: "2026-11-25"}
