@@ -266,7 +266,9 @@ def test_los_scripts_de_windows_son_ascii_con_crlf_y_hacen_lo_prometido():
         raw = f.read_bytes()
         assert all(b < 128 for b in raw) and b"\r\n" in raw, f.name
     assert "ONLOGON" in (DESPLIEGUE / "instalar-servicio.bat").read_text()
-    assert "funnel" not in (DESPLIEGUE / "celular-tailscale.bat").read_text().lower().replace("no usa funnel", "")
+    ts = (DESPLIEGUE / "celular-tailscale.bat").read_text().lower()
+    assert "funnel" not in ts.replace("no usa funnel", "").replace("funnel de raphael empresas", "")
+    assert "--https=%raphael_ts_port%" in ts and "8443" in ts and "serve reset" not in ts.replace('nunca hace "serve reset"', "")
     assert "raphael_personal_api" in (DESPLIEGUE / "arrancar-personal.bat").read_text()
     assert "arrancar-personal.bat" in (DESPLIEGUE / "arrancar-oculto.vbs").read_text()
 
@@ -369,3 +371,26 @@ def test_ws_phone_sin_operaciones_instalada_cierra_con_motivo(tmp_path, monkeypa
     with TestClient(app) as c, pytest.raises(WebSocketDisconnect) as e, c.websocket_connect("/ws/phone"):
         pass
     assert e.value.code == 1013
+
+
+def test_los_roles_no_muestran_un_modelo_local_que_no_esta_prendido():
+    cfg = cerebro.load(environ={"NVIDIA_API_KEY": NVIDIA})
+    from raphael_core.models import ModelGateway, Usage
+
+    class Espacio:
+        def get(self, *a):
+            return None
+
+        def put(self, *a):
+            pass
+
+    ahora = lambda: __import__("datetime").datetime(2026, 11, 25)  # noqa: E731
+    gw = ModelGateway(cfg, Usage(Espacio(), 10**6, ahora), env={"NVIDIA_API_KEY": NVIDIA})
+    caido = cerebro.probe_local(cfg, local_caido)
+    st = cerebro.status(cfg, caido, gw)
+    assert st["roles"]["ruteo"]["now"].startswith("nvidia")          # local primero, pero apagado: no se muestra
+    assert "ollama" not in str(st["roles"]) and "lmstudio" not in str(st["roles"])
+    st = cerebro.status(cfg, cerebro.probe_local(cfg, local_arriba), gw)
+    assert st["roles"]["ruteo"]["now"].startswith("ollama")
+    sin_nube = ModelGateway(cfg, Usage(Espacio(), 10**6, ahora), env={})
+    assert cerebro.status(cfg, caido, sin_nube)["roles"]["mando"]["now"] == "sin modelo (reglas)"

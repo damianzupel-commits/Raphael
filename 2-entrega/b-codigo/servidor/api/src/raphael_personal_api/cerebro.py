@@ -128,13 +128,26 @@ def local_ready(probe: list[dict]) -> bool:
     return any(p["up"] and p["model_ready"] for p in probe)
 
 
+def live_label(gateway, role: str, probe: list[dict]) -> str:
+    """Qué modelo atendería ahora ese rol de verdad: un proveedor local que no responde (o sin su modelo) no cuenta.
+    Sin ninguno disponible dice «sin modelo (reglas)»; nunca muestra un modelo que no está prendido."""
+    if gateway is None:
+        return ""
+    up = {p["provider"] for p in probe if p["up"] and p["model_ready"]}
+    for c in gateway.candidates(role):
+        if c.spec.is_local and c.name not in up:
+            continue
+        return f"{c.name}: {c.spec.model}"
+    return "sin modelo (reglas)"
+
+
 def status(cfg: ModelsConfig, probe: list[dict], gateway=None) -> dict:
     """Lo que ve el cliente: qué usa cada rol, qué brigadas son privadas y qué pasa con ellas ahora."""
     ready = local_ready(probe)
     roles = {}
     for role in ROLES:
         chain = cfg.roles.get(role, [])
-        roles[role] = {"tiers": chain, "now": gateway.label(role) if gateway is not None else ""}
+        roles[role] = {"tiers": chain, "now": live_label(gateway, role, probe)}
     hints = []
     for p in probe:
         if not p["up"]:

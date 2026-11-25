@@ -9,7 +9,7 @@ la app del celular hablan la misma API, con los mismos datos y la misma charla.
    programada de Windows ("Raphael Personal", al iniciar sesión, sin ventana) y crea `Raphael.url` en el escritorio.
 2. Abrí `http://127.0.0.1:8788/`. Desde esta PC se entra sin clave; la clave de la app está en `.data\personal\clave-inicial.txt`.
 3. Pestaña **Configuración**: pegá lo que tengas (NVIDIA, modelo local, etc.). Se aplica en caliente. Lo que falta no rompe nada.
-4. Celular: `celular-tailscale.bat` (usa `tailscale serve`, solo tu red privada, **no** Funnel, sin abrir puertos). Abrí esa
+4. Celular: `celular-tailscale.bat` (usa `tailscale serve` en el puerto HTTPS 8443, porque el 443 lo usa el Funnel de Empresas; solo tu red privada, **no** Funnel, sin abrir puertos, y nunca hace `serve reset`). Abrí esa
    dirección `https://….ts.net` en el celular con Tailscale prendido y entrá con la clave de la app.
 
 Registro del servidor: `.data\personal\servidor.log`. Sacar el servicio: `instalar-servicio.bat quitar`.
@@ -43,7 +43,7 @@ Sin sesión: `GET /api/v1/health`, `POST /api/v1/login`, `GET /` (la página).
   programada, el acceso directo, `icacls` ni Tailscale. **No probado:** Ollama, LM Studio, NVIDIA ni la voz real.
 - La **app Android** y el **panel de escritorio** todavía son los de Empresas / el del harness: falta apuntarlos a esta API (pendiente
   de esta pieza; la página web ya cubre el uso desde el celular).
-- `tailscale serve --bg 8788` es la sintaxis de versiones recientes; en las viejas cambia (ver el aviso del script).
+- `tailscale serve --bg --https=8443 http://127.0.0.1:8788` es la sintaxis de versiones recientes; en las viejas cambia. La dirección lleva `:8443`.
 - Los ids de las brigadas en `personal.installation.yaml` (`seguridad`, `investigacion`, …) son los probables: una que todavía no
   existe se marca "no instalada" y no rompe el arranque.
 - Corre mientras tu sesión de Windows está abierta; arrancar sin iniciar sesión pediría guardar tu contraseña en la tarea y administrador.
