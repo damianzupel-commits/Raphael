@@ -54,6 +54,7 @@ from widgets import (  # noqa: E402
     spaced,
 )
 
+from config_vista import ConfigView  # noqa: E402
 from raphael_core import CONTRACT_VERSION  # noqa: E402
 
 #: subvistas del Núcleo (herramientas del harness)
@@ -71,6 +72,7 @@ ORCH_LOOK = ("◉", CYAN)
 SECTIONS = {
     "nucleo": ("⚙", CYAN, "Núcleo", "herramientas del harness"),
     "brigadas": ("＋", CYAN, "Agregar brigadas", "catálogo · montar"),
+    "config": ("☰", CYAN, "Configuración", "claves, modelos por brigada, autonomía, apariencia"),
 }
 LEVEL_TAG = {"automatico": "ok", "aprobacion": "warn", "humano": "bad"}
 TASK_TAG = {"en curso": "cyan", "en cola": "muted", "aprobación": "warn"}
@@ -98,7 +100,8 @@ class RaphaelApp(tk.Tk):
         self.body.pack(fill="both", expand=True, pady=(14, 0))
         self.views: dict[str, tk.Frame] = {}
         for key, builder in [("main", self._view_main), ("nucleo", self._view_nucleo),
-                             ("brigadas", self._view_brigades), ("brigada", self._view_brigade)]:
+                             ("brigadas", self._view_brigades), ("brigada", self._view_brigade),
+                             ("config", self._view_config)]:
             f = tk.Frame(self.body, bg=BG)
             f.place(relx=0, rely=0, relwidth=1, relheight=1)
             builder(f)
@@ -167,6 +170,8 @@ class RaphaelApp(tk.Tk):
         self.pill_down.pack(side="left", padx=4)
         Pill(right, ["⚙ Núcleo"], command=lambda: self.show_view("nucleo"), variant="ghost", height=44,
              width=120).pack(side="left", padx=(4, 0))
+        Pill(right, ["☰ Configuración"], command=lambda: self.show_view("config"), variant="ghost", height=44,
+             width=160).pack(side="left", padx=(6, 0))
 
     def _toggle_sample(self) -> None:
         self.app.sample = not self.app.sample
@@ -576,6 +581,16 @@ class RaphaelApp(tk.Tk):
             builder(sub)
             self.tools[key] = sub
         self.show_tool("estado")
+
+    def _view_config(self, f: tk.Frame) -> None:
+        """Configuración dentro de la misma ventana: no abre navegador ni otra página."""
+        self.config_view = ConfigView(f, self.app.config, self.app, on_models=self._config_changed)
+        self.config_view.pack(fill="both", expand=True)
+
+    def _config_changed(self) -> None:
+        aviso = self.app.reload_models()
+        if aviso:
+            self.config_view.decir(aviso, False)
 
     # --- vista Brigadas (catálogo) --------------------------------------------------------------------------------------
     def _view_brigades(self, f: tk.Frame) -> None:
