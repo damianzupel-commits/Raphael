@@ -114,6 +114,22 @@ class FalsaVoz:
         return b"RIFF" + text.encode()
 
 
+class FalsoEnlace:
+    """Hace de `raphael_operaciones.adapters.phone.link`: anota lo que el servidor le pasa."""
+
+    def __init__(self):
+        self.calls = []
+
+    async def register(self, ws):
+        self.calls.append(("register", None))
+
+    async def handle_incoming(self, msg):
+        self.calls.append(("incoming", msg))
+
+    async def unregister(self, ws):
+        self.calls.append(("unregister", None))
+
+
 @pytest.fixture
 def api(tmp_path):
     environ: dict[str, str] = {}
@@ -122,7 +138,8 @@ def api(tmp_path):
     env_file.write_text("# claves\n", encoding="utf-8")
     state = {"fetch": local_caido}
     app = create_app(rt, report=report, tick=False, env_file=env_file, environ=environ, speech=FalsaVoz(),
-                     fetch=lambda u: state["fetch"](u))
+                     fetch=lambda u: state["fetch"](u), phone_link=(enlace := FalsoEnlace()))
+    app.state.enlace = enlace
     app.state.auth.set_key(CLAVE)
     with TestClient(app) as c:
         tok = c.post("/api/v1/login", json={"key": CLAVE, "device": "t"}).json()["token"]
@@ -279,3 +296,74 @@ def test_eventos_y_comandos_para_los_clientes_de_las_brigadas(api):
     sin_brigada = {"brigade": "geolocalizacion", "cook": "mapa", "name": "pines"}
     assert c.post("/api/v1/command", json=sin_brigada).status_code in (400, 404, 422)
     assert c.post("/api/v1/command", json={"brigade": "Mal Id", "cook": "x", "name": "y"}).status_code == 422
+
+
+# --- celular de Operaciones: emparejamiento y /ws/phone ---------------------------------------------------------------------
+def test_emparejar_el_celular_con_un_codigo_de_un_solo_uso(api):
+    c, rt, env_file, environ, state, app = api
+    environ["RAPHAEL_PUBLIC_URL"] = "https://pc.tail1.ts.net"
+    p = c.post("/api/v1/phone/pair").json()
+    assert len(p["code"]) == 8 and p["payload"] == f"raphael://pair?host=https://pc.tail1.ts.net&code={p['code']}"
+    c.headers.pop("Authorization")
+    r = c.post("/api/v1/phone/redeem", json={"code": p["code"].lower(), "device": "celu"})
+    assert r.status_code == 200
+    tok = r.json()["token"]
+    assert c.get("/api/v1/summary", headers={"Authorization": f"Bearer {tok}"}).status_code == 200
+    assert c.post("/api/v1/phone/redeem", json={"code": p["code"]}).status_code == 401      # ya se usó
+
+
+def test_codigo_malo_se_cuenta_se_bloquea_y_avisa_a_seguridad(api):
+    c, rt, *_ = api
+    c.headers.pop("Authorization")
+    estados = [c.post("/api/v1/phone/redeem", json={"code": "ZZZZZZZZ"}).status_code for _ in range(6)]
+    assert estados[:5] == [401] * 5 and estados[5] == 429
+    assert any(e == "acceso.fallido" and d.get("via") == "emparejamiento" for e, d in rt.bus.history)
+
+
+def test_pedir_un_codigo_exige_sesion(api):
+    c, *_ = api
+    c.headers.pop("Authorization")
+    assert c.post("/api/v1/phone/pair").status_code == 401
+
+
+def test_ws_phone_usa_el_enlace_de_operaciones(api):
+    c, rt, env_file, environ, state, app = api
+    with c.websocket_connect("/ws/phone", headers={"Authorization": c.headers["Authorization"]}) as ws:
+        ws.send_text('{"id": "1", "result": 5}')
+    calls = app.state.enlace.calls
+    assert [k for k, _ in calls] == ["register", "incoming", "unregister"] and calls[1][1] == '{"id": "1", "result": 5}'
+
+
+def test_ws_phone_acepta_el_token_en_el_primer_mensaje_y_nunca_en_la_direccion(api):
+    c, rt, env_file, environ, state, app = api
+    tok = c.headers["Authorization"][7:]
+    with TestClient(app) as anon, anon.websocket_connect("/ws/phone") as ws:
+        ws.send_json({"token": tok})
+        ws.send_text("hola")
+    assert [k for k, _ in app.state.enlace.calls] == ["register", "incoming", "unregister"]
+
+
+def test_ws_phone_sin_sesion_se_cierra_sin_tocar_el_enlace_y_avisa(api):
+    from starlette.websockets import WebSocketDisconnect
+
+    c, rt, env_file, environ, state, app = api
+    tok = c.headers["Authorization"][7:]
+    with TestClient(app) as anon:      # un cliente sin la sesión puesta por defecto
+        for ruta, headers in ((f"/ws/phone?token={tok}", {}),            # por la dirección no vale
+                              ("/ws/phone", {"Authorization": "Bearer falso"})):
+            with pytest.raises(WebSocketDisconnect) as e, anon.websocket_connect(ruta, headers=headers) as ws:
+                ws.send_json({"token": "falso"})
+                ws.receive_text()
+            assert e.value.code == 1008
+    assert app.state.enlace.calls == []
+    assert any(e == "acceso.fallido" and d.get("via") == "ws/phone" for e, d in rt.bus.history)
+
+
+def test_ws_phone_sin_operaciones_instalada_cierra_con_motivo(tmp_path):
+    from starlette.websockets import WebSocketDisconnect
+
+    rt, report = boot.start(INSTALACION, tmp_path, dev_dirs=[], environ={}, installed=False)
+    app = create_app(rt, report=report, tick=False, environ={})
+    with TestClient(app) as c, pytest.raises(WebSocketDisconnect) as e, c.websocket_connect("/ws/phone"):
+        pass
+    assert e.value.code == 1013
