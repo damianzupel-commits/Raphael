@@ -8,6 +8,7 @@ version: 1.0.0
 contract: ">=2.1,<3"
 description: OSINT de infraestructura con fuentes públicas. Geolocaliza IPs y dominios, rastrea direcciones cripto y arma las capas del globo (terremotos, vuelos, barcos, satélites). Cada resultado lleva su fuente. Sin clave o sin red avisa y no inventa.
 editions: [personal]
+chief: "raphael_geolocalizacion.spec:SPEC"
 cooks:
   - {id: ip-infra, entry: "raphael_geolocalizacion.cooks.ip_infra:IpInfra", blocking: true}
   - {id: cripto, entry: "raphael_geolocalizacion.cooks.cripto:Cripto", blocking: true}
@@ -15,6 +16,14 @@ cooks:
 actions:
   buscar_shodan: {level: aprobacion, tags: [external, spend], description: "buscar hosts expuestos en Shodan (gasta cupo de la cuenta de Damián)"}
   borrar_pines: {level: aprobacion, tags: [irreversible], description: "borrar los pines guardados del globo"}
+tools:
+  - {name: geo_ip, tags: [external], description: "geolocaliza una IP o dominio público (ip-api; no guarda pin)"}
+  - {name: geo_cripto, tags: [external], description: "rastrea una dirección BTC o ETH en explorers públicos"}
+  - {name: geo_capa, tags: [external], description: "datos de una capa del globo (terremotos, vuelos, barcos…)"}
+  - {name: geo_capas, description: "las capas disponibles y si necesitan clave"}
+  - {name: geo_fuentes, description: "modo (real o simulado) y qué claves están cargadas, sin mostrarlas"}
+  - {name: geo_pines, description: "los pines guardados del globo"}
+  - {name: geo_shodan, level: aprobacion, tags: [external, spend], description: "buscar hosts expuestos en Shodan (gasta cupo de la cuenta de Damián)"}
 events:
   publishes: [pin.agregado]
   consumes: []

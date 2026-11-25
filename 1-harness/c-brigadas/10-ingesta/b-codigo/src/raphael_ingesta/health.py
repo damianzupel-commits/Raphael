@@ -11,6 +11,7 @@ from pathlib import Path
 from raphael_core import Health
 
 from .config import SOURCES, settings_of
+from .tools import make_tools
 
 
 def _problem(config: dict) -> str:
@@ -46,3 +47,5 @@ def validate(ctx) -> None:
     bad = _problem(ctx.config)
     if bad:
         raise ValueError(f"config de ingesta inválida: {bad}")
+    for name, fn in make_tools(ctx).items():
+        ctx.register_tool(name, fn)

@@ -8,6 +8,7 @@ version: 2.0.0
 contract: ">=2.1,<3"
 description: Analiza mercados (USD/JPY de entrada), genera señales con riesgo calculado, prueba la estrategia sobre histórico y vigila. Solo ejecuta una orden si Damián la aprueba, también en demo.
 editions: [personal]
+chief: "raphael_trading.spec:SPEC"
 cooks:
   - {id: signals, entry: "raphael_trading.cooks.signals:Signals"}
   - {id: backtest, entry: "raphael_trading.cooks.backtest:Backtest"}
@@ -16,6 +17,13 @@ actions:
   avisar_senal: {level: automatico, description: "avisarle a Damián que apareció una señal (solo aviso, no opera)"}
   ejecutar_orden: {level: aprobacion, tags: [spend, irreversible, external], description: "mandar una orden al broker (demo o real)"}
   cerrar_posicion: {level: aprobacion, tags: [spend, irreversible, external], description: "cerrar una posición abierta en el broker"}
+tools:
+  - {name: trading_analizar, tags: [external], description: "analiza un instrumento ahora y devuelve la señal con entrada, stop y objetivo (no ejecuta nada)"}
+  - {name: trading_backtest, tags: [external], description: "prueba la estrategia sobre histórico: win rate, expectativa en R y drawdown"}
+  - {name: trading_senales, description: "señales guardadas por la vigilancia (las últimas 20)"}
+  - {name: trading_ordenes, description: "órdenes ya ejecutadas (las últimas 20)"}
+  - {name: trading_posiciones, tags: [external], description: "posiciones abiertas en el broker (solo lee)"}
+  - {name: trading_estado, description: "adaptadores configurados, pausa y órdenes de hoy"}
 events:
   publishes: [trading.senal_nueva, trading.orden_ejecutada, trading.orden_rechazada]
   consumes: []
