@@ -9,6 +9,7 @@ from raphael_core import Health
 
 from .config import ROOT_ENV, repair_config, resolve_root
 from .fixer import is_git_repo
+from .tools import make_tools
 
 
 def _first_error(exc: ValidationError) -> str:
@@ -42,3 +43,5 @@ def validate(ctx) -> None:
         repair_config(ctx.config)
     except ValidationError as exc:
         raise ValueError(f"config inválida: {_first_error(exc)}") from None
+    for name, fn in make_tools(ctx).items():
+        ctx.register_tool(name, fn)
