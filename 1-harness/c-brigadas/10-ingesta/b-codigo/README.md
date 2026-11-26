@@ -1,5 +1,5 @@
 # Ingesta · b-codigo
-La brigada **ingesta** (pieza 10) para el harness v2, versión 2.0.0. Mete conocimiento nuevo al vault desde YouTube, la web y arXiv. Cada nota guarda su origen (URL y fecha).
+La brigada **ingesta** (pieza 10) para el harness v2, versión 2.0.0. Mete conocimiento nuevo al vault desde YouTube, la web, arXiv y fuentes públicas (papers, noticias, datos de conflicto y economía). Cada nota guarda su origen (URL y fecha).
 
 ## Qué hay
 - `manifest.yaml` (y su copia dentro del paquete, que es la fuente: `scripts/sync_manifest.py`): 3 cocineros, 10 acciones con su nivel, 5 comandos de lectura, eventos y config.
@@ -27,3 +27,11 @@ cd ../c-salud/pruebas && python -m pytest        # 73 tests, sin red ni claves
 ruff check ../..
 python ../c-salud/mantenimiento/probar_real.py   # UNA vez en la PC: prueba los adaptadores reales contra la red
 ```
+
+## Fuentes públicas (cocinero `fuentes`)
+Aprobadas por Damián el 2026-11-26 tras leer las condiciones oficiales de cada una (`fichas.py` guarda, por fuente, clave, ritmo, crédito y lo que no figura): OpenAlex, Crossref, GDELT, Reserva Federal (RSS), FRED, Banco Mundial, ReliefWeb, UCDP, MIT News y Harvard Gazette. arXiv sigue en su cocinero y la OECD tiene ficha pero **todavía no adaptador**. **Quedaron afuera por sus términos:** Al Jazeera, BBC, FMI y SIPRI.
+- Un pedido es `ficha:consulta` (`openalex:armed conflict`, `fed:press_all.xml`, `bancomundial:WLD/NY.GDP.MKTP.CD`, `fred:FEDFUNDS`). La consulta por defecto de cada fuente se cambia en la config (`fuentes_consultas`).
+- Solo se guardan título, resumen y metadatos con el **enlace original y el crédito** de la fuente (cada nota lleva `Crédito:`). Nunca texto completo de artículos ni PDF.
+- Cortesía: un pedido por vez, pausa mínima por fuente, tope por corrida (`max_por_lista`, 10 por defecto) y el email de `INGESTA_CONTACTO_EMAIL` donde la fuente lo pide. Sin la clave obligatoria de una fuente no se toca la red.
+- Dejarla corriendo sola es `vigilar` y **pide aprobación** por fuente. La primera tanda se corre una vez y se revisa antes.
+- Los parsers están probados con ejemplos escritos a mano a partir de la documentación; **los pedidos a la red real no se probaron en la nube**: correr `probar_real.py --fuentes` una vez en la PC.

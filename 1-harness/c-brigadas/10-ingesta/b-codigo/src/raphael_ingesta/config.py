@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass, field
 
-SOURCES = ("youtube", "web", "arxiv")
+SOURCES = ("youtube", "web", "arxiv", "fuentes")
 
 DEFAULT_TOPICS = (
     "ciberseguridad ofensiva y defensiva",
@@ -29,6 +29,7 @@ class Settings:
     topics: tuple[str, ...] = DEFAULT_TOPICS  # temas contra los que se etiqueta la relevancia
     arxiv_query: str = DEFAULT_ARXIV_QUERY
     max_text_chars: int = 12000  # lo que se le manda al modelo
+    fuentes_consultas: dict[str, str] = field(default_factory=dict)  # consulta por fuente pública (si no, la de su ficha)
 
     def mode_of(self, source: str) -> str:
         return self.modes.get(source) or self.mode
@@ -47,4 +48,5 @@ def settings_of(config: dict | None) -> Settings:
         topics=tuple(c.get("temas") or DEFAULT_TOPICS),
         arxiv_query=str(c.get("arxiv_busqueda") or DEFAULT_ARXIV_QUERY),
         max_text_chars=int(c.get("max_caracteres", 12000)),
+        fuentes_consultas={str(k): str(v) for k, v in dict(c.get("fuentes_consultas") or {}).items()},
     )

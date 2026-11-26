@@ -131,3 +131,25 @@ class MockArxiv:
             if p[0] == arxiv_id:
                 return self._item(i)
         raise NoContent(f"arXiv no devolvió el paper {arxiv_id}")
+
+
+class MockFuentes:
+    """Cualquier fuente pública simulada: 3 entradas fijas por búsqueda. La ficha `ERRORTECNI` falla con error de red."""
+
+    def __init__(self) -> None:
+        self.calls: list[str] = []
+
+    def search(self, ref: str, limit: int) -> list[Entry]:
+        from ..fichas import ficha_de
+        from .fuentes import _entry
+
+        self.calls.append(ref)
+        try:
+            ficha, q = ficha_de(ref)
+        except ValueError as exc:
+            raise SourceError(str(exc)) from None
+        if "ERRORTECNI" in q:
+            raise SourceError("la fuente falló: error de red simulado", retriable=True)
+        return [_entry(ficha, f"MOCK{i}", f"{ficha.nombre} simulado {i}: {q or ficha.consulta}", f"https://ejemplo.org/{ficha.id}/{i}",
+                       "Texto simulado de una fuente pública sobre conflicto, economía y política.", published="2026-11-20")
+                for i in range(min(limit, 3))]

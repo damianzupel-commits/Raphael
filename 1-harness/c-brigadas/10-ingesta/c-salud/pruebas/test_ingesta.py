@@ -277,7 +277,12 @@ def test_comandos_de_lectura(tmp_path):
     assert [n["fuente"] for n in x.cmd("web", "notas", {"limit": 1}, who="orquestador")] == ["web"]
     assert [n["id"] for n in x.cmd("arxiv", "notas", {"fuente": "youtube"})] == ["youtube:MOCKVID0001"]
     est = x.cmd("youtube", "estado")
-    assert est["notas"] == 2 and est["modos"] == {"youtube": "simulado", "web": "simulado", "arxiv": "simulado"}
+    assert est["notas"] == 2 and est["modos"] == {
+        "youtube": "simulado",
+        "web": "simulado",
+        "arxiv": "simulado",
+        "fuentes": "simulado",
+    }
     assert est["vault"] == str(tmp_path)
 
 
