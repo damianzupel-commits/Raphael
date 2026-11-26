@@ -35,6 +35,7 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--video", help="un video de YouTube con subtítulos")
     ap.add_argument("--lista", help="una lista de reproducción pública")
+    ap.add_argument("--fuentes", action="store_true", help="probar las fuentes públicas (una búsqueda de 2 ítems por fuente)")
     ap.add_argument("--pagina", default="https://example.org/", help="una página web pública")
     args = ap.parse_args()
     results = []
@@ -48,6 +49,12 @@ def main() -> int:
     if args.video:
         vid = video_id_of(args.video)
         results.append(_try("YouTube video", lambda: f"{len(yt.fetch_video(vid).text)} caracteres de transcripción"))
+    if args.fuentes:
+        from raphael_ingesta.adapters.fuentes import sources
+
+        fu = make("fuentes", "real")
+        for fid in sources():
+            results.append(_try(f"fuente {fid}", lambda fid=fid: f"{len(fu.search(fid, 2))} ítems"))
     if not (args.lista or args.video):
         print("  (YouTube no se probó: pasá --video y --lista)")
     print("Resultado:", "todo bien" if all(results) else "hay fallas")

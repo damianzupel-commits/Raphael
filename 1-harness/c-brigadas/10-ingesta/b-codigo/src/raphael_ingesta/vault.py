@@ -13,7 +13,7 @@ from .model import Item
 from .summary import Summary
 from .text import one_line
 
-LABELS = {"youtube": "YouTube", "web": "Web", "arxiv": "arXiv"}
+LABELS = {"youtube": "YouTube", "web": "Web", "arxiv": "arXiv", "fuentes": "Fuentes públicas"}
 
 
 def slug(text: str, n: int = 70) -> str:
@@ -29,7 +29,11 @@ def note_id(item: Item) -> str:
 def build_note(item: Item, s: Summary, when: datetime) -> str:
     """El Markdown de la nota: frontmatter + ## Fuente / ## Resumen / ## Temas clave / ## Relevancia / ## Notas relacionadas."""
     authors = ", ".join(one_line(a, 80) for a in item.authors[:8]) or "desconocidos"
-    tags = ["ingesta", item.source, s.category] + (["baja-relevancia"] if s.low else [])
+    tags = (
+        ["ingesta", item.source, s.category]
+        + ([item.extra["ficha"]] if item.extra.get("ficha") else [])
+        + (["baja-relevancia"] if s.low else [])
+    )
     label = LABELS.get(item.source, item.source)
     fm = [
         "---",
@@ -51,6 +55,7 @@ def build_note(item: Item, s: Summary, when: datetime) -> str:
         f"- Fecha de ingesta: {when.date().isoformat()}",
         f"- Autores o canal: {authors}",
         f"- Publicado: {item.published or 's/f'}",
+        *([f"- Crédito: {item.extra['credito']}"] if item.extra.get("credito") else []),
         f"- Generado con: {'modelo' if s.by == 'modelo' else 'reglas (sin modelo: resumen extractivo, sin evaluar)'}",
         "",
         "## Resumen",

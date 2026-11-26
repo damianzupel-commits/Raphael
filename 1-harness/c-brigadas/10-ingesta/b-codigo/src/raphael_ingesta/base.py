@@ -19,7 +19,7 @@ from raphael_core import Action, ActionError, Cook, Health, Message, Reply
 from raphael_core.contract import Trust
 
 from . import adapters
-from .config import Settings, settings_of
+from .config import SOURCES, Settings, settings_of
 from .model import Item, NoContent, SourceError
 from .summary import summarize
 from .text import one_line
@@ -52,7 +52,7 @@ class Ingester(Cook):
 
     source = ""
     commands = {
-        "notas": "lo ingerido, lo más nuevo primero ({'limit': n, 'fuente': 'youtube'|'web'|'arxiv'} opcionales)",
+        "notas": "lo ingerido, lo más nuevo primero ({'limit': n, 'fuente': 'youtube'|'web'|'arxiv'|'fuentes'} opcionales)",
         "cola": "lo que falta procesar",
         "fallidos": "lo que no se pudo ingerir, con el motivo",
         "vigiladas": "listas y búsquedas que se revisan solas",
@@ -108,7 +108,7 @@ class Ingester(Cook):
         if name == "estado":
             cfg = self.cfg(ctx)
             return {
-                "modos": {s: cfg.mode_of(s) for s in ("youtube", "web", "arxiv")},
+                "modos": {s: cfg.mode_of(s) for s in SOURCES},
                 "vault": cfg.vault_dir or "(sin carpeta: las notas quedan en el almacén de la brigada)",
                 "notas": len(sh.list("notas")),
                 "cola": len(sh.list("cola")),

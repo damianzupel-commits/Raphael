@@ -88,7 +88,8 @@ def test_el_ruteo_manda_cada_pedido_a_su_efimero():
     assert SPEC.routing.classify("resumí https://www.youtube.com/watch?v=abc") == "youtube"
     assert SPEC.routing.classify("traeme los últimos papers de arxiv") == "arxiv"
     assert SPEC.routing.classify("leé https://ejemplo.org/nota") == "web"
-    assert {h.mode for h in SPEC.helpers} == {"youtube", "web", "arxiv"}
+    assert SPEC.routing.classify("buscame lo nuevo en openalex") == "fuentes"
+    assert {h.mode for h in SPEC.helpers} == {"youtube", "web", "arxiv", "fuentes"}
 
 
 def test_una_tool_de_lectura_corre_sola_y_el_resultado_llega_al_modelo():

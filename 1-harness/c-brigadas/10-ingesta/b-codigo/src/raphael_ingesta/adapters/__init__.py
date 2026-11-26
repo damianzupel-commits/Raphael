@@ -22,12 +22,16 @@ class ArxivAdapter(Protocol):
     def fetch(self, arxiv_id: str) -> Item: ...
 
 
+class FuentesAdapter(Protocol):
+    def search(self, ref: str, limit: int) -> list[Entry]: ...  # ref = "ficha:consulta"
+
+
 def make(source: str, mode: str):
     """El adaptador de una fuente en el modo pedido. Los reales importan sus librerías recién al usarse."""
     if mode == "simulado":
         from . import mock
 
-        return {"youtube": mock.MockYouTube, "web": mock.MockWeb, "arxiv": mock.MockArxiv}[source]()
+        return {"youtube": mock.MockYouTube, "web": mock.MockWeb, "arxiv": mock.MockArxiv, "fuentes": mock.MockFuentes}[source]()
     if source == "youtube":
         from .youtube import RealYouTube
 
@@ -36,6 +40,10 @@ def make(source: str, mode: str):
         from .web import RealWeb
 
         return RealWeb()
+    if source == "fuentes":
+        from .fuentes import RealFuentes
+
+        return RealFuentes()
     from .arxiv import RealArxiv
 
     return RealArxiv()

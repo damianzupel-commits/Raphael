@@ -11,15 +11,25 @@ from . import adapters
 from .adapters.arxiv import arxiv_id_of
 from .adapters.youtube import video_id_of
 from .config import SOURCES, settings_of
+from .fichas import FICHAS
 from .model import Entry, Item, SourceError
 
-TEXTO_MAX = 4000   # lo que el modelo del efímero ve de un texto: alcanza para resumir y no revienta el contexto
+TEXTO_MAX = 4000  # lo que el modelo del efímero ve de un texto: alcanza para resumir y no revienta el contexto
 
 
 def _item(i: Item) -> dict:
     texto = i.text or ""
-    return {"ok": True, "fuente": i.source, "titulo": i.title, "origen": i.url, "autores": i.authors, "fecha": i.published,
-            "texto": texto[:TEXTO_MAX], "texto_truncado": len(texto) > TEXTO_MAX, "guardado": False}
+    return {
+        "ok": True,
+        "fuente": i.source,
+        "titulo": i.title,
+        "origen": i.url,
+        "autores": i.authors,
+        "fecha": i.published,
+        "texto": texto[:TEXTO_MAX],
+        "texto_truncado": len(texto) > TEXTO_MAX,
+        "guardado": False,
+    }
 
 
 def _entry(e: Entry) -> dict:
@@ -64,21 +74,53 @@ def make_tools(ctx) -> dict:
     def ingesta_buscar_arxiv(query: str = "") -> dict:
         """Busca los papers más nuevos de una búsqueda de arXiv (por defecto la de la config). No encola nada."""
         q = str(query).strip() or cfg.arxiv_query
-        return _seguro(lambda: {"ok": True, "busqueda": q,
-                                "papers": [_entry(e) for e in _ad("arxiv").search(q, cfg.max_per_list)]})
+        return _seguro(
+            lambda: {"ok": True, "busqueda": q, "papers": [_entry(e) for e in _ad("arxiv").search(q, cfg.max_per_list)]}
+        )
+
+    def ingesta_fuentes() -> list[dict]:
+        """Las fuentes públicas disponibles: qué trae cada una, qué clave pide y qué hay que citar."""
+        return [
+            {
+                "id": f.id,
+                "nombre": f.nombre,
+                "consulta_por_defecto": cfg.fuentes_consultas.get(f.id) or f.consulta,
+                "claves": list(f.claves),
+                "credito": f.credito,
+                "nota": f.nota,
+                "lista": f.listo,
+            }
+            for f in FICHAS.values()
+        ]
+
+    def ingesta_buscar_fuente(ref: str) -> dict:
+        """Busca lo más nuevo de una fuente pública (`ficha:consulta`, ej. `openalex:armed conflict`). No encola ni guarda."""
+        return _seguro(
+            lambda: {
+                "ok": True,
+                "busqueda": str(ref).strip(),
+                "items": [
+                    {**_entry(e), "credito": (e.item.extra if e.item else {}).get("credito", "")}
+                    for e in _ad("fuentes").search(str(ref).strip(), cfg.max_per_list)
+                ],
+            }
+        )
 
     def ingesta_notas(limit: int = 20, fuente: str = "") -> list[dict]:
         """Lo ingerido, lo más nuevo primero. `fuente`: youtube, web o arxiv."""
         notas = [n for n in ctx.shared.list("notas") if not fuente or n["fuente"] == fuente]
         notas.reverse()
         notas.sort(key=lambda n: n["fecha"], reverse=True)
-        return [{k: n[k] for k in ("id", "titulo", "origen", "fecha", "fuente", "categoria", "por", "veredicto")}
-                for n in notas[: min(max(int(limit), 1), 100)]]
+        return [
+            {k: n[k] for k in ("id", "titulo", "origen", "fecha", "fuente", "categoria", "por", "veredicto")}
+            for n in notas[: min(max(int(limit), 1), 100)]
+        ]
 
     def ingesta_cola() -> list[dict]:
         """Lo que falta procesar."""
-        return [{k: j.get(k) for k in ("id", "fuente", "titulo", "estado", "intentos", "no_antes")}
-                for j in ctx.shared.list("cola")]
+        return [
+            {k: j.get(k) for k in ("id", "fuente", "titulo", "estado", "intentos", "no_antes")} for j in ctx.shared.list("cola")
+        ]
 
     def ingesta_fallidos() -> list[dict]:
         """Lo que no se pudo ingerir, con el motivo."""
@@ -91,10 +133,28 @@ def make_tools(ctx) -> dict:
     def ingesta_estado() -> dict:
         """Modo de cada fuente, carpeta del vault y cuánto hay de cada cosa."""
         sh = ctx.shared
-        return {"modos": {s: cfg.mode_of(s) for s in SOURCES},
-                "vault": cfg.vault_dir or "(sin carpeta: las notas quedan en el almacén de la brigada)",
-                "notas": len(sh.list("notas")), "cola": len(sh.list("cola")), "fallidos": len(sh.list("fallidos")),
-                "vigiladas": len(sh.list("vigiladas"))}
+        return {
+            "modos": {s: cfg.mode_of(s) for s in SOURCES},
+            "vault": cfg.vault_dir or "(sin carpeta: las notas quedan en el almacén de la brigada)",
+            "notas": len(sh.list("notas")),
+            "cola": len(sh.list("cola")),
+            "fallidos": len(sh.list("fallidos")),
+            "vigiladas": len(sh.list("vigiladas")),
+        }
 
-    return {f.__name__: f for f in (ingesta_leer_pagina, ingesta_leer_video, ingesta_leer_paper, ingesta_buscar_arxiv,
-                                    ingesta_notas, ingesta_cola, ingesta_fallidos, ingesta_vigiladas, ingesta_estado)}
+    return {
+        f.__name__: f
+        for f in (
+            ingesta_leer_pagina,
+            ingesta_leer_video,
+            ingesta_leer_paper,
+            ingesta_buscar_arxiv,
+            ingesta_fuentes,
+            ingesta_buscar_fuente,
+            ingesta_notas,
+            ingesta_cola,
+            ingesta_fallidos,
+            ingesta_vigiladas,
+            ingesta_estado,
+        )
+    }
