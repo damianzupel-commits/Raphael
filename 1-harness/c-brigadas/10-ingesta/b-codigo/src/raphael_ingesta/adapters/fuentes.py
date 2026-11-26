@@ -279,16 +279,23 @@ class RealFuentes:
         if wait > 0:
             self._sleep(wait)
         self._last[ficha.id] = self._clock()
-        ua = "RaphaelIngesta/2.0 (asistente personal" + (f"; contacto: {self._email()}" if self._email() else "") + ")"
+        # formato "compatible" que aceptan los firewalls de los sitios y sigue diciendo quién es el cliente
+        ua = (
+            "Mozilla/5.0 (compatible; RaphaelIngesta/2.0; asistente personal"
+            + (f"; contacto: {self._email()}" if self._email() else "")
+            + ")"
+        )
         return self._get(url, {"User-Agent": ua, **(headers or {})})
 
     def _json(self, ficha: Ficha, url: str, headers: dict | None = None):
         import json
 
+        raw = self._pedir(ficha, url, headers)
         try:
-            return json.loads(self._pedir(ficha, url, headers))
+            return json.loads(raw)
         except ValueError:
-            raise SourceError(f"{ficha.nombre} no devolvió JSON válido") from None
+            muestra = " ".join(raw.split())[:100]
+            raise SourceError(f"{ficha.nombre} no devolvió JSON válido (empieza con: {muestra!r})") from None
 
     def search(self, ref: str, limit: int) -> list[Entry]:
         try:
@@ -320,6 +327,8 @@ class RealFuentes:
         return parse_crossref(f, self._json(f, f"https://api.crossref.org/works?{urlencode(p)}"))
 
     def _gdelt(self, f: Ficha, q: str, n: int):
+        if " OR " in q and not q.startswith("("):
+            q = f"({q})"  # GDELT exige paréntesis alrededor de los OR
         p = {"query": q, "mode": "artlist", "format": "json", "maxrecords": min(n, 250), "sort": "datedesc"}
         return parse_gdelt(f, self._json(f, f"https://api.gdeltproject.org/api/v2/doc/doc?{urlencode(p)}"))
 

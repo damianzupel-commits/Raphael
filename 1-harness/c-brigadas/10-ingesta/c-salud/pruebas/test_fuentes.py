@@ -220,3 +220,23 @@ def test_un_tercero_no_dispara_ingestas_y_un_error_de_la_fuente_se_dice():
     x.stranger("buscame lo más nuevo en openalex")
     assert x.ctx("fuentes").shared.list("cola") == [] and x.pending("buscar_fuente") == []
     assert "falló" in x.act("fuentes", "buscar_fuente", {"ref": "gdelt:ERRORTECNI"})["text"]
+
+
+def test_gdelt_agrupa_los_or_y_un_json_roto_muestra_como_empieza():
+    log: list = []
+    r = RealFuentes(
+        get=lambda u, h: log.append(u) or "Please limit requests to one every 5 seconds", env={}, sleep=lambda s: None
+    )
+    try:
+        r.search("gdelt:war OR conflict", 3)
+        raise AssertionError("tenía que fallar")
+    except SourceError as exc:
+        assert "Please limit" in exc.reason
+    assert "query=%28war+OR+conflict%29" in log[0]
+
+
+def test_el_user_agent_es_compatible_e_identifica_al_cliente():
+    log: list = []
+    _real({"INGESTA_CONTACTO_EMAIL": "yo@ejemplo.org"}, log).search("crossref:war", 3)
+    ua = log[0][1]["User-Agent"]
+    assert ua.startswith("Mozilla/5.0 (compatible; RaphaelIngesta/2.0")
