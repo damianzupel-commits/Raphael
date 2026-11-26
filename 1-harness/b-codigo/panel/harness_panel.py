@@ -101,7 +101,7 @@ class RaphaelApp(tk.Tk):
         self.after(60_000, self._tick)
 
     def _build_ui(self) -> None:
-        root = self._root = tk.Frame(self, bg=BG)
+        root = self._raiz = tk.Frame(self, bg=BG)
         root.pack(fill="both", expand=True, padx=24, pady=(18, 16))
         self._header(root)
         self._top_band(root)
@@ -127,7 +127,7 @@ class RaphaelApp(tk.Tk):
             aviso = self.app.reload()
         except Exception as e:  # noqa: BLE001 - un error al recargar no tumba la ventana
             aviso = f"No se pudo recargar: {e}"
-        self._root.destroy()
+        self._raiz.destroy()
         self._build_ui()
         if scope != ORCHESTRATOR and self.app.brigade(scope) is None:
             scope = ORCHESTRATOR
