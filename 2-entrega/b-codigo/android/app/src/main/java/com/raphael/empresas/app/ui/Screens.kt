@@ -88,7 +88,7 @@ fun TodayScreen(vm: AppViewModel) {
                 colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Cyan, unfocusedBorderColor = Cyan.copy(alpha = 0.5f),
                     focusedContainerColor = InputBg, unfocusedContainerColor = InputBg, cursorColor = Cyan))
             Spacer(Modifier.width(8.dp))
-            Button(onClick = { if (text.isNotBlank()) vm.ask(text.trim()); text = "" }, enabled = !vm.busy,
+            Button(onClick = { if (text.isNotBlank()) { vm.ask(text.trim()); text = "" } }, enabled = !vm.chatting && text.isNotBlank(),
                 shape = RoundedCornerShape(12.dp), contentPadding = PaddingValues(horizontal = 16.dp, vertical = 14.dp)) {
                 Text("Enviar", fontWeight = FontWeight.Bold)
             }
