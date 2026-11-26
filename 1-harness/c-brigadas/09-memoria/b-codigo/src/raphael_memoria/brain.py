@@ -28,8 +28,14 @@ ANTICIP_WEIGHT = 0.5
 MIRROR_DIR = "12-Memoria-Raphael"
 
 
+#: tope del texto que se manda a embeber. Los modelos de embeddings locales tienen una ventana corta (nomic en LM Studio,
+#: 2048 tokens por defecto) y una nota más larga falla o diluye el vector; con el tope entra la parte de arriba (SUPUESTO:
+#: ~4 caracteres por token en español, sin medir contra el modelo real).
+EMBED_MAX_CHARS = 6000
+
+
 def embedding_text(n: Note) -> str:
-    return f"{n.title}\n{n.category}\n{' '.join(n.tags)}\n{n.content}"
+    return f"{n.title}\n{n.category}\n{' '.join(n.tags)}\n{n.content}"[:EMBED_MAX_CHARS]
 
 
 class Brain:
@@ -44,7 +50,7 @@ class Brain:
     def from_ctx(cls, ctx, *, transport=None, env=None) -> Brain:
         """Arma el Cerebro de una instalación con el contexto de un cocinero. Los datos van al espacio COMÚN de la
         brigada (los ven los cuatro cocineros); el modelo va siempre como pedido privado."""
-        cfg = memoria_config(ctx.config)
+        cfg = memoria_config(ctx.config, env)
         now = ctx.now
         vault = Vault(vault_path(cfg, env), now=now, excluded_dirs=cfg.vault.excluded_dirs)
         embedder = build_embedder(cfg, env, transport=transport)
@@ -55,6 +61,10 @@ class Brain:
                     ai_available=lambda: ctx.has_ai("cocinero"))
         brain.episodes._mirror = brain._mirror_episode
         return brain
+
+    def is_sensitive(self, note_id: str) -> bool:
+        """¿La nota vive en una carpeta marcada como sensible? Es solo una marca: no impide leerla."""
+        return note_id.split("/", 1)[0] in set(self.cfg.vault.sensitive_dirs)
 
     # --- estado y avisos ---------------------------------------------------------------------------------------------
     def has_model(self) -> bool:
@@ -71,7 +81,13 @@ class Brain:
             degraded = self.embedder.last_error or "no hay embeddings"
         elif not vectors and notes:
             degraded = "el índice de embeddings está vacío: correr `reindexar`"
+        folders: dict[str, int] = {}
+        for n in notes:
+            folders[n.folder] = folders.get(n.folder, 0) + 1
+        marked = {d: folders.get(d, 0) for d in self.cfg.vault.sensitive_dirs}
         return {"vault": str(self.vault.root), "notas": len(notes), "con_vector": len(vectors),
+                "carpetas": dict(sorted(folders.items())),
+                "sensibles": {"carpetas": marked, "nota": "marcadas, no bloqueadas: se leen igual y llevan sensible=true"},
                 "modelo_local": self.has_model(),
                 "embeddings": {"proveedor": self.embedder.name, "modelo": self.embedder.model, "responde": probe is not None},
                 "modo_busqueda": "semantica" if degraded is None else "palabra-clave", "aviso": degraded}

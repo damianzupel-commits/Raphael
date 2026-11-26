@@ -10,9 +10,10 @@ Portado de `app/obsidian/vault.py` de JarvisRemote, sin estado global: el vault 
 from __future__ import annotations
 
 import re
+import threading
 import zipfile
 from collections.abc import Callable, Iterator
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import datetime
 from pathlib import Path
 
@@ -23,6 +24,12 @@ from .textutil import slugify, tokens
 AUTHORS = ("jarvis", "human")
 _WIKILINK = re.compile(r"\[\[([^\]|#]+)(?:[|#][^\]]*)?\]\]")
 _FRONT = re.compile(r"\A---\r?\n(.*?)\r?\n---\r?\n?(.*)\Z", re.DOTALL)
+
+# Cache de notas ya leídas, por (vault, archivo) y validada con la fecha de modificación y el tamaño: con un vault de cientos
+# de notas (Vault-Fenix: ~900) releer y parsear todo en cada consulta es lo que más pesa. Es de módulo a propósito: las tools
+# arman un Vault nuevo en cada llamada. Un archivo que cambia (por Obsidian o por otro programa) se vuelve a leer solo.
+_CACHE: dict[tuple[str, str], tuple[int, int, Note]] = {}
+_CACHE_LOCK = threading.Lock()
 
 
 @dataclass
@@ -85,6 +92,22 @@ class Vault:
 
     # --- leer
     def _read(self, path: Path) -> Note:
+        key = (str(self.root), str(path))
+        st = path.stat()
+        with _CACHE_LOCK:
+            hit = _CACHE.get(key)
+        if hit and hit[0] == st.st_mtime_ns and hit[1] == st.st_size:
+            return replace(hit[2], tags=list(hit[2].tags), extra=dict(hit[2].extra))
+        note = self._parse(path)
+        with _CACHE_LOCK:
+            _CACHE[key] = (st.st_mtime_ns, st.st_size, note)
+        return replace(note, tags=list(note.tags), extra=dict(note.extra))
+
+    def _forget(self, path: Path) -> None:
+        with _CACHE_LOCK:
+            _CACHE.pop((str(self.root), str(path)), None)
+
+    def _parse(self, path: Path) -> Note:
         text = path.read_text(encoding="utf-8")
         m = _FRONT.match(text)
         meta: dict = {}
@@ -161,6 +184,7 @@ class Vault:
         path.parent.mkdir(parents=True, exist_ok=True)
         head = yaml.safe_dump(meta, allow_unicode=True, sort_keys=False).strip()
         path.write_text(f"---\n{head}\n---\n{content}", encoding="utf-8")
+        self._forget(path)                              # dos escrituras seguidas pueden compartir fecha y tamaño
         return self._read(path)
 
     def delete(self, note_id: str) -> None:
@@ -168,6 +192,7 @@ class Vault:
         if not path.is_file():
             raise FileNotFoundError(f"la nota '{note_id}' no existe")
         path.unlink()
+        self._forget(path)
 
     # --- buscar y relacionar
     def keyword_score(self, query_words: set[str], note: Note) -> int:
