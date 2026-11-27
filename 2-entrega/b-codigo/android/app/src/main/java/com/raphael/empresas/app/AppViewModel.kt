@@ -27,6 +27,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         private set
     var busy by mutableStateOf(false)
         private set
+    /** Solo el chat: mientras espera una respuesta del orquestador. Aparte de `busy` para que una carga lenta de fondo no deje el botón Enviar gris. */
+    var chatting by mutableStateOf(false)
+        private set
     var message by mutableStateOf<String?>(null)
     var tab by mutableStateOf(Tab.HOY)
 
@@ -72,15 +75,19 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             try {
                 block()
             } catch (e: ApiError) {
-                if (e.unauthorized) {
-                    prefs.clearSession()
-                    loggedIn = false
-                }
-                message = e.message
+                onApiError(e)
             } finally {
                 busy = false
             }
         }
+    }
+
+    private fun onApiError(e: ApiError) {
+        if (e.unauthorized) {
+            prefs.clearSession()
+            loggedIn = false
+        }
+        message = e.message
     }
 
     // --- sesión
@@ -163,8 +170,20 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         if (personal) panel = api.panel()
         pending.replace(api.pending())
         prefs.lastNotified = maxOf(prefs.lastNotified, pending.maxOfOrNull { it.id } ?: 0)
-        if (chat.isEmpty()) askNow(api, if (personal) "buen día, ¿qué tengo para decidir hoy?" else "buen día, ¿qué tareas tenemos hoy?",
-            showOwner = false)
+        if (chat.isEmpty()) greet()
+    }
+
+    /** El saludo inicial tarda lo que tarde el modelo: corre aparte, sin trabar la barra de carga ni el botón Enviar. */
+    private fun greet() {
+        val api = prefs.api()
+        viewModelScope.launch {
+            try {
+                if (chat.isEmpty()) askNow(api, if (personal) "buen día, ¿qué tengo para decidir hoy?" else "buen día, ¿qué tareas tenemos hoy?",
+                    showOwner = false)
+            } catch (e: ApiError) {
+                if (e.unauthorized) onApiError(e) // si solo tardó o falló, no molesta: la persona ya puede escribir
+            }
+        }
     }
 
     fun loadPending() = run {
@@ -241,7 +260,18 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     // --- Secretaria
-    fun ask(text: String) = run { askNow(prefs.api(), text, showOwner = true) }
+    fun ask(text: String) {
+        viewModelScope.launch {
+            chatting = true
+            try {
+                askNow(prefs.api(), text, showOwner = true)
+            } catch (e: ApiError) {
+                onApiError(e)
+            } finally {
+                chatting = false
+            }
+        }
+    }
 
     private suspend fun askNow(api: Api, text: String, showOwner: Boolean) {
         if (showOwner) chat.add(ChatEntry(true, text))
