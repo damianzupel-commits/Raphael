@@ -33,6 +33,22 @@ nav{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}nav button{flex:1}nav butto
 <nav id="tabs"></nav>
 <section id="t-hablar" class="card"><div id="log"></div>
 <div class="row" style="margin-top:10px"><input id="say" placeholder="Decime qué necesitás" autocomplete="off"><button id="send">Enviar</button></div></section>
+<section id="t-campo" class="card hide"><h2>Campo</h2>
+<div class="row"><select id="cneg" aria-label="Negocio"></select><button id="cnew" class="sec mini">Nuevo</button></div>
+<div id="cnewrow" class="row hide" style="margin-top:8px"><input id="cnn" placeholder="Nombre del negocio"><button id="cmk" class="mini">Crear</button></div>
+<div id="ctemas" class="row" style="flex-wrap:wrap;margin-top:10px"></div>
+<textarea id="ctxt" rows="3" placeholder="Qué viste (tocá un tema o dejá en Auto)" style="margin-top:8px"></textarea>
+<div class="row" style="margin-top:8px;flex-wrap:wrap"><button id="csave">Guardar nota</button><button id="cmic" class="sec">🎤 Grabar</button>
+<label class="sec" style="display:inline-block;margin:0;padding:10px 16px;border:1px solid var(--bd);border-radius:8px;cursor:pointer;font-weight:600">📷 Foto<input id="cfoto" type="file" accept="image/*" capture="environment" style="display:none"></label></div>
+<div id="cst" class="mut" style="margin-top:6px"></div>
+<h2 style="margin-top:16px">Hoy</h2><div id="choy"></div>
+<h2 style="margin-top:16px">Cierre del día <small>(las 3 cosas que más tiempo o plata hicieron perder)</small></h2>
+<input id="cc1" placeholder="1"><input id="cc2" placeholder="2" style="margin-top:6px"><input id="cc3" placeholder="3" style="margin-top:6px">
+<div class="row" style="margin-top:8px;flex-wrap:wrap"><button id="ccl">Guardar cierre</button><button id="cres" class="sec">Resumen del día</button><button id="cresia" class="sec">Resumen con IA local</button></div>
+<h2 style="margin-top:16px">Preguntarle al expediente</h2>
+<div class="row"><input id="cq" placeholder="¿cuántas veces faltó stock?"><button id="cask">Preguntar</button></div>
+<div class="row" style="margin-top:8px"><button id="cexp" class="sec">Ver expediente</button><button id="cdl" class="sec">Bajar .md</button></div>
+<pre id="cout" class="mut" style="white-space:pre-wrap;margin-top:10px"></pre></section>
 <section id="t-pend" class="card hide"><h2>Pendientes de tu aprobación</h2><div id="pend"></div></section>
 <section id="t-cerebro" class="card hide"><h2>Cerebro</h2><div id="brain"></div></section>
 <div id="t-config" class="hide"><section class="card"><h2>Estado</h2><div id="checks"></div></section><div id="groups"></div>
@@ -43,7 +59,7 @@ nav{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}nav button{flex:1}nav butto
 <button id="chk" class="sec">Cambiar clave</button></section></div>
 <p><button id="out" class="sec">Salir</button></p></div>
 <script>
-const TABS=[["hablar","Hablar"],["pend","Pendientes"],["cerebro","Cerebro"],["config","Configuración"]];
+const TABS=[["hablar","Hablar"],["campo","Campo"],["pend","Pendientes"],["cerebro","Cerebro"],["config","Configuración"]];
 const G={ia:"Inteligencia artificial (nube)",local:"Modelo local (Ollama / LM Studio)",roles:"Qué modelo usa cada rol",red:"Celular",voz:"Voz",cuentas:"Otras cuentas"};
 const $=id=>document.getElementById(id);let tok=null;try{tok=sessionStorage.getItem("t")}catch(e){}
 function say(t,ok){const m=$("msg");m.textContent=t;m.className=ok?"g":"e";clearTimeout(say.t);say.t=setTimeout(()=>m.className="",6000)}
@@ -55,7 +71,7 @@ function show(on){$("login").classList.toggle("hide",on);$("app").classList.togg
 function el(t,a,...k){const e=document.createElement(t);Object.assign(e,a||{});k.forEach(x=>e.append(x));return e}
 function tab(n){TABS.forEach(([k])=>{const s=$(k==="config"?"t-config":"t-"+k);s.classList.toggle("hide",k!==n)});
  [...$("tabs").children].forEach((b,i)=>b.classList.toggle("on",TABS[i][0]===n));
- if(n==="pend")loadPend();if(n==="cerebro")loadBrain();if(n==="config")loadCfg()}
+ if(n==="campo")loadCampo();if(n==="pend")loadPend();if(n==="cerebro")loadBrain();if(n==="config")loadCfg()}
 TABS.forEach(([k,t])=>{const b=el("button",{textContent:t});b.onclick=()=>tab(k);$("tabs").append(b)});
 function bub(t,me){const b=el("div",{className:"b "+(me?"me":"ra")});b.textContent=t;$("log").append(b);$("log").scrollTop=1e9}
 async function send(){const t=$("say").value.trim();if(!t)return;$("say").value="";bub(t,true);
@@ -105,6 +121,45 @@ $("pairb").onclick=async()=>{try{const d=await api("/api/v1/phone/pair",{method:
  else p.append(el("div",{className:"st aviso",textContent:"Sin imagen de QR (falta instalar segno). Escribí el código en la app. Enlace: "+d.payload}));
  if(!d.host)p.append(el("div",{className:"st aviso",textContent:"Falta la dirección para el celular (Configuración → Celular): el QR no lleva servidor."}))}catch(e){say(e.message)}};
 $("out").onclick=async()=>{try{await api("/api/v1/logout",{method:"POST"})}catch(e){}tok=null;try{sessionStorage.removeItem("t")}catch(e){}show(false)};
+
+const C={tema:"auto",rec:null,temas:{}};
+async function capi(p,o={},raw){const h={};if(tok)h.Authorization="Bearer "+tok;if(!raw)h["Content-Type"]="application/json";Object.assign(h,o.headers||{});
+ const r=await fetch(p,{...o,headers:h});if(r.status===401){tok=null;show(false)}const ct=r.headers.get("content-type")||"";
+ const d=ct.includes("json")?await r.json():await r.text();if(!r.ok)throw new Error((d&&d.detail)||("Error "+r.status));return d}
+const cn=()=>$("cneg").value;const hoy=()=>new Date().toLocaleDateString("sv");
+function cmsg(t){$("cst").textContent=t}
+async function loadCampo(sel){try{const d=await capi("/api/v1/campo");C.temas=d.temas;const s=$("cneg");const cur=sel||s.value;s.replaceChildren();
+ d.negocios.forEach(n=>s.append(el("option",{value:n.id,textContent:n.nombre})));if(cur)s.value=cur;
+ if(!d.negocios.length){cmsg("Creá el negocio con «Nuevo» para empezar.");return}
+ const t=$("ctemas");t.replaceChildren();[["auto","Auto"],...Object.entries(d.temas)].forEach(([k,v])=>{const b=el("button",{className:"mini "+(k===C.tema?"":"sec"),textContent:v});b.onclick=()=>{C.tema=k;loadCampo()};t.append(b)});
+ if(!d.voz)cmsg("Sin voz instalada: los audios se guardan y se transcriben cuando haya voz.");loadHoy()}catch(e){say(e.message)}}
+async function loadHoy(){if(!cn())return;try{const d=await capi("/api/v1/campo/notas?negocio="+cn()+"&dia="+hoy());const h=$("choy");h.replaceChildren();
+ if(!d.notas.length)h.append(el("p",{className:"mut",textContent:"Todavía no anotaste nada hoy."}));
+ d.notas.slice().reverse().forEach(n=>{const ic={texto:"",voz:"🎤 ",foto:"📷 "}[n.fuente];
+  h.append(el("div",{className:"st",textContent:n.hora+" · "+(C.temas[n.tema]||n.tema)+" · "+ic+(n.texto||(n.fuente==="voz"?"(audio sin transcribir)":"(foto)"))}))})}catch(e){say(e.message)}}
+$("cneg").onchange=loadHoy;$("cnew").onclick=()=>$("cnewrow").classList.toggle("hide");
+$("cmk").onclick=async()=>{try{const n=await capi("/api/v1/campo/negocios",{method:"POST",body:JSON.stringify({nombre:$("cnn").value})});$("cnn").value="";$("cnewrow").classList.add("hide");loadCampo(n.id)}catch(e){say(e.message)}};
+$("csave").onclick=async()=>{const t=$("ctxt").value.trim();if(!t)return say("Escribí algo primero.");
+ try{await capi("/api/v1/campo/nota",{method:"POST",body:JSON.stringify({negocio:cn(),texto:t,tema:C.tema})});$("ctxt").value="";say("Guardada.",true);loadHoy()}catch(e){say(e.message)}};
+$("cfoto").onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const q="?negocio="+cn()+"&tema="+C.tema+"&texto="+encodeURIComponent($("ctxt").value.trim());
+ await capi("/api/v1/campo/foto"+q,{method:"POST",body:f,headers:{"Content-Type":f.type||"image/jpeg"}},true);$("ctxt").value="";say("Foto guardada.",true);loadHoy()}catch(x){say(x.message)}e.target.value=""};
+$("cmic").onclick=async()=>{if(C.rec){C.rec.stop();return}
+ if(!navigator.mediaDevices||!window.MediaRecorder)return say("Este navegador no puede grabar (necesita https o localhost).");
+ try{const st=await navigator.mediaDevices.getUserMedia({audio:true});const ch=[];const r=new MediaRecorder(st);C.rec=r;
+  r.ondataavailable=e=>ch.push(e.data);$("cmic").textContent="⏹ Parar";
+  r.onstop=async()=>{st.getTracks().forEach(t=>t.stop());C.rec=null;$("cmic").textContent="🎤 Grabar";const b=new Blob(ch,{type:r.mimeType||"audio/webm"});
+   try{const n=await capi("/api/v1/campo/voz?negocio="+cn()+"&tema="+C.tema,{method:"POST",body:b,headers:{"Content-Type":b.type}},true);
+    say(n.aviso||"Audio guardado y transcripto.",!n.aviso);loadHoy()}catch(x){say(x.message)}};r.start()}catch(x){say("No pude usar el micrófono: "+x.message)}};
+$("ccl").onclick=async()=>{const cosas=["cc1","cc2","cc3"].map(i=>$(i).value.trim()).filter(Boolean);if(!cosas.length)return say("Escribí al menos una.");
+ try{await capi("/api/v1/campo/cierre",{method:"POST",body:JSON.stringify({negocio:cn(),cosas})});["cc1","cc2","cc3"].forEach(i=>$(i).value="");say("Cierre guardado.",true);loadHoy()}catch(e){say(e.message)}};
+function verRes(r){const L=[r.dia+" · "+r.total+" nota(s)"];if(r.ia)L.push("","Según la IA local:",r.texto_ia);
+ else L.push("","Pérdidas ("+r.origen_perdidas+"):",...r.perdidas.map((p,i)=>(i+1)+". "+p));L.push("","Mirar mañana:",...r.mirar_manana.map(m=>"- "+m));$("cout").textContent=L.join("\n")}
+$("cres").onclick=async()=>{try{verRes(await capi("/api/v1/campo/resumen?negocio="+cn()))}catch(e){say(e.message)}};
+$("cresia").onclick=async()=>{try{cmsg("Pensando en tu PC…");const r=await capi("/api/v1/campo/resumen?ia=true&negocio="+cn());cmsg(r.ia?"":"Sin modelo local prendido: resumen por reglas.");verRes(r)}catch(e){say(e.message)}};
+$("cask").onclick=async()=>{const q=$("cq").value.trim();if(!q)return;try{const r=await capi("/api/v1/campo/preguntar",{method:"POST",body:JSON.stringify({negocio:cn(),pregunta:q})});
+ const L=[r.respuesta,"","Coincidencias: "+r.coincidencias+(r.ia?"":" (sin IA local: solo búsqueda)")];Object.entries(r.por_dia).forEach(([d,n])=>L.push("  "+d+": "+n));$("cout").textContent=L.join("\n")}catch(e){say(e.message)}};
+$("cexp").onclick=async()=>{try{$("cout").textContent=await capi("/api/v1/campo/expediente?negocio="+cn())}catch(e){say(e.message)}};
+$("cdl").onclick=async()=>{try{const t=await capi("/api/v1/campo/expediente?negocio="+cn());const a=el("a",{href:URL.createObjectURL(new Blob([t],{type:"text/markdown"})),download:"expediente-"+cn()+".md"});a.click()}catch(e){say(e.message)}};
 enter();
 </script></main></body></html>
 """
