@@ -28,7 +28,7 @@ from raphael_empresas_api import configuracion
 from raphael_empresas_api.app import ConfigIn, LoginIn, NewKeyIn, RejectIn, ResolveIn, is_same_pc
 from raphael_empresas_api.auth import Auth
 
-from . import API_VERSION, __version__, campos, cerebro
+from . import API_VERSION, __version__, campo, campo_rutas, campos, cerebro
 from .pagina import PAGINA
 
 TICK_SECONDS = 60
@@ -83,13 +83,15 @@ def pending_view(p: dict) -> dict:
 
 def create_app(rt: Runtime, *, report: dict | None = None, tick: bool = True, env_file: Path | None = None,
                environ: dict[str, str] | None = None, local_open: bool = False, models_path: str | Path | None = None,
-               fetch: cerebro.Fetch = cerebro.http_get, speech: Any = None, phone_link: Any = None) -> FastAPI:
+               fetch: cerebro.Fetch = cerebro.http_get, speech: Any = None, phone_link: Any = None,
+               campo_dir: Path | None = None) -> FastAPI:
     """`report`: lo que devolvió `boot.start` (brigadas montadas, errores, pendientes).
     `env_file`: el `raphael.env` local donde la pantalla de Configuración guarda las claves (None = sin Configuración).
     `fetch`: cómo se mira si el modelo local responde (los tests ponen uno falso).
     `speech`: la voz hablada del orquestador (`speech_from`); None = sin voz (los endpoints dicen por qué).
     `phone_link`: el enlace con el celular de Operaciones (`register`, `handle_incoming`, `unregister`); None = se busca
     `raphael_operaciones.adapters.phone.link` al conectarse el celular.
+    `campo_dir`: dónde guarda la captura de campo (negocios, notas, audios y fotos); None = junto a `env_file`, o sin captura.
     `local_open`: en la PC, los pedidos de esa misma PC entran sin clave (ver `is_same_pc`)."""
     environ = os.environ if environ is None else environ
     report = report or {}
@@ -314,6 +316,14 @@ def create_app(rt: Runtime, *, report: dict | None = None, tick: bool = True, en
         except Exception as exc:  # noqa: BLE001
             raise HTTPException(422, str(exc)[:300]) from None
         return Response(audio, media_type="audio/wav", headers={"Cache-Control": "no-store"})
+
+    # --- captura de campo (negocios que Damián observa: notas, voz, fotos, resumen del día y expediente)
+    if campo_dir is None and env_file is not None:
+        campo_dir = Path(env_file).parent / "campo"
+    app.include_router(campo_rutas.router(
+        campo.Campo(campo_dir, rt.clock) if campo_dir is not None else None, session, _voz if speech else None,
+        lambda msgs: rt.models.complete("cocinero", msgs, target="campo", private=True, prefer="local", max_tokens=700)
+        if rt.models is not None else None))
 
     # --- estado
     @app.get("/api/v1/summary")
