@@ -248,7 +248,7 @@ class Campo:
                 if tema and n.get("tema") != tema:
                     continue
                 out.append(n)
-        return sorted(out, key=lambda n: n["id"])
+        return out   # en el orden en que se anotaron (el id solo desempata por segundo, no por orden)
 
     def media(self, negocio: str, archivo: str) -> tuple[Path, str]:
         d = self._existente(negocio)
@@ -282,7 +282,7 @@ class Campo:
         # Criterio de Damián: el material no apunta a empleados. Lo del tema Personal no entra a las pérdidas: va aparte, a él.
         cand = [n for n in notas if "cierre" not in n.get("etiquetas", []) and n["texto"] and n["tema"] != "personal"]
         personas = [f"{n['hora']} · {n['texto']}" for n in notas if n["tema"] == "personal" and n["texto"]]
-        cand.sort(key=lambda n: (-puntaje_perdida(n["texto"]), n["id"]))
+        cand.sort(key=lambda n: (-puntaje_perdida(n["texto"]), n["hora"]))
         perdidas = cierre[:3] or [f"{n['hora']} · {TEMAS[n['tema']]}: {n['texto']}" for n in cand[:3]
                                   if puntaje_perdida(n["texto"]) > 0]
         pend = [n for n in notas if n["fuente"] == "voz" and n["estado"] != "ok"]
