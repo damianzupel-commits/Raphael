@@ -208,3 +208,16 @@ def test_la_ia_del_resumen_se_pide_siempre_privada(tmp_path):
         c.post("/api/v1/campo/nota", json={"negocio": "bodegon", "texto": "faltó pescado"})
         r = c.get("/api/v1/campo/resumen?negocio=bodegon&ia=true").json()
     assert r["ia"] and r["texto_ia"] == "resumen local" and visto["private"] is True and visto["prefer"] == "local"
+
+
+def test_el_material_no_apunta_a_empleados(cam):
+    cam.agregar("bodegon-de-prueba", texto="el mozo Juan se equivocó dos comandas y faltó la milanesa", tema="personal")
+    cam.agregar("bodegon-de-prueba", texto="faltó la milanesa y esperaron 30 minutos", tema="cocina")
+    r = cam.resumen("bodegon-de-prueba")
+    assert all("Juan" not in p for p in r["perdidas"]) and len(r["perdidas"]) == 1
+    assert any("Juan" in x for x in r["solo_para_damian"])
+    assert "Juan" not in (cam.root / "bodegon-de-prueba/resumenes/2026-11-30.md").read_text("utf-8")
+    assert "Juan" in cam.expediente("bodegon-de-prueba") and "Juan" not in cam.expediente("bodegon-de-prueba", para_dueno=True)
+    pedido = []
+    cam.resumen("bodegon-de-prueba", ask=lambda m: pedido.append(m))
+    assert "no nombres ni señales a empleados" in pedido[0][0]["content"]

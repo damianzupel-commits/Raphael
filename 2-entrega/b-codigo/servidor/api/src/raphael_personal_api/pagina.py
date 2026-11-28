@@ -153,7 +153,7 @@ $("cmic").onclick=async()=>{if(C.rec){C.rec.stop();return}
 $("ccl").onclick=async()=>{const cosas=["cc1","cc2","cc3"].map(i=>$(i).value.trim()).filter(Boolean);if(!cosas.length)return say("Escribí al menos una.");
  try{await capi("/api/v1/campo/cierre",{method:"POST",body:JSON.stringify({negocio:cn(),cosas})});["cc1","cc2","cc3"].forEach(i=>$(i).value="");say("Cierre guardado.",true);loadHoy()}catch(e){say(e.message)}};
 function verRes(r){const L=[r.dia+" · "+r.total+" nota(s)"];if(r.ia)L.push("","Según la IA local:",r.texto_ia);
- else L.push("","Pérdidas ("+r.origen_perdidas+"):",...r.perdidas.map((p,i)=>(i+1)+". "+p));L.push("","Mirar mañana:",...r.mirar_manana.map(m=>"- "+m));$("cout").textContent=L.join("\n")}
+ else L.push("","Pérdidas ("+r.origen_perdidas+"):",...r.perdidas.map((p,i)=>(i+1)+". "+p));L.push("","Mirar mañana:",...r.mirar_manana.map(m=>"- "+m));if(r.solo_para_damian&&r.solo_para_damian.length)L.push("","Solo para vos (no va al dueño):",...r.solo_para_damian.map(m=>"- "+m));$("cout").textContent=L.join("\n")}
 $("cres").onclick=async()=>{try{verRes(await capi("/api/v1/campo/resumen?negocio="+cn()))}catch(e){say(e.message)}};
 $("cresia").onclick=async()=>{try{cmsg("Pensando en tu PC…");const r=await capi("/api/v1/campo/resumen?ia=true&negocio="+cn());cmsg(r.ia?"":"Sin modelo local prendido: resumen por reglas.");verRes(r)}catch(e){say(e.message)}};
 $("cask").onclick=async()=>{const q=$("cq").value.trim();if(!q)return;try{const r=await capi("/api/v1/campo/preguntar",{method:"POST",body:JSON.stringify({negocio:cn(),pregunta:q})});

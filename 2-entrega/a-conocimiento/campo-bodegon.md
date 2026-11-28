@@ -26,3 +26,6 @@ Para que Damián anote desde el celular, durante el turno, todo lo que ve en un 
 
 ## Endpoints (`/api/v1/campo`, todos con sesión)
 `GET /` · `POST /negocios` · `POST /nota` · `POST /voz?negocio&tema` (audio crudo) · `POST /foto?negocio&tema&texto` (imagen cruda) · `POST /cierre` · `PATCH /nota/{id}` · `GET /notas?negocio&dia&tema&q` · `GET /media/{archivo}?negocio` · `GET /resumen?negocio&dia&ia` · `POST /preguntar` · `GET /expediente?negocio` · `POST /transcribir/{id}?negocio`.
+
+## Criterio: no apuntar a empleados
+Lo que va al dueño habla de procesos y herramientas, no de personas. Las notas del tema **Personal** no entran a las pérdidas del resumen: salen aparte, como «Solo para vos», y no se guardan en el resumen del día. La IA recibe la orden de redactar sin nombrar ni señalar a nadie. `GET /expediente?para_dueno=true` omite el tema Personal. Señalar a una persona queda para Damián, y solo con evidencia repetida.

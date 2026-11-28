@@ -279,7 +279,9 @@ class Campo:
         por_tema = Counter(n["tema"] for n in notas)
         cierre = [n["texto"] for n in sorted((n for n in notas if "cierre" in n.get("etiquetas", [])),
                                              key=lambda n: n.get("etiquetas", [""])[-1])]
-        cand = [n for n in notas if "cierre" not in n.get("etiquetas", []) and n["texto"]]
+        # Criterio de Damián: el material no apunta a empleados. Lo del tema Personal no entra a las pérdidas: va aparte, a él.
+        cand = [n for n in notas if "cierre" not in n.get("etiquetas", []) and n["texto"] and n["tema"] != "personal"]
+        personas = [f"{n['hora']} · {n['texto']}" for n in notas if n["tema"] == "personal" and n["texto"]]
         cand.sort(key=lambda n: (-puntaje_perdida(n["texto"]), n["id"]))
         perdidas = cierre[:3] or [f"{n['hora']} · {TEMAS[n['tema']]}: {n['texto']}" for n in cand[:3]
                                   if puntaje_perdida(n["texto"]) > 0]
@@ -293,7 +295,8 @@ class Campo:
         if not [t for t in por_tema if t != "otro"] or len(notas) < 5:
             mirar.append("Pocas notas: anotá más en el turno pico para que el diagnóstico tenga de dónde agarrarse.")
         return {"dia": dia, "total": len(notas), "por_tema": dict(por_tema), "perdidas": perdidas,
-                "origen_perdidas": "cierre del día" if cierre else "reglas (palabras de pérdida)", "mirar_manana": mirar}
+                "origen_perdidas": "cierre del día" if cierre else "reglas (palabras de pérdida)", "mirar_manana": mirar,
+                "solo_para_damian": personas}
 
     def resumen(self, negocio: str, dia: str | None = None, *, ask: Ask | None = None, guardar: bool = True) -> dict:
         dia = self._dia(dia) if dia else f"{self.clock():%Y-%m-%d}"
@@ -306,7 +309,10 @@ class Campo:
                 "Sos el asistente de un consultor que observa un restaurante. Con las notas del día armás un resumen corto en "
                 "español rioplatense. Usá SOLO lo que dicen las notas; si algo no está, no lo inventes ni lo estimes. Formato:\n"
                 "PÉRDIDAS: las 3 cosas que más tiempo o plata hicieron perder, una por línea, citando el [id] de la nota.\n"
-                "MIRAR MAÑANA: hasta 3 cosas concretas para observar.")},
+                "MIRAR MAÑANA: hasta 3 cosas concretas para observar.\n"
+                "REGLA: el resumen puede llegar al dueño, así que no nombres ni señales a empleados. Redactá cada problema como "
+                "falla de proceso, de herramienta o de organización (ej. «el pedido llega a cocina sin orden claro», no «el mozo "
+                "se equivocó»). Si una nota solo habla de una persona, omitila.")},
                 {"role": "user", "content": f"Notas del {dia}:\n{cuerpo}"}]
             txt = ask(msg)
             if txt:
@@ -329,11 +335,12 @@ class Campo:
         return "\n".join(L) + "\n"
 
     # --- expediente
-    def expediente(self, negocio: str) -> str:
-        """El expediente del negocio en Markdown: notas por tema y resúmenes diarios. Es lo que se lleva al diagnóstico."""
+    def expediente(self, negocio: str, *, para_dueno: bool = False) -> str:
+        """El expediente en Markdown: notas por tema y resúmenes diarios (lo que se lleva al diagnóstico).
+        `para_dueno`: sin el tema Personal ni lo que sea sobre personas; ese material es solo de Damián."""
         d = self._existente(negocio)
         nombre = json.loads((d / "negocio.json").read_text("utf-8"))["nombre"]
-        notas = self.notas(negocio)
+        notas = [n for n in self.notas(negocio) if not (para_dueno and n["tema"] == "personal")]
         dias = sorted({n["dia"] for n in notas})
         L = [f"# Expediente: {nombre}", "",
              f"{len(notas)} nota(s) en {len(dias)} día(s)" + (f", del {dias[0]} al {dias[-1]}." if dias else "."), ""]
@@ -366,7 +373,8 @@ class Campo:
             ctx = "\n".join(f"[{n['id']}] {n['dia']} ({TEMAS[n['tema']]}) {n['texto']}" for n in base if n["texto"])[:12000]
             txt = ask([{"role": "system", "content": (
                 "Contestá la pregunta sobre un restaurante usando SOLO estas notas del observador. Citá el [id] de cada nota "
-                "que uses. Si las notas no alcanzan, decilo. No inventes cifras ni hechos. Español rioplatense, corto.")},
+                "que uses. Si las notas no alcanzan, decilo. No inventes cifras ni hechos. No culpes a personas: "
+                "hablá de procesos y herramientas. Español rioplatense, corto.")},
                 {"role": "user", "content": f"Notas:\n{ctx}\n\nPregunta: {pregunta}"}])
             if txt:
                 r["ia"], r["respuesta"] = True, txt.strip()

@@ -155,8 +155,9 @@ def router(campo: c.Campo | None, session: Callable[..., dict],
         return ok(lambda: s.preguntar(b.negocio, b.pregunta, ask=lambda m: txt))
 
     @r.get("/expediente", response_class=PlainTextResponse)
-    async def expediente(negocio: str) -> PlainTextResponse:
-        return PlainTextResponse(ok(lambda: store().expediente(negocio)), media_type="text/markdown; charset=utf-8",
+    async def expediente(negocio: str, para_dueno: bool = False) -> PlainTextResponse:
+        return PlainTextResponse(ok(lambda: store().expediente(negocio, para_dueno=para_dueno)),
+                                 media_type="text/markdown; charset=utf-8",
                                  headers={"Cache-Control": "no-store"})
 
     return r
